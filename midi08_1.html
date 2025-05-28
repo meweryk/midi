@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <title>Генератор частот</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+            max-width: 800px;
+            font-size: 0.9em;
+        }
+        li {
+        	font-size: 0.8em;
+        }
+        .control {
+            margin: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            background: #f8f8f8;
+        }
+        .frequency-item {
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            position: relative;
+        }
+        .divider {
+            height: 1px;
+            background: #ccc;
+            margin: 10px 0;
+            width: 100%;
+        }
+        .color-box {
+            width: 25px;
+            height: 25px;
+            border: 1px solid #aaa;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            padding: 5px;
+            border: 1px solid #ddd;
+            text-align: center;
+        }
+        input[type="range"].freq-range {
+            width: 120px;
+            height: 4px;
+        }
+        input[type="range"].phase-shift {
+            width: 160px;
+            height: 3px;
+        }
+        input[type="range"].phase-shift::-webkit-slider-thumb {
+            background: #2ecc71;
+        }
+        input[type="range"].phase-shift::-moz-range-thumb {
+            background: #2ecc71;
+        }
+        button {
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+        .main-btn {
+            background: #e0e0e0;
+            border: 1px solid #ccc;
+        }
+        button.main-btn.active {
+            background-color: #90ee90;
+            border-color: #5cb85c;
+        }
+        .remove-btn {
+            background: #ff4444;
+            color: white;
+            border: 1px solid #cc0000;
+        }
+        .pan-selector {
+            margin: 0 5px;
+            padding: 3px;
+            width: 60px;
+            font-size: 0.9em;
+        }
+        .phase-control {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        input[type="number"] {
+            font-size: 0.9em;
+            padding: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Генератор частот</h1>
+    <div class="control">
+        <button id="toggleBtn" class="main-btn">Старт</button>
+        <button id="addFrequency" class="main-btn">+ Добавить частоту</button>
+    </div>
+    <div id="frequencyControls" class="control"></div>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Звук (Гц)</th>
+                <th>Свет (ТГц)</th>
+                <th>Длина волны</th>
+                <th>Цвет</th>
+            </tr>
+        </thead>
+        <tbody id="results"></tbody>
+    </table>
+    <div class="control">
+    	<ul>
+    		<li>Идеальный 5-й ключ ДНК: гармонизированный с
+    	
+    	частотами D 288 Гц и А 432 Гц, он является краеугольным камнем коллекции.</li>
+    	
+    		<li>Идеальная 5-я клавиша F/C: настроена на частоту F 324 Гц и С 512 Гц, предлагая новое измерение исследования гармоник.</li>
+    	
+    		<li>Дельта-клавиша: уникально настроена на ноту D на обоих концах со смещением на 3 Гц, создавая дельта-бинауральную частоту, способствующую глубокой медитации и регенерации.</li>
+    	
+    		<li>Тета-ключ: настроен на ноту А на обоих концах и смещен на 6 Гц, он создает тета-бинауральную частоту, способствующую состоянию расслабленного осознания и открывая доступ к подсознанию.</li>
+    	</ul>
+    	<h3>Тона планет</h3>
+    	<ul>
+    		<li>
+    			<b>Тон Меркурия.</b><br>  			
+    			141.27 Hz<br>    			
+    			Цвет: сине-зеленый<br>   			
+    			Чакра: Вишудха горловая чакра<br>    			
+    			Эффект: поддерживает центр речи, коммуникацию и интеллектуальную деятельность.
+    		</li>
+    		<li>
+    			<b>Тон Венеры.</b><br>  			
+    			221.23 Hz<br>    			
+    			Цвет: желто-оранжевый<br>    			
+    			Чакра: Аджна надбровная чакра, третий глаз<br>    			
+    			Эффект: поддерживает высшую любовную энергию и стремление к гармонии.
+    		</li>
+    		<li>
+    			<b>Тон Марса.</b><br>    			
+    			144.72 Hz<br>    			
+    			Цвет: синий<br>    			
+    			Эффект: поддерживает силу воли и сфокусированную энергию
+			</li>
+			<li>			
+    			<b>Тон Юпитера.</b><br>    			
+    			183.58 Hz<br>    			
+    			Цвет: красный<br>    			
+    			Эффект: поддерживает творческую силу.
+			</li>
+			<li>    			
+    			<b>Тон Сатурн.</b><br>   			
+    			147.85 Hz<br>   			
+    			Цвет: синий<br>  			
+    			Эффект: усиливает концентрацию и осознанность.
+    		</li>
+    		<li>
+    			<b>Тон Урана.</b><br>    			
+    			207.36 Hz<br>    			
+    			Цвет: оранжевый<br>    			
+    			Эффект: поддерживает силу удивления и обновления, обладает первобытной и эротической силой.    			
+    		</li>
+    		<li>
+    			<b>Тон Нептуна.</b><br>    			
+    			211.44 Hz<br>    			
+    			Цвет: оранжевый<br>    			
+    			Эффект: поддерживает интуицию, подсознание и усиливает переживания во сне.    			
+    		</li>
+    		<li>
+    			<b>Тон Плутона.</b><br>   			
+    			140.64 Hz<br>			
+    			Цвет: сине-зеленый<br>   			
+    			Эффект: поддерживает магическую групповую динамику и отвечает за интеграцию в определенные структуры общества.
+    		</li>
+    		<li>
+    			<b>Тон Солнца.</b><br>   			
+    			126.22 Hz<br>    			
+    			Цвет: желто-зеленый<br>   			
+    			Чакра: Манипура солнечное сплетение	(Xapa)<br>    			
+    			Эффект: усиливает ощущение концентрации на магическом и трансцендентном.<br>   			
+    			Солнце это энергетический центр нашей солнечной системы. Оно является центром притяжения, вокруг которого вращаются Земля и другие планеты. Поэтому частота солнца связана с психическим центром. В Дзене эта точка называется Хара. Тон солнца это граница между Инь и Ян, между этой и другой стороной. Он поднимается из высшего измерения и, лишенный рационального наблюдения, символизирует нечто магическое и трансцендентное. 			
+    			Солнечный тон следует использовать после работы с другими тонами и в первую очередь для продвинутых практиков.
+    		</li>
+    	</ul>
+    	<a href="https://www.planetware.de/octave/">Основано на источнике Planetware, где можно скачать эти тона </a>
+    </div>
+
+    <script>
+        let audioContext;
+        let isPlaying = false;
+        const channels = new Map();
+
+        function initAudio() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function createOscillatorChain(freq, pan, phaseShift = 0) {
+            const oscillator = audioContext.createOscillator();
+            const panner = audioContext.createStereoPanner();
+            const delayNode = audioContext.createDelay();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+            panner.pan.value = pan;
+            delayNode.delayTime.value = phaseShift / (360 * freq);
+
+            oscillator.connect(delayNode);
+            delayNode.connect(panner);
+            panner.connect(audioContext.destination);
+
+            return { oscillator, panner, delayNode };
+        }
+
+        function calculateLightParameters(frequency) {
+            const C = 299792458;
+            let lightFreq = frequency;
+            let octaves = 0;
+
+            while (lightFreq < 400e12 && octaves++ < 50) lightFreq *= 2;
+
+            const wavelength = (C / lightFreq) * 1e9;
+
+            if (wavelength >= 380 && wavelength <= 780) {
+                return {
+                    lightFreq: lightFreq / 1e12,
+                    wavelength: wavelength.toFixed(1) + ' нм',
+                    color: wavelengthToColor(wavelength)
+                };
+            }
+            return null;
+        }
+
+        function wavelengthToColor(wl) {
+            wl = Math.max(380, Math.min(780, wl));
+            let r, g, b, factor;
+
+            if (wl < 440) {
+                r = (wl - 380) / 60; g = 0; b = 1;
+            } else if (wl < 490) {
+                r = 0; g = (wl - 440) / 50; b = 1;
+            } else if (wl < 510) {
+                r = 0; g = 1; b = (510 - wl) / 20;
+            } else if (wl < 580) {
+                r = (wl - 510) / 70; g = 1; b = 0;
+            } else if (wl < 645) {
+                r = 1; g = (645 - wl) / 65; b = 0;
+            } else {
+                r = 1; g = 0; b = 0;
+            }
+
+            factor = wl > 700 ? 0.3 : wl < 420 ? 0.3 + 0.7 * (wl - 380) / 40 : 1;
+            const gamma = 0.8;
+
+            return `rgb(${[
+                Math.round(255 * Math.pow(r * factor, gamma)),
+                Math.round(255 * Math.pow(g * factor, gamma)),
+                Math.round(255 * Math.pow(b * factor, gamma))
+            ].join(',')})`;
+        }
+
+        function updateVisualization(id, frequency) {
+            const data = calculateLightParameters(frequency);
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            if (!data || !row) return;
+
+            row.innerHTML = `
+                <td>${frequency}</td>
+                <td>${data.lightFreq.toFixed(3)}</td>
+                <td>${data.wavelength}</td>
+                <td><div class="color-box" style="background:${data.color}"></div></td>
+            `;
+        }
+
+        function updateDividers() {
+            const container = document.getElementById('frequencyControls');
+            const items = container.querySelectorAll('.frequency-item');
+            container.querySelectorAll('.divider').forEach(div => div.remove());
+            items.forEach((item, index) => {
+                if (index < items.length - 1) {
+                    const divider = document.createElement('div');
+                    divider.className = 'divider';
+                    item.after(divider);
+                }
+            });
+        }
+
+        function createFrequencyControl(defaultFrequency = 432) {
+            const id = Date.now().toString();
+            const div = document.createElement('div');
+            div.className = 'frequency-item';
+            div.dataset.id = id;
+            div.innerHTML = `
+                <input type="range" class="freq-range" min="1" max="20000" value="${defaultFrequency}" style="width: 200px;">
+                <input type="number" class="freq-number" value="${defaultFrequency}" style="width: 80px;">
+                <br>
+                <div class="phase-control">
+                    <input type="range" class="phase-shift" min="0" max="180" value="0" step="1" style="width: 200px;">
+                    <span class="phase-value">0°</span>
+                </div>
+                <select class="pan-selector" style="width: 45px;">
+                    <option value="-1">L</option>
+                    <option value="0" selected>C</option>
+                    <option value="1">R</option>
+                </select>
+                <button class="remove-btn" onclick="removeFrequency('${id}')">×</button>
+            `;
+
+            const freqRange = div.querySelector('.freq-range');
+            const freqNumber = div.querySelector('.freq-number');
+            const phaseShift = div.querySelector('.phase-shift');
+            const phaseValue = div.querySelector('.phase-value');
+
+            freqNumber.addEventListener('input', () => {
+                const sanitized = freqNumber.value.replace(',', '.');
+                const val = parseFloat(sanitized);
+                if (!isNaN(val)) {
+                    freqRange.value = val;
+                    updateVisualization(id, val);
+                    if (channels.has(id)) {
+                        channels.get(id).oscillator.frequency.setValueAtTime(val, audioContext.currentTime);
+                    }
+                }
+            });
+
+            freqRange.addEventListener('input', () => {
+                const val = parseFloat(freqRange.value);
+                freqNumber.value = val;
+                updateVisualization(id, val);
+                if (channels.has(id)) {
+                    channels.get(id).oscillator.frequency.setValueAtTime(val, audioContext.currentTime);
+                }
+            });
+
+            phaseShift.addEventListener('input', () => {
+                const deg = parseFloat(phaseShift.value);
+                phaseValue.textContent = `${deg}°`;
+                if (channels.has(id)) {
+                    const { oscillator, delayNode } = channels.get(id);
+                    const freq = oscillator.frequency.value;
+                    delayNode.delayTime.value = deg / (360 * freq);
+                }
+            });
+
+            document.getElementById('frequencyControls').appendChild(div);
+            updateDividers();
+
+            const row = document.createElement('tr');
+            row.dataset.id = id;
+            document.getElementById('results').appendChild(row);
+            updateVisualization(id, defaultFrequency);
+        }
+
+        function removeFrequency(id) {
+            document.querySelector(`.frequency-item[data-id="${id}"]`)?.remove();
+            document.querySelector(`tr[data-id="${id}"]`)?.remove();
+            if (channels.has(id)) {
+                channels.get(id).oscillator.stop();
+                channels.delete(id);
+            }
+            updateDividers();
+        }
+
+        document.getElementById('addFrequency').addEventListener('click', () => {
+            createFrequencyControl();
+        });
+
+        document.getElementById('toggleBtn').addEventListener('click', () => {
+            initAudio();
+            isPlaying = !isPlaying;
+            const toggleBtn = document.getElementById('toggleBtn');
+            toggleBtn.textContent = isPlaying ? 'Стоп' : 'Старт';
+            toggleBtn.classList.toggle('active', isPlaying);
+
+            document.querySelectorAll('.frequency-item').forEach(item => {
+                const id = item.dataset.id;
+                const freq = parseFloat(item.querySelector('.freq-range').value);
+                const pan = parseFloat(item.querySelector('.pan-selector').value);
+                const deg = parseFloat(item.querySelector('.phase-shift').value);
+                if (isPlaying) {
+                    const chain = createOscillatorChain(freq, pan, deg);
+                    channels.set(id, chain);
+                    chain.oscillator.start();
+                } else {
+                    if (channels.has(id)) {
+                        channels.get(id).oscillator.stop();
+                        channels.delete(id);
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
