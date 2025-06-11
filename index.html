@@ -98,13 +98,62 @@
             font-size: 0.9em;
             padding: 3px;
         }
+	/* Кнопка */
+    .info-button {
+      font-size: 18px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    /* Модальное окно (фон) */
+    .modal {
+      display: none; 
+      position: fixed;
+      z-index: 1;
+      left: 0; top: 0;
+      width: 100%; height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+
+    /* Содержимое окна */
+    .modal-content {
+      background-color: #fefefe;
+      margin: 15% auto;
+      padding: 20px;
+      border-radius: 10px;
+      width: 300px;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+      position: relative;
+    }
+
+    /* Кнопка закрытия */
+    .close {
+      position: absolute;
+      top: 10px;
+      right: 15px;
+      font-size: 18px;
+      font-weight: bold;
+      color: #aaa;
+      cursor: pointer;
+    }
+
+    .close:hover {
+      color: #000;
+    }
     </style>
 </head>
 <body>
-    <h1>Генератор частот</h1> <button class="main-btn"onclick="window.location.href = 'readme.md';">i</button>
+    <h1>Генератор частот</h1> 
     <div class="control">
         <button id="toggleBtn" class="main-btn">Старт</button>
         <button id="addFrequency" class="main-btn">+ Добавить частоту</button>
+	<button class="main-btn" onclick="openModal()">i</button>
     </div>
     <div id="frequencyControls" class="control"></div>
 
@@ -197,6 +246,15 @@
 	<a href="https://meweryk.github.io/Wave-of-land/index.html">Ещё проекты</a><br>
 	<p>© Автор</p>
     </div>
+
+    <!-- Модальное окно -->
+<div id="infoModal" class="modal">
+  <div class="modal-content">
+    <span class="close" onclick="closeModal()">&times;</span>
+    <h3>Информация</h3>
+    <p>Здесь отображается дополнительная информация по кнопке "i".</p>
+  </div>
+</div>
 
     <script>
         let audioContext;
@@ -403,6 +461,22 @@
                 }
             });
         });
+
+	function openModal() {
+    document.getElementById('infoModal').style.display = 'block';
+  }
+
+  function closeModal() {
+    document.getElementById('infoModal').style.display = 'none';
+  }
+
+  // Закрытие окна при клике вне области
+  window.onclick = function(event) {
+    const modal = document.getElementById('infoModal');
+    if (event.target === modal) {
+      modal.style.display = 'none';
+    }
+  }
     </script>
 </body>
   </html>
