@@ -3,15 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Генератор частот</title>
+    <title>Генератор частот с FM модуляцией</title>
     <style>
         body {
             font-family: Arial, sans-serif;
             margin: 10px;
             max-width: 800px;
             font-size: 0.9em;
-            background: #f5f5f5;
-            color: #333;
         }
         li {
             font-size: 0.8em;
@@ -21,8 +19,6 @@
             padding: 10px;
             border: 1px solid #ddd;
             background: #f8f8f8;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .frequency-item {
             margin: 5px 0;
@@ -34,7 +30,7 @@
         }
         .divider {
             height: 1px;
-            background: #ddd;
+            background: #ccc;
             margin: 10px 0;
             width: 100%;
         }
@@ -42,7 +38,6 @@
             width: 25px;
             height: 25px;
             border: 1px solid #aaa;
-            border-radius: 3px;
         }
         table {
             width: 100%;
@@ -50,14 +45,11 @@
             margin-top: 20px;
         }
         th, td {
-            padding: 8px 5px;
+            padding: 5px;
             border: 1px solid #ddd;
             text-align: center;
         }
-        th {
-            background-color: #e8f5e9;
-        }
-        input[type="range"].freq-range {
+        input[type="range"] {
             width: 120px;
             height: 4px;
         }
@@ -72,37 +64,29 @@
             background: #2ecc71;
         }
         button {
-            padding: 6px 12px;
+            padding: 5px 10px;
             cursor: pointer;
-            border-radius: 4px;
+            border-radius: 3px;
             font-size: 0.9em;
-            border: 1px solid #ccc;
-            background: white;
-            transition: all 0.2s;
-        }
-        button:hover {
-            background: #f0f0f0;
         }
         .main-btn {
-            background: #e3f2fd;
-            border-color: #bbdefb;
+            background: #e0e0e0;
+            border: 1px solid #ccc;
         }
         button.main-btn.active {
-            background-color: #c8e6c9;
-            border-color: #81c784;
+            background-color: #90ee90;
+            border-color: #5cb85c;
         }
         .remove-btn {
-            background: #ffebee;
-            color: #c62828;
-            border-color: #ef9a9a;
+            background: #ff4444;
+            color: white;
+            border: 1px solid #cc0000;
         }
         .pan-selector {
             margin: 0 5px;
-            padding: 4px;
+            padding: 3px;
             width: 60px;
             font-size: 0.9em;
-            border-radius: 4px;
-            border: 1px solid #ddd;
         }
         .phase-control {
             display: flex;
@@ -111,10 +95,8 @@
         }
         input[type="number"] {
             font-size: 0.9em;
-            padding: 4px;
+            padding: 3px;
             width: 70px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
         }
         .wave-controls {
             margin-top: 10px;
@@ -130,10 +112,38 @@
             border: 1px solid #ccc;
         }
         .wave-btn.active {
-            background-color: #bbdefb;
-            border-color: #90caf9;
+            background-color: #90ee90;
+            border-color: #5cb85c;
         }
-        /* Модальное окно */
+        .fm-controls {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            padding: 8px;
+            background: #eef;
+            border-radius: 4px;
+            border: 1px solid #ddf;
+        }
+        .fm-label {
+            font-weight: bold;
+            color: #333;
+        }
+        /* Кнопка */
+        .info-button {
+            font-size: 18px;
+            background-color: #007BFF;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            text-align: center;
+            cursor: pointer;
+        }
+
+        /* Модальное окно (фон) */
         .modal {
             display: none; 
             position: fixed;
@@ -141,29 +151,30 @@
             left: 0; top: 0;
             width: 100%; height: 100%;
             background-color: rgba(0,0,0,0.5);
-            overflow: auto;
         }
+
+        /* Содержимое окна */
         .modal-content {
             background-color: #fefefe;
-            margin: 5% auto;
+            margin: 15% auto;
             padding: 20px;
             border-radius: 10px;
-            width: 90%;
-            max-width: 500px;
+            width: 300px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             position: relative;
-            max-height: 80vh;
-            overflow-y: auto;
         }
+
+        /* Кнопка закрытия */
         .close {
             position: absolute;
             top: 10px;
             right: 15px;
-            font-size: 24px;
+            font-size: 18px;
             font-weight: bold;
-            color: #777;
+            color: #aaa;
             cursor: pointer;
         }
+
         .close:hover {
             color: #000;
         }
@@ -181,8 +192,19 @@
             <button id="sineBtn" class="wave-btn active">Синус</button>
             <button id="squareBtn" class="wave-btn">Меандр</button>
         </div>
+        
+        <!-- FM модуляция - все в одной строке -->
+        <div class="fm-controls">
+            <input type="checkbox" id="fmEnabled">
+            <span class="fm-label">FM модуляция:</span>
+            
+            <span class="fm-label">Частота (Гц):</span>
+            <input type="number" id="fmFreq" min="0" max="100" value="0" step="0.001" style="width: 80px;">
+            
+            <span class="fm-label">Девиация (%):</span>
+            <input type="number" id="fmDepth" min="0" max="5" value="0" step="0.01" style="width: 70px;">
+        </div>
     </div>
-    
     <div id="frequencyControls" class="control"></div>
 
     <table>
@@ -275,25 +297,25 @@
     <div id="infoModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
-            <h3>Информация о синтезаторе</h3>
-            <p>Это простой синтезатор для генерации частот, писался для тестирования родинского бублика. Мануал ниже.</p>
-            <p>На сайте <strong>Planetware</strong>, записанный звук состоит из частоты и октавно увеличенной в 2 раза.</p>
-            <p>Программа синтезатора частот с возможностями:</p>
+            <h3>FM модуляция в генераторе</h3>
+            <p>Реализована точная частотная модуляция (FM) по формуле:</p>
+            <p><strong>f(t) = f₀ + Δf × sin(2πfₘt)</strong></p>
+            <p>где:</p>
             <ul>
-                <li>Добавление осцилляторов</li>
-                <li>Определение для каждого осциллятора канала: правого (R), левого (L) или вывода на два сразу (С)</li>
-                <li>Установка сдвига фазы (до 180°) между осцилляторами</li>
-                <li>Расчёт длины волны в видимом диапазоне при октавном увеличении частоты звука</li>
-                <li>Цветовая шкала длины волны</li>
+                <li><strong>f(t)</strong> - мгновенная частота</li>
+                <li><strong>f₀</strong> - основная частота осциллятора</li>
+                <li><strong>Δf</strong> - девиация частоты (Δf = f₀ × depth / 100)</li>
+                <li><strong>fₘ</strong> - частота модуляции</li>
             </ul>
-            <h3>Особенности:</h3>
+            
+            <h4>Параметры:</h4>
             <ul>
-                <li>Возможность изменения частоты в настоящем времени</li>
-                <li><strong>Важно:</strong> изменение выводов на соединениях — только через остановку и повторный запуск</li>
-                <li>Переход фазы корректно отрабатывает только после остановки и нового старта</li>
-                <li>Добавлена нормализация амплитуды для предотвращения клиппинга</li>
-                <li>Реализован компрессор для мягкого ограничения сигнала</li>
+                <li><strong>Включение:</strong> флажок активирует/деактивирует FM модуляцию</li>
+                <li><strong>Частота модуляции:</strong> 0-100 Гц (шаг 0.001 Гц)</li>
+                <li><strong>Девиация:</strong> 0-5% от основной частоты (шаг 0.01%)</li>
             </ul>
+            
+            <p>FM модуляция применяется ко всем активным осцилляторам одновременно.</p>
             <p>Проект синтезатора разрабатывается для генерации частот и исследования катушки <strong>РодоФон</strong>, сделанной по принципу <strong>Марко Родина</strong>.</p>
         </div>
     </div>
@@ -304,57 +326,111 @@
         const channels = new Map();
         let currentWaveType = 'sine';
         let masterGain;
-        let compressor;
+        let fmOscillator;
+        let fmEnabled = false;
+        let fmFreq = 0;
+        let fmDepth = 0;
 
         function initAudio() {
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 
-                // Создаем главный узел усиления
+                // Создаем главный узел усиления для нормализации
                 masterGain = audioContext.createGain();
-                masterGain.gain.value = 0.8; // сниженный уровень по умолчанию
+                // Устанавливаем общее усиление на 0.8 для предотвращения клиппинга
+                masterGain.gain.value = 0.8;
+                masterGain.connect(audioContext.destination);
                 
-                // Создаем компрессор для предотвращения клиппинга
-                compressor = audioContext.createDynamicsCompressor();
-                compressor.threshold.value = -20;
-                compressor.knee.value = 10;
-                compressor.ratio.value = 12;
-                compressor.attack.value = 0.01;
-                compressor.release.value = 0.1;
-                
-                // Подключаем цепочку: masterGain -> compressor -> destination
-                masterGain.connect(compressor);
-                compressor.connect(audioContext.destination);
+                // Создаем FM осциллятор (будет использоваться, когда FM включен)
+                fmOscillator = audioContext.createOscillator();
+                fmOscillator.type = 'sine';
+                fmOscillator.frequency.value = 0;
+                fmOscillator.start();
             }
         }
 
-        // Создание осциллятора
         function createOscillatorChain(freq, pan, phaseShift = 0) {
             const oscillator = audioContext.createOscillator();
             const panner = audioContext.createStereoPanner();
-            const gainNode = audioContext.createGain();
             const delayNode = audioContext.createDelay();
+            const gainNode = audioContext.createGain(); // Узел усиления для нормализации
             
-            // Установка типа волны
             oscillator.type = currentWaveType;
             oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
-            
-            // Настройка панорамирования
             panner.pan.value = pan;
-            
-            // Настройка задержки для сдвига фазы
             delayNode.delayTime.value = phaseShift / (360 * freq);
             
-            // Начальное значение усиления
+            // Нормализация амплитуды
             gainNode.gain.value = 1;
             
-            // Соединение узлов: oscillator -> delayNode -> gainNode -> panner -> masterGain
+            // Подключение: oscillator -> delayNode -> gainNode -> panner -> masterGain
             oscillator.connect(delayNode);
             delayNode.connect(gainNode);
             gainNode.connect(panner);
             panner.connect(masterGain);
             
-            return { oscillator, panner, delayNode, gainNode };
+            // FM модуляция (если включена)
+            let fmGain = null;
+            if (fmEnabled) {
+                // Рассчитываем девиацию для этой частоты
+                const deviation = freq * (fmDepth / 100);
+                
+                // Создаем узел усиления для модуляции
+                fmGain = audioContext.createGain();
+                fmGain.gain.value = deviation;
+                
+                // Подключаем FM осциллятор к усилителю, а затем к частоте основного осциллятора
+                fmOscillator.connect(fmGain);
+                fmGain.connect(oscillator.frequency);
+            }
+
+            return { 
+                oscillator, 
+                panner, 
+                delayNode, 
+                gainNode,
+                fmGain // Для управления FM
+            };
+        }
+
+        // Обновление параметров FM
+        function updateFMParams() {
+            fmEnabled = document.getElementById('fmEnabled').checked;
+            fmFreq = parseFloat(document.getElementById('fmFreq').value) || 0;
+            fmDepth = parseFloat(document.getElementById('fmDepth').value) || 0;
+            
+            // Обновляем частоту FM осциллятора
+            if (fmOscillator) {
+                fmOscillator.frequency.value = fmFreq;
+            }
+            
+            // Обновляем все активные осцилляторы
+            if (isPlaying) {
+                channels.forEach((chain, id) => {
+                    const item = document.querySelector(`.frequency-item[data-id="${id}"]`);
+                    if (item) {
+                        const freq = parseFloat(item.querySelector('.freq-range').value);
+                        
+                        // Если FM был включен/выключен, нужно пересоздать осциллятор
+                        if (chain.fmGain && !fmEnabled) {
+                            // Отключаем FM
+                            chain.fmGain.disconnect();
+                            chain.oscillator.frequency.value = freq;
+                        } else if (!chain.fmGain && fmEnabled) {
+                            // Включаем FM
+                            const deviation = freq * (fmDepth / 100);
+                            chain.fmGain = audioContext.createGain();
+                            chain.fmGain.gain.value = deviation;
+                            fmOscillator.connect(chain.fmGain);
+                            chain.fmGain.connect(chain.oscillator.frequency);
+                        } else if (chain.fmGain && fmEnabled) {
+                            // Обновляем девиацию
+                            const deviation = freq * (fmDepth / 100);
+                            chain.fmGain.gain.value = deviation;
+                        }
+                    }
+                });
+            }
         }
 
         function calculateLightParameters(frequency) {
@@ -460,13 +536,16 @@
                 const sanitized = freqNumber.value.replace(',', '.');
                 const val = parseFloat(sanitized);
                 if (!isNaN(val)) {
-                    // Ограничиваем значение в допустимом диапазоне
-                    const clampedVal = Math.max(1, Math.min(20000, val));
-                    freqRange.value = clampedVal;
-                    freqNumber.value = clampedVal;
-                    updateVisualization(id, clampedVal);
+                    freqRange.value = val;
+                    updateVisualization(id, val);
                     if (channels.has(id)) {
-                        channels.get(id).oscillator.frequency.setValueAtTime(clampedVal, audioContext.currentTime);
+                        channels.get(id).oscillator.frequency.setValueAtTime(val, audioContext.currentTime);
+                        
+                        // Обновляем FM девиацию при изменении частоты
+                        if (fmEnabled && channels.get(id).fmGain) {
+                            const deviation = val * (fmDepth / 100);
+                            channels.get(id).fmGain.gain.value = deviation;
+                        }
                     }
                 }
             });
@@ -477,6 +556,12 @@
                 updateVisualization(id, val);
                 if (channels.has(id)) {
                     channels.get(id).oscillator.frequency.setValueAtTime(val, audioContext.currentTime);
+                    
+                    // Обновляем FM девиацию при изменении частоты
+                    if (fmEnabled && channels.get(id).fmGain) {
+                        const deviation = val * (fmDepth / 100);
+                        channels.get(id).fmGain.gain.value = deviation;
+                    }
                 }
             });
 
@@ -537,22 +622,18 @@
             toggleBtn.textContent = isPlaying ? 'Стоп' : 'Старт';
             toggleBtn.classList.toggle('active', isPlaying);
 
-            // Автоматическая нормализация амплитуды
-            const activeChannels = document.querySelectorAll('.frequency-item').length;
-            const gainValue = 1 / Math.max(1, Math.sqrt(activeChannels)); // логарифмическая нормализация
-            
             document.querySelectorAll('.frequency-item').forEach(item => {
                 const id = item.dataset.id;
                 const freq = parseFloat(item.querySelector('.freq-range').value);
                 const pan = parseFloat(item.querySelector('.pan-selector').value);
                 const deg = parseFloat(item.querySelector('.phase-shift').value);
-                
                 if (isPlaying) {
                     const chain = createOscillatorChain(freq, pan, deg);
                     channels.set(id, chain);
                     chain.oscillator.start();
                     
-                    // Применяем нормализованное усиление
+                    // Автоматическая нормализация амплитуды
+                    const gainValue = 1 / Math.max(1, channels.size);
                     chain.gainNode.gain.value = gainValue;
                 } else {
                     if (channels.has(id)) {
@@ -566,6 +647,11 @@
         // Инициализация кнопок волн
         document.getElementById('sineBtn').addEventListener('click', () => setWaveType('sine'));
         document.getElementById('squareBtn').addEventListener('click', () => setWaveType('square'));
+        
+        // Обработчики для элементов управления FM
+        document.getElementById('fmEnabled').addEventListener('change', updateFMParams);
+        document.getElementById('fmFreq').addEventListener('input', updateFMParams);
+        document.getElementById('fmDepth').addEventListener('input', updateFMParams);
 
         function openModal() {
             document.getElementById('infoModal').style.display = 'block';
