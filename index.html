@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
     <title>Генератор частот</title>
     <style>
         body {
@@ -11,15 +10,19 @@
             margin: 10px;
             max-width: 800px;
             font-size: 0.9em;
+            background: #f5f5f5;
+            color: #333;
         }
         li {
-        	font-size: 0.8em;
+            font-size: 0.8em;
         }
         .control {
             margin: 10px;
             padding: 10px;
             border: 1px solid #ddd;
             background: #f8f8f8;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
         .frequency-item {
             margin: 5px 0;
@@ -31,7 +34,7 @@
         }
         .divider {
             height: 1px;
-            background: #ccc;
+            background: #ddd;
             margin: 10px 0;
             width: 100%;
         }
@@ -39,6 +42,7 @@
             width: 25px;
             height: 25px;
             border: 1px solid #aaa;
+            border-radius: 3px;
         }
         table {
             width: 100%;
@@ -46,9 +50,12 @@
             margin-top: 20px;
         }
         th, td {
-            padding: 5px;
+            padding: 8px 5px;
             border: 1px solid #ddd;
             text-align: center;
+        }
+        th {
+            background-color: #e8f5e9;
         }
         input[type="range"].freq-range {
             width: 120px;
@@ -65,29 +72,37 @@
             background: #2ecc71;
         }
         button {
-            padding: 5px 10px;
+            padding: 6px 12px;
             cursor: pointer;
-            border-radius: 3px;
+            border-radius: 4px;
             font-size: 0.9em;
+            border: 1px solid #ccc;
+            background: white;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #f0f0f0;
         }
         .main-btn {
-            background: #e0e0e0;
-            border: 1px solid #ccc;
+            background: #e3f2fd;
+            border-color: #bbdefb;
         }
         button.main-btn.active {
-            background-color: #90ee90;
-            border-color: #5cb85c;
+            background-color: #c8e6c9;
+            border-color: #81c784;
         }
         .remove-btn {
-            background: #ff4444;
-            color: white;
-            border: 1px solid #cc0000;
+            background: #ffebee;
+            color: #c62828;
+            border-color: #ef9a9a;
         }
         .pan-selector {
             margin: 0 5px;
-            padding: 3px;
+            padding: 4px;
             width: 60px;
             font-size: 0.9em;
+            border-radius: 4px;
+            border: 1px solid #ddd;
         }
         .phase-control {
             display: flex;
@@ -96,56 +111,62 @@
         }
         input[type="number"] {
             font-size: 0.9em;
-            padding: 3px;
+            padding: 4px;
+            width: 70px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
         }
-	/* Кнопка */
-    .info-button {
-      font-size: 18px;
-      background-color: #007BFF;
-      color: white;
-      border: none;
-      border-radius: 50%;
-      width: 32px;
-      height: 32px;
-      text-align: center;
-      cursor: pointer;
-    }
-
-    /* Модальное окно (фон) */
-    .modal {
-      display: none; 
-      position: fixed;
-      z-index: 1;
-      left: 0; top: 0;
-      width: 100%; height: 100%;
-      background-color: rgba(0,0,0,0.5);
-    }
-
-    /* Содержимое окна */
-    .modal-content {
-      background-color: #fefefe;
-      margin: 15% auto;
-      padding: 20px;
-      border-radius: 10px;
-      width: 300px;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
-      position: relative;
-    }
-
-    /* Кнопка закрытия */
-    .close {
-      position: absolute;
-      top: 10px;
-      right: 15px;
-      font-size: 18px;
-      font-weight: bold;
-      color: #aaa;
-      cursor: pointer;
-    }
-
-    .close:hover {
-      color: #000;
-    }
+        .wave-controls {
+            margin-top: 10px;
+            display: flex;
+            gap: 8px;
+        }
+        .wave-btn {
+            padding: 5px 10px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 0.9em;
+            background: #e0e0e0;
+            border: 1px solid #ccc;
+        }
+        .wave-btn.active {
+            background-color: #bbdefb;
+            border-color: #90caf9;
+        }
+        /* Модальное окно */
+        .modal {
+            display: none; 
+            position: fixed;
+            z-index: 1;
+            left: 0; top: 0;
+            width: 100%; height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow: auto;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            position: relative;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        .close {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #777;
+            cursor: pointer;
+        }
+        .close:hover {
+            color: #000;
+        }
     </style>
 </head>
 <body>
@@ -153,8 +174,15 @@
     <div class="control">
         <button id="toggleBtn" class="main-btn">Старт</button>
         <button id="addFrequency" class="main-btn">+ Добавить частоту</button>
-	<button class="main-btn" onclick="openModal()">i</button>
+        <button class="main-btn" onclick="openModal()">i</button>
+        
+        <!-- Кнопки управления формой волны -->
+        <div class="wave-controls">
+            <button id="sineBtn" class="wave-btn active">Синус</button>
+            <button id="squareBtn" class="wave-btn">Меандр</button>
+        </div>
     </div>
+    
     <div id="frequencyControls" class="control"></div>
 
     <table>
@@ -169,137 +197,164 @@
         <tbody id="results"></tbody>
     </table>
     <div class="control">
-    	<ul>
-    		<li>Идеальный 5-й ключ ДНК: гармонизированный с
-    	
-    	частотами D 288 Гц и А 432 Гц, он является краеугольным камнем коллекции.</li>
-    	
-    		<li>Идеальная 5-я клавиша F/C: настроена на частоту F 324 Гц и С 512 Гц, предлагая новое измерение исследования гармоник.</li>
-    	
-    		<li>Дельта-клавиша: уникально настроена на ноту D на обоих концах со смещением на 3 Гц, создавая дельта-бинауральную частоту, способствующую глубокой медитации и регенерации.</li>
-    	
-    		<li>Тета-ключ: настроен на ноту А на обоих концах и смещен на 6 Гц, он создает тета-бинауральную частоту, способствующую состоянию расслабленного осознания и открывая доступ к подсознанию.</li>
-    	</ul>
-    	<h3>Тона планет</h3>
-    	<ul>
-    		<li>
-    			<b>Тон Меркурия.</b><br>  			
-    			141.27 Hz<br>    			
-    			Цвет: сине-зеленый<br>   			
-    			Чакра: Вишудха горловая чакра<br>    			
-    			Эффект: поддерживает центр речи, коммуникацию и интеллектуальную деятельность.
-    		</li>
-    		<li>
-    			<b>Тон Венеры.</b><br>  			
-    			221.23 Hz<br>    			
-    			Цвет: желто-оранжевый<br>    			
-    			Чакра: Аджна надбровная чакра, третий глаз<br>    			
-    			Эффект: поддерживает высшую любовную энергию и стремление к гармонии.
-    		</li>
-    		<li>
-    			<b>Тон Марса.</b><br>    			
-    			144.72 Hz<br>    			
-    			Цвет: синий<br>    			
-    			Эффект: поддерживает силу воли и сфокусированную энергию
-			</li>
-			<li>			
-    			<b>Тон Юпитера.</b><br>    			
-    			183.58 Hz<br>    			
-    			Цвет: красный<br>    			
-    			Эффект: поддерживает творческую силу.
-			</li>
-			<li>    			
-    			<b>Тон Сатурн.</b><br>   			
-    			147.85 Hz<br>   			
-    			Цвет: синий<br>  			
-    			Эффект: усиливает концентрацию и осознанность.
-    		</li>
-    		<li>
-    			<b>Тон Урана.</b><br>    			
-    			207.36 Hz<br>    			
-    			Цвет: оранжевый<br>    			
-    			Эффект: поддерживает силу удивления и обновления, обладает первобытной и эротической силой.    			
-    		</li>
-    		<li>
-    			<b>Тон Нептуна.</b><br>    			
-    			211.44 Hz<br>    			
-    			Цвет: оранжевый<br>    			
-    			Эффект: поддерживает интуицию, подсознание и усиливает переживания во сне.    			
-    		</li>
-    		<li>
-    			<b>Тон Плутона.</b><br>   			
-    			140.64 Hz<br>			
-    			Цвет: сине-зеленый<br>   			
-    			Эффект: поддерживает магическую групповую динамику и отвечает за интеграцию в определенные структуры общества.
-    		</li>
-    		<li>
-    			<b>Тон Солнца.</b><br>   			
-    			126.22 Hz<br>    			
-    			Цвет: желто-зеленый<br>   			
-    			Чакра: Манипура солнечное сплетение	(Xapa)<br>    			
-    			Эффект: усиливает ощущение концентрации на магическом и трансцендентном.<br>   			
-    			Солнце это энергетический центр нашей солнечной системы. Оно является центром притяжения, вокруг которого вращаются Земля и другие планеты. Поэтому частота солнца связана с психическим центром. В Дзене эта точка называется Хара. Тон солнца это граница между Инь и Ян, между этой и другой стороной. Он поднимается из высшего измерения и, лишенный рационального наблюдения, символизирует нечто магическое и трансцендентное. 			
-    			Солнечный тон следует использовать после работы с другими тонами и в первую очередь для продвинутых практиков.
-    		</li>
-    	</ul>
-    	<a href="https://www.planetware.de/octave/">Основано на источнике Planetware, где можно скачать эти тона </a><br>
-	<a href="https://meweryk.github.io/Wave-of-land/index.html">Ещё проекты</a><br>
-	<p>© Автор</p>
+        <ul>
+            <li>Идеальный 5-й ключ ДНК: гармонизированный с
+                частотами D 288 Гц и А 432 Гц, он является краеугольным камнем коллекции.</li>
+            <li>Идеальная 5-я клавиша F/C: настроена на частоту F 324 Гц и С 512 Гц, предлагая новое измерение исследования гармоник.</li>
+            <li>Дельта-клавиша: уникально настроена на ноту D на обоих концах со смещением на 3 Гц, создавая дельта-бинауральную частоту, способствующую глубокой медитации и регенерации.</li>
+            <li>Тета-ключ: настроен на ноту А на обоих концах и смещен на 6 Гц, он создает тета-бинауральную частоту, способствующую состоянию расслабленного осознания и открывая доступ к подсознанию.</li>
+        </ul>
+        <h3>Тона планет</h3>
+        <ul>
+            <li>
+                <b>Тон Меркурия.</b><br>  			
+                141.27 Hz<br>    			
+                Цвет: сине-зеленый<br>   			
+                Чакра: Вишудха горловая чакра<br>    			
+                Эффект: поддерживает центр речи, коммуникацию и интеллектуальную деятельность.
+            </li>
+            <li>
+                <b>Тон Венеры.</b><br>  			
+                221.23 Hz<br>    			
+                Цвет: желто-оранжевый<br>    			
+                Чакra: Аджна надбровная чакра, третий глаз<br>    			
+                Эффект: поддерживает высшую любовную энергию и стремление к гармонии.
+            </li>
+            <li>
+                <b>Тон Марса.</b><br>    			
+                144.72 Hz<br>    			
+                Цвет: синий<br>    			
+                Эффект: поддерживает силу воли и сфокусированную энергию
+            </li>
+            <li>			
+                <b>Тон Юпитера.</b><br>    			
+                183.58 Hz<br>    			
+                Цвет: красный<br>    			
+                Эффект: поддерживает творческую силу.
+            </li>
+            <li>    			
+                <b>Тон Сатурн.</b><br>   			
+                147.85 Hz<br>   			
+                Цвет: синий<br>  			
+                Эффект: усиливает концентрацию и осознанность.
+            </li>
+            <li>
+                <b>Тон Урана.</b><br>    			
+                207.36 Hz<br>    			
+                Цвет: оранжевый<br>    			
+                Эффект: поддерживает силу удивления и обновления, обладает первобытной и эротической силой.    			
+            </li>
+            <li>
+                <b>Тон Нептуна.</b><br>    			
+                211.44 Hz<br>    			
+                Цвет: оранжевый<br>    			
+                Эффект: поддерживает интуицию, подсознание и усиливает переживания во сне.    			
+            </li>
+            <li>
+                <b>Тон Плутона.</b><br>   			
+                140.64 Hz<br>			
+                Цвет: сине-зеленый<br>   			
+                Эффект: поддерживает магическую групповую динамику и отвечает за интеграцию в определенные структуры общества.
+            </li>
+            <li>
+                <b>Тон Солнца.</b><br>   			
+                126.22 Hz<br>    			
+                Цвет: желто-зеленый<br>   			
+                Чакра: Манипура солнечное сплетение	(Xapa)<br>    			
+                Эффект: усиливает ощущение концентрации на магическом и трансцендентном.<br>   			
+                Солнце это энергетический центр нашей солнечной системы. Оно является центром притяжения, вокруг которого вращаются Земля и другие планеты. Поэтому частота солнца связана с психическим центром. В Дзене эта точка называется Хара. Тон солнца это граница между Инь и Ян, между этой и другой стороной. Он поднимается из высшего измерения и, лишенный рационального наблюдения, символизирует нечто магическое и трансцендентное. 			
+                Солнечный тон следует использовать после работы с другими тонами и в первую очередь для продвинутых практиков.
+            </li>
+        </ul>
+        <a href="https://www.planetware.de/octave/">Основано на источнике Planetware, где можно скачать эти тона </a><br>
+        <a href="https://meweryk.github.io/Wave-of-land/index.html">Ещё проекты</a><br>
+        <p>© Автор</p>
     </div>
 
     <!-- Модальное окно -->
-<div id="infoModal" class="modal">
-  <div class="modal-content">
-    <span class="close" onclick="closeModal()">&times;</span>
-    <h3>Информация о синтезаторе</h3>
-    <p>Это простой синтезатор для генерации частот, писался для тестирования родинского бублика. Мануал ниже.</p>
-    <p>На сайте <strong>Planetware</strong>, записанный звук состоит из частоты и октавно увеличенной в 2 раза.</p>
-    <p>Программа синтезатора частот с возможностями:</p>
-    <ul>
-      <li>Добавление осцилляторов</li>
-      <li>Определение для каждого осциллятора канала: правого (R), левого (L) или вывода на два сразу (С)</li>
-      <li>Установка сдвига фазы (до 180°) между осцилляторами</li>
-      <li>Расчёт длины волны в видимом диапазоне при октавном увеличении частоты звука</li>
-      <li>Цветовая шкала длины волны</li>
-    </ul>
-    <h3>Особенности:</h3>
-    <ul>
-      <li>Возможность изменения частоты в настоящее время</li>
-      <li><strong>Важно:</strong> изменение выводов на соединениях — только через остановку и повторный запуск</li>
-      <li>Переход фазы корректно отрабатывает только после остановки и нового старта</li>
-      <li>При воспроизведении звука одновременно на двух каналах (С) — сигнал меандр</li>
-      <li>Для чистого звука необходимо разведение по разным каналам</li>
-    </ul>
-    <p>Проект синтезатора разрабатывается для генерации частот и исследования катушки <strong>РодоФон</strong>, сделанной по принципу <strong>Марко Родина</strong>.</p>
-  </div>
-</div>
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h3>Информация о синтезаторе</h3>
+            <p>Это простой синтезатор для генерации частот, писался для тестирования родинского бублика. Мануал ниже.</p>
+            <p>На сайте <strong>Planetware</strong>, записанный звук состоит из частоты и октавно увеличенной в 2 раза.</p>
+            <p>Программа синтезатора частот с возможностями:</p>
+            <ul>
+                <li>Добавление осцилляторов</li>
+                <li>Определение для каждого осциллятора канала: правого (R), левого (L) или вывода на два сразу (С)</li>
+                <li>Установка сдвига фазы (до 180°) между осцилляторами</li>
+                <li>Расчёт длины волны в видимом диапазоне при октавном увеличении частоты звука</li>
+                <li>Цветовая шкала длины волны</li>
+            </ul>
+            <h3>Особенности:</h3>
+            <ul>
+                <li>Возможность изменения частоты в настоящем времени</li>
+                <li><strong>Важно:</strong> изменение выводов на соединениях — только через остановку и повторный запуск</li>
+                <li>Переход фазы корректно отрабатывает только после остановки и нового старта</li>
+                <li>Добавлена нормализация амплитуды для предотвращения клиппинга</li>
+                <li>Реализован компрессор для мягкого ограничения сигнала</li>
+            </ul>
+            <p>Проект синтезатора разрабатывается для генерации частот и исследования катушки <strong>РодоФон</strong>, сделанной по принципу <strong>Марко Родина</strong>.</p>
+        </div>
+    </div>
 
     <script>
         let audioContext;
         let isPlaying = false;
         const channels = new Map();
+        let currentWaveType = 'sine';
+        let masterGain;
+        let compressor;
 
         function initAudio() {
             if (!audioContext) {
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                
+                // Создаем главный узел усиления
+                masterGain = audioContext.createGain();
+                masterGain.gain.value = 0.8; // сниженный уровень по умолчанию
+                
+                // Создаем компрессор для предотвращения клиппинга
+                compressor = audioContext.createDynamicsCompressor();
+                compressor.threshold.value = -20;
+                compressor.knee.value = 10;
+                compressor.ratio.value = 12;
+                compressor.attack.value = 0.01;
+                compressor.release.value = 0.1;
+                
+                // Подключаем цепочку: masterGain -> compressor -> destination
+                masterGain.connect(compressor);
+                compressor.connect(audioContext.destination);
             }
         }
 
+        // Создание осциллятора
         function createOscillatorChain(freq, pan, phaseShift = 0) {
             const oscillator = audioContext.createOscillator();
             const panner = audioContext.createStereoPanner();
+            const gainNode = audioContext.createGain();
             const delayNode = audioContext.createDelay();
             
-            oscillator.type = 'sine';
+            // Установка типа волны
+            oscillator.type = currentWaveType;
             oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+            
+            // Настройка панорамирования
             panner.pan.value = pan;
+            
+            // Настройка задержки для сдвига фазы
             delayNode.delayTime.value = phaseShift / (360 * freq);
-
+            
+            // Начальное значение усиления
+            gainNode.gain.value = 1;
+            
+            // Соединение узлов: oscillator -> delayNode -> gainNode -> panner -> masterGain
             oscillator.connect(delayNode);
-            delayNode.connect(panner);
-            panner.connect(audioContext.destination);
-
-            return { oscillator, panner, delayNode };
+            delayNode.connect(gainNode);
+            gainNode.connect(panner);
+            panner.connect(masterGain);
+            
+            return { oscillator, panner, delayNode, gainNode };
         }
 
         function calculateLightParameters(frequency) {
@@ -381,11 +436,11 @@
             div.className = 'frequency-item';
             div.dataset.id = id;
             div.innerHTML = `
-                <input type="range" class="freq-range" min="1" max="20000" value="${defaultFrequency}" style="width: 200px;">
+                <input type="range" class="freq-range" min="1" max="20000" value="${defaultFrequency}" style="width: 120px;">
                 <input type="number" class="freq-number" value="${defaultFrequency}" style="width: 80px;">
                 <br>
                 <div class="phase-control">
-                    <input type="range" class="phase-shift" min="0" max="180" value="0" step="1" style="width: 200px;">
+                    <input type="range" class="phase-shift" min="0" max="180" value="0" step="1" style="width: 160px;">
                     <span class="phase-value">0°</span>
                 </div>
                 <select class="pan-selector" style="width: 45px;">
@@ -405,10 +460,13 @@
                 const sanitized = freqNumber.value.replace(',', '.');
                 const val = parseFloat(sanitized);
                 if (!isNaN(val)) {
-                    freqRange.value = val;
-                    updateVisualization(id, val);
+                    // Ограничиваем значение в допустимом диапазоне
+                    const clampedVal = Math.max(1, Math.min(20000, val));
+                    freqRange.value = clampedVal;
+                    freqNumber.value = clampedVal;
+                    updateVisualization(id, clampedVal);
                     if (channels.has(id)) {
-                        channels.get(id).oscillator.frequency.setValueAtTime(val, audioContext.currentTime);
+                        channels.get(id).oscillator.frequency.setValueAtTime(clampedVal, audioContext.currentTime);
                     }
                 }
             });
@@ -451,6 +509,23 @@
             updateDividers();
         }
 
+        function setWaveType(type) {
+            currentWaveType = type;
+            
+            // Обновляем активное состояние кнопок
+            document.querySelectorAll('.wave-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.getElementById(`${type}Btn`).classList.add('active');
+            
+            // Обновляем осцилляторы
+            if (isPlaying) {
+                channels.forEach(chain => {
+                    chain.oscillator.type = type;
+                });
+            }
+        }
+
         document.getElementById('addFrequency').addEventListener('click', () => {
             createFrequencyControl();
         });
@@ -462,15 +537,23 @@
             toggleBtn.textContent = isPlaying ? 'Стоп' : 'Старт';
             toggleBtn.classList.toggle('active', isPlaying);
 
+            // Автоматическая нормализация амплитуды
+            const activeChannels = document.querySelectorAll('.frequency-item').length;
+            const gainValue = 1 / Math.max(1, Math.sqrt(activeChannels)); // логарифмическая нормализация
+            
             document.querySelectorAll('.frequency-item').forEach(item => {
                 const id = item.dataset.id;
                 const freq = parseFloat(item.querySelector('.freq-range').value);
                 const pan = parseFloat(item.querySelector('.pan-selector').value);
                 const deg = parseFloat(item.querySelector('.phase-shift').value);
+                
                 if (isPlaying) {
                     const chain = createOscillatorChain(freq, pan, deg);
                     channels.set(id, chain);
                     chain.oscillator.start();
+                    
+                    // Применяем нормализованное усиление
+                    chain.gainNode.gain.value = gainValue;
                 } else {
                     if (channels.has(id)) {
                         channels.get(id).oscillator.stop();
@@ -480,21 +563,25 @@
             });
         });
 
-	function openModal() {
-    document.getElementById('infoModal').style.display = 'block';
-  }
+        // Инициализация кнопок волн
+        document.getElementById('sineBtn').addEventListener('click', () => setWaveType('sine'));
+        document.getElementById('squareBtn').addEventListener('click', () => setWaveType('square'));
 
-  function closeModal() {
-    document.getElementById('infoModal').style.display = 'none';
-  }
+        function openModal() {
+            document.getElementById('infoModal').style.display = 'block';
+        }
 
-  // Закрытие окна при клике вне области
-  window.onclick = function(event) {
-    const modal = document.getElementById('infoModal');
-    if (event.target === modal) {
-      modal.style.display = 'none';
-    }
-  }
+        function closeModal() {
+            document.getElementById('infoModal').style.display = 'none';
+        }
+
+        // Закрытие окна при клике вне области
+        window.onclick = function(event) {
+            const modal = document.getElementById('infoModal');
+            if (event.target === modal) {
+                modal.style.display = 'none';
+            }
+        }
     </script>
 </body>
-  </html>
+</html>
