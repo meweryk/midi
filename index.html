@@ -96,12 +96,13 @@
         input[type="number"] {
             font-size: 0.9em;
             padding: 3px;
-            width: 70px;
+            width: 80px; /* Увеличим ширину для дробных чисел */
         }
         .wave-controls {
             margin-top: 10px;
             display: flex;
             gap: 8px;
+            flex-wrap: wrap;
         }
         .wave-btn {
             padding: 5px 10px;
@@ -162,6 +163,8 @@
             width: 300px;
             box-shadow: 0 4px 8px rgba(0,0,0,0.2);
             position: relative;
+            max-height: 80vh; /* Добавлено для прокрутки */
+            overflow-y: auto; /* Добавлено для прокрутки */
         }
 
         /* Кнопка закрытия */
@@ -178,6 +181,150 @@
         .close:hover {
             color: #000;
         }
+        
+        /* Новые стили для сохраненных списков */
+        .save-list-container {
+            margin: 20px 0;
+        }
+        
+        .saved-lists-header {
+            cursor: pointer;
+            padding: 8px;
+            background: #e0e0e0;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .saved-lists-header::after {
+            content: "▼";
+            font-size: 0.8em;
+        }
+        
+        .saved-lists-content {
+            display: none;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 3px;
+            background: #f9f9f9;
+        }
+        
+        .saved-list-btn {
+            display: block;
+            width: 100%;
+            margin: 5px 0;
+            padding: 8px;
+            text-align: left;
+            background: #e9e9e9;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+        
+        .saved-list-btn:hover {
+            background: #d9d9d9;
+        }
+        
+        #saveListBtn, #exportBtn, #importBtn {
+            margin-top: 20px;
+            padding: 8px 15px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            margin-right: 5px;
+        }
+        
+        #exportBtn {
+            background: #2196F3;
+        }
+        
+        #importBtn {
+            background: #FF9800;
+        }
+        
+        .name-prompt-modal {
+            display: none;
+            position: fixed;
+            z-index: 2;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .name-prompt-content {
+            background-color: #fefefe;
+            margin: 20% auto;
+            padding: 20px;
+            border-radius: 5px;
+            width: 300px;
+        }
+        
+        /* Стиль для заблокированных кнопок */
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        /* Контейнер для сохраненного элемента */
+        .saved-item-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .saved-item-name {
+            flex-grow: 1;
+            text-align: left;
+        }
+        
+        .delete-preset-btn {
+            background: #ff4444;
+            color: white;
+            border: 1px solid #cc0000;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+        
+        /* Стили для блока информации */
+        .info-container {
+            margin: 20px 0;
+        }
+        
+        .info-header {
+            cursor: pointer;
+            padding: 8px;
+            background: #e0e0e0;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .info-header::after {
+            content: "▼";
+            font-size: 0.8em;
+        }
+        
+        .info-content {
+            display: none;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            border-radius: 3px;
+            background: #f9f9f9;
+        }
     </style>
 </head>
 <body>
@@ -191,6 +338,7 @@
         <div class="wave-controls">
             <button id="sineBtn" class="wave-btn active">Синус</button>
             <button id="squareBtn" class="wave-btn">Меандр</button>
+            <button id="cycleFrequencies" class="wave-btn">перебор частот</button>
         </div>
         
         <!-- FM модуляция - все в одной строке -->
@@ -218,113 +366,136 @@
         </thead>
         <tbody id="results"></tbody>
     </table>
+    
+    <!-- Кнопки сохранения, экспорта и импорта -->
     <div class="control">
-        <ul>
-            <li>Идеальный 5-й ключ ДНК: гармонизированный с
-                частотами D 288 Гц и А 432 Гц, он является краеугольным камнем коллекции.</li>
-            <li>Идеальная 5-я клавиша F/C: настроена на частоту F 324 Гц и С 512 Гц, предлагая новое измерение исследования гармоник.</li>
-            <li>Дельта-клавиша: уникально настроена на ноту D на обоих концах со смещением на 3 Гц, создавая дельта-бинауральную частоту, способствующую глубокой медитации и регенерации.</li>
-            <li>Тета-ключ: настроен на ноту А на обоих концах и смещен на 6 Гц, он создает тета-бинауральную частоту, способствующую состоянию расслабленного осознания и открывая доступ к подсознанию.</li>
-        </ul>
-        <h3>Тона планет</h3>
-        <ul>
-            <li>
-                <b>Тон Меркурия.</b><br>  			
-                141.27 Hz<br>    			
-                Цвет: сине-зеленый<br>   			
-                Чакра: Вишудха горловая чакра<br>    			
-                Эффект: поддерживает центр речи, коммуникацию и интеллектуальную деятельность.
-            </li>
-            <li>
-                <b>Тон Венеры.</b><br>  			
-                221.23 Hz<br>    			
-                Цвет: желто-оранжевый<br>    			
-                Чакra: Аджна надбровная чакра, третий глаз<br>    			
-                Эффект: поддерживает высшую любовную энергию и стремление к гармонии.
-            </li>
-            <li>
-                <b>Тон Марса.</b><br>    			
-                144.72 Hz<br>    			
-                Цвет: синий<br>    			
-                Эффект: поддерживает силу воли и сфокусированную энергию
-            </li>
-            <li>			
-                <b>Тон Юпитера.</b><br>    			
-                183.58 Hz<br>    			
-                Цвет: красный<br>    			
-                Эффект: поддерживает творческую силу.
-            </li>
-            <li>    			
-                <b>Тон Сатурн.</b><br>   			
-                147.85 Hz<br>   			
-                Цвет: синий<br>  			
-                Эффект: усиливает концентрацию и осознанность.
-            </li>
-            <li>
-                <b>Тон Урана.</b><br>    			
-                207.36 Hz<br>    			
-                Цвет: оранжевый<br>    			
-                Эффект: поддерживает силу удивления и обновления, обладает первобытной и эротической силой.    			
-            </li>
-            <li>
-                <b>Тон Нептуна.</b><br>    			
-                211.44 Hz<br>    			
-                Цвет: оранжевый<br>    			
-                Эффект: поддерживает интуицию, подсознание и усиливает переживания во сне.    			
-            </li>
-            <li>
-                <b>Тон Плутона.</b><br>   			
-                140.64 Hz<br>			
-                Цвет: сине-зеленый<br>   			
-                Эффект: поддерживает магическую групповую динамику и отвечает за интеграцию в определенные структуры общества.
-            </li>
-            <li>
-                <b>Тон Солнца.</b><br>   			
-                126.22 Hz<br>    			
-                Цвет: желто-зеленый<br>   			
-                Чакра: Манипура солнечное сплетение	(Xapa)<br>    			
-                Эффект: усиливает ощущение концентрации на магическом и трансцендентном.<br>   			
-                Солнце это энергетический центр нашей солнечной системы. Оно является центром притяжения, вокруг которого вращаются Земля и другие планеты. Поэтому частота солнца связана с психическим центром. В Дзене эта точка называется Хара. Тон солнца это граница между Инь и Ян, между этой и другой стороной. Он поднимается из высшего измерения и, лишенный рационального наблюдения, символизирует нечто магическое и трансцендентное. 			
-                Солнечный тон следует использовать после работы с другими тонами и в первую очередь для продвинутых практиков.
-            </li>
-        </ul>
-        <a href="https://www.planetware.de/octave/">Основано на источнике Planetware, где можно скачать эти тона </a><br>
-        <a href="https://meweryk.github.io/Wave-of-land/index.html">Ещё проекты</a><br>
-        <p>© Автор</p>
+        <button id="saveListBtn">Сохранить список</button>
+        <button id="exportBtn">Экспорт</button>
+        <button id="importBtn">Импорт</button>
+        <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+    </div>
+    
+    <!-- Блок сохраненных списков -->
+    <div class="save-list-container control">
+        <div class="saved-lists-header" onclick="toggleSavedLists()">
+            Список сохранённых частот
+        </div>
+        <div class="saved-lists-content" id="savedListsContent"></div>
+    </div>
+    
+    <!-- Блок информации о частотах планет и ДНК -->
+    <div class="info-container control">
+        <div class="info-header" onclick="toggleInfo()">
+            Информация о частотах планет и ДНК
+        </div>
+        <div class="info-content" id="infoContent">
+            <ul>
+                <li>Идеальный 5-й ключ ДНК: гармонизированный с
+                    частотами D 288 Гц и А 432 Гц, он является краеугольным камнем коллекции.</li>
+                <li>Идеальная 5-я клавиша F/C: настроена на частоту F 324 Гц и С 512 Гц, предлагая новое измерение исследования гармоник.</li>
+                <li>Дельта-клавиша: уникально настроена на ноту D на обоих концах со смещением на 3 Гц, создавая дельта-бинауральную частоту, способствующую глубокой медитации и регенерации.</li>
+                <li>Тета-ключ: настроен на ноту А на обоих концах и смещен на 6 Гц, он создает тета-бинауральную частоту, способствующую состоянию расслабленного осознания и открывая доступ к подсознанию.</li>
+            </ul>
+            <h3>Тона планет</h3>
+            <ul>
+                <li>
+                    <b>Тон Меркурия.</b><br>  			
+                    141.27 Hz<br>    			
+                    Цвет: сине-зеленый<br>   			
+                    Чакра: Вишудха горловая чакра<br>    			
+                    Эффект: поддерживает центр речи, коммуникацию и интеллектуальную деятельность.
+                </li>
+                <li>
+                    <b>Тон Венеры.</b><br>  			
+                    221.23 Hz<br>    			
+                    Цвет: желто-оранжевый<br>    			
+                    Чакra: Аджна надбровная чакра, третий глаз<br>    			
+                    Эффект: поддерживает высшую любовную энергию и стремление к гармонии.
+                </li>
+                <li>
+                    <b>Тон Марса.</b><br>    			
+                    144.72 Hz<br>    			
+                    Цвет: синий<br>    			
+                    Эффект: поддерживает силу воли и сфокусированную энергию
+                </li>
+                <li>			
+                    <b>Тон Юпитера.</b><br>    			
+                    183.58 Hz<br>    			
+                    Цвет: красный<br>    			
+                    Эффект: поддерживает творческую силу.
+                </li>
+                <li>    			
+                    <b>Тон Сатурн.</b><br>   			
+                    147.85 Hz<br>   			
+                    Цвет: синий<br>  			
+                    Эффект: усиливает концентрацию и осознанность.
+                </li>
+                <li>
+                    <b>Тон Урана.</b><br>    			
+                    207.36 Hz<br>    			
+                    Цвет: оранжевый<br>    			
+                    Эффект: поддерживает силу удивления и обновления, обладает первобытной и эротической силой.    			
+                </li>
+                <li>
+                    <b>Тон Нептуна.</b><br>    			
+                    211.44 Hz<br>    			
+                    Цвет: оранжевый<br>    			
+                    Эффект: поддерживает интуицию, подсознание и усиливает переживания во сне.    			
+                </li>
+                <li>
+                    <b>Тон Плутона.</b><br>   			
+                    140.64 Hz<br>			
+                    Цвет: сине-зеленый<br>   			
+                    Эффект: поддерживает магическую групповую динамику и отвечает за интеграцию в определенные структуры общества.
+                </li>
+                <li>
+                    <b>Тон Солнца.</b><br>   			
+                    126.22 Hz<br>    			
+                    Цвет: желто-зеленый<br>   			
+                    Чакra: Манипура солнечное сплетение	(Xapa)<br>    			
+                    Эффект: усиливает ощущение концентрации на магическом и трансцендентном.<br>   			
+                    Солнце это энергетический центр нашей солнечной системы. Оно является центром притяжения, вокруг которого вращаются Земля и другие планеты. Поэтому частота солнца связана с психическим центром. В Дзене эта точка называется Хара. Тон солнца это граница между Инь и Ян, между этой и другой стороной. Он поднимается из высшего измерения и, лишенный рационального наблюдения, символизирует нечто магическое и трансцендентное. 			
+                    Солнечный тон следует использовать после работы с другими тонами и в первую очередь для продвинутых практиков.
+                </li>
+            </ul>
+            <a href="https://www.planetware.de/octave/">Основано на источнике Planetware, где можно скачать эти тона </a><br>
+            <a href="https://meweryk.github.io/Wave-of-land/index.html">Ещё проекты</a><br>
+            <p>© Автор</p>
+        </div>
     </div>
 
-    <!-- Модальное окно -->
+    <!-- Модальное окно информации -->
     <div id="infoModal" class="modal">
         <div class="modal-content">
             <span class="close" onclick="closeModal()">&times;</span>
             <h3>Информация о синтезаторе</h3>
-            <p>Это простой синтезатор для генерации частот, писался для тестирования родинского бублика. Мануал ниже.</p>
-            <p>На сайте <strong>Planetware</strong>, записанный звук состоит из частоты и октавно увеличенной в 2 раза.</p>
-            <p>Программа синтезатора частот с возможностями:</p>
+            <p>Это простой синтезатор для генерации частот и тестирования родинского бублика.</p>
+            
             <ul>
-                <li>Добавление осцилляторов</li>
-                <li>Определение для каждого осциллятора канала: правого (R), левого (L) или вывода на два сразу (С)</li>
-                <li>Установка сдвига фазы (до 180°) между осцилляторами</li>
-                <li>Расчёт длины волны в видимом диапазоне при октавном увеличении частоты звука</li>
-                <li>Цветовая шкала длины волны</li>
+            <li>Добавление осцилляторов</li>
+            <li>Определение для каждого осциллятора канала: правого (R), левого (L) или вывода на два сразу (С)</li>
+            <li>Установка сдвига фазы (до 180°) между осцилляторами</li>
+            <li>Расчёт длины волны в видимом диапазоне при октавном увеличении частоты звука</li>
+            <li>Цветовая шкала длины волны</li>
             </ul>
             <h3>Особенности:</h3>
             <ul>
-                <li>Возможность изменения частоты в настоящее время</li>
-                <li><strong>Важно:</strong> изменение выводов на соединениях — только через остановку и повторный запуск</li>
-                <li>Переход фазы корректно отрабатывает только после остановки и нового старта</li>
-                <li>Добавлена нормализация амплитуды для предотвращения клиппинга</li>
-                <li>Реализован компрессор для мягкого ограничения сигнала</li>
+            <li>Возможность изменения частоты в настоящее время</li>
+            <li><strong>Важно:</strong> изменение выводов на соединениях — только через остановку и повторный запуск</li>
+            <li>Переход фазы корректно отрабатывает только после остановки и нового старта</li>
+            <li>Добавлена нормализация амплитуды для предотвращения клиппинга</li>
+            <li>Реализован компрессор для мягкого ограничения сигнала</li>
+            <li>Перебор частот: проигрывает по 2 частоты с введённого пресета, каждую пару частот по 3 минуты, после чего воспроизведение останавливается</li>
             </ul>
             <h3>FM модуляция в генераторе</h3>
             <p>Реализована точная частотная модуляция (FM) по формуле:</p>
-            <p><strong>f(t) = fн + Δf × sin(2πfмt)</strong></p>
+            <p><strong>f(t) = f₀ + Δf × sin(2πfₘt)</strong></p>
             <p>где:</p>
             <ul>
                 <li><strong>f(t)</strong> - мгновенная частота</li>
-                <li><strong>fн</strong> - основная частота осциллятора</li>
+                <li><strong>f₀</strong> - основная частота осциллятора</li>
                 <li><strong>Δf</strong> - девиация частоты (Δf = f₀ × depth / 100)</li>
-                <li><strong>fм</strong> - частота модуляции</li>
+                <li><strong>fₘ</strong> - частота модуляции</li>
             </ul>
             
             <h4>Параметры:</h4>
@@ -338,6 +509,19 @@
             <p>Проект синтезатора разрабатывается для генерации частот и исследования катушки <strong>РодоФон</strong>, сделанной по принципу <strong>Марко Родина</strong>.</p>
         </div>
     </div>
+    
+    <!-- Модальное окно для ввода имени -->
+    <div id="namePromptModal" class="name-prompt-modal">
+        <div class="name-prompt-content">
+            <h3>Сохранение списка</h3>
+            <p>Введите название для вашего списка частот:</p>
+            <input type="text" id="listNameInput" style="width: 100%; padding: 8px; margin: 10px 0; box-sizing: border-box;">
+            <div style="display: flex; justify-content: space-between;">
+                <button onclick="document.getElementById('namePromptModal').style.display = 'none'">Отмена</button>
+                <button onclick="confirmSaveList()" style="background: #4CAF50; color: white;">Сохранить</button>
+            </div>
+        </div>
+    </div>
 
     <script>
         let audioContext;
@@ -349,6 +533,183 @@
         let fmEnabled = false;
         let fmFreq = 0;
         let fmDepth = 0;
+        
+        // Переменные для перебора частот
+        let isFrequencyCycling = false;
+        let cycleInterval;
+        let countdownInterval;
+        let currentPairIndex = 0;
+        let currentPairOscillators = [];
+        let totalCycleTime = 0;
+        let remainingTime = 0;
+        let frequencyPairs = [];
+        
+        // Функция для работы с localStorage
+        const frequencyListsStorageKey = 'savedFrequencyLists';
+        
+        function getSavedFrequencyLists() {
+            const saved = localStorage.getItem(frequencyListsStorageKey);
+            return saved ? JSON.parse(saved) : {};
+        }
+        
+        function saveFrequencyLists(lists) {
+            localStorage.setItem(frequencyListsStorageKey, JSON.stringify(lists));
+        }
+        
+        function showNamePrompt() {
+            document.getElementById('namePromptModal').style.display = 'block';
+            document.getElementById('listNameInput').value = '';
+            document.getElementById('listNameInput').focus();
+        }
+        
+        function confirmSaveList() {
+            const listName = document.getElementById('listNameInput').value.trim();
+            if (!listName) {
+                alert('Пожалуйста, введите название списка');
+                return;
+            }
+            
+            saveCurrentList(listName);
+            document.getElementById('namePromptModal').style.display = 'none';
+        }
+        
+        function saveCurrentList(listName) {
+            // Собираем данные о текущих частотах
+            const frequencyItems = document.querySelectorAll('.frequency-item');
+            const frequencies = [];
+            
+            frequencyItems.forEach(item => {
+                const id = item.dataset.id;
+                const freq = parseFloat(item.querySelector('.freq-range').value);
+                const phaseShift = parseFloat(item.querySelector('.phase-shift').value);
+                const pan = parseFloat(item.querySelector('.pan-selector').value);
+                
+                frequencies.push({
+                    freq: parseFloat(freq.toFixed(6)), // Сохраняем с точностью до 6 знаков
+                    phaseShift: parseFloat(phaseShift.toFixed(3)),
+                    pan: parseFloat(pan.toFixed(3))
+                });
+            });
+            
+            // Собираем параметры FM модуляции
+            const fmParams = {
+                enabled: document.getElementById('fmEnabled').checked,
+                freq: parseFloat(parseFloat(document.getElementById('fmFreq').value || 0).toFixed(6)),
+                depth: parseFloat(parseFloat(document.getElementById('fmDepth').value || 0).toFixed(3))
+            };
+            
+            // Формируем объект списка
+            const listData = {
+                frequencies,
+                fm: fmParams
+            };
+            
+            // Сохраняем в localStorage
+            const savedLists = getSavedFrequencyLists();
+            savedLists[listName] = listData;
+            saveFrequencyLists(savedLists);
+            
+            // Обновляем отображение сохраненных списков
+            renderSavedLists();
+            
+            alert(`Список "${listName}" успешно сохранен!`);
+        }
+        
+        function renderSavedLists() {
+            const savedLists = getSavedFrequencyLists();
+            const container = document.getElementById('savedListsContent');
+            container.innerHTML = '';
+            
+            if (Object.keys(savedLists).length === 0) {
+                container.innerHTML = '<p>Нет сохранённых списков</p>';
+                return;
+            }
+            
+            // Сортируем по алфавиту
+            const sortedNames = Object.keys(savedLists).sort();
+            
+            sortedNames.forEach(name => {
+                const containerDiv = document.createElement('div');
+                containerDiv.className = 'saved-item-container';
+                
+                const btn = document.createElement('button');
+                btn.className = 'saved-list-btn saved-item-name';
+                btn.textContent = name;
+                btn.onclick = () => applyFrequencyList(name, savedLists[name]);
+                
+                const deleteBtn = document.createElement('div');
+                deleteBtn.className = 'delete-preset-btn';
+                deleteBtn.textContent = '×';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteSavedList(name);
+                };
+                
+                containerDiv.appendChild(btn);
+                containerDiv.appendChild(deleteBtn);
+                container.appendChild(containerDiv);
+            });
+        }
+        
+        function deleteSavedList(name) {
+            if (confirm(`Вы уверены, что хотите удалить пресет "${name}"?`)) {
+                const savedLists = getSavedFrequencyLists();
+                delete savedLists[name];
+                saveFrequencyLists(savedLists);
+                renderSavedLists();
+            }
+        }
+        
+        function toggleSavedLists() {
+            const content = document.getElementById('savedListsContent');
+            content.style.display = content.style.display === 'block' ? 'none' : 'block';
+            renderSavedLists();
+        }
+        
+        function applyFrequencyList(listName, listData) {
+            // Останавливаем все текущие осцилляторы
+            if (isPlaying) {
+                togglePlayback();
+            }
+            if (isFrequencyCycling) {
+                stopFrequencyCycle();
+            }
+            
+            // Очищаем текущие элементы управления
+            document.querySelectorAll('.frequency-item').forEach(item => item.remove());
+            document.querySelectorAll('tr[data-id]').forEach(row => row.remove());
+            
+            // Создаем новые элементы управления
+            listData.frequencies.forEach(item => {
+                const id = createFrequencyControl(item.freq);
+                
+                // Находим последний добавленный элемент
+                const lastItem = document.querySelector(`.frequency-item[data-id="${id}"]`);
+                
+                // Устанавливаем параметры
+                lastItem.querySelector('.phase-shift').value = item.phaseShift;
+                lastItem.querySelector('.phase-value').textContent = `${item.phaseShift}°`;
+                lastItem.querySelector('.pan-selector').value = item.pan;
+                
+                // Обновляем визуализацию
+                updateVisualization(id, item.freq);
+            });
+            
+            // Устанавливаем параметры FM
+            document.getElementById('fmEnabled').checked = listData.fm.enabled;
+            document.getElementById('fmFreq').value = listData.fm.freq;
+            document.getElementById('fmDepth').value = listData.fm.depth;
+            updateFMParams();
+            
+            // Обновляем все строки таблицы
+            document.querySelectorAll('.frequency-item').forEach(item => {
+                const id = item.dataset.id;
+                const freq = parseFloat(item.querySelector('.freq-range').value);
+                updateVisualization(id, freq);
+            });
+            
+            alert(`Список "${listName}" успешно загружен!`);
+        }
 
         function initAudio() {
             if (!audioContext) {
@@ -415,8 +776,8 @@
         // Обновление параметров FM
         function updateFMParams() {
             fmEnabled = document.getElementById('fmEnabled').checked;
-            fmFreq = parseFloat(document.getElementById('fmFreq').value) || 0;
-            fmDepth = parseFloat(document.getElementById('fmDepth').value) || 0;
+            fmFreq = parseFloat(parseFloat(document.getElementById('fmFreq').value || 0).toFixed(6));
+            fmDepth = parseFloat(parseFloat(document.getElementById('fmDepth').value || 0).toFixed(3));
             
             // Обновляем частоту FM осциллятора
             if (fmOscillator) {
@@ -447,6 +808,31 @@
                             const deviation = freq * (fmDepth / 100);
                             chain.fmGain.gain.value = deviation;
                         }
+                    }
+                });
+            }
+            
+            // Обновляем FM для текущей пары при переборе
+            if (isFrequencyCycling && currentPairOscillators.length > 0) {
+                currentPairOscillators.forEach(chain => {
+                    const freq = chain.oscillator.frequency.value;
+                    
+                    if (fmEnabled) {
+                        const deviation = freq * (fmDepth / 100);
+                        
+                        // Если FM не был подключен - создаем
+                        if (!chain.fmGain) {
+                            chain.fmGain = audioContext.createGain();
+                            fmOscillator.connect(chain.fmGain);
+                            chain.fmGain.connect(chain.oscillator.frequency);
+                        }
+                        
+                        // Обновляем девиацию
+                        chain.fmGain.gain.value = deviation;
+                    } else if (chain.fmGain) {
+                        // Отключаем FM
+                        chain.fmGain.disconnect();
+                        chain.fmGain = null;
                     }
                 });
             }
@@ -504,8 +890,14 @@
             const row = document.querySelector(`tr[data-id="${id}"]`);
             if (!data || !row) return;
 
+            // Форматируем частоту до тысячных
+            const formattedFrequency = parseFloat(frequency.toFixed(6)).toLocaleString('ru-RU', {
+                minimumFractionDigits: 3,
+                maximumFractionDigits: 6
+            });
+
             row.innerHTML = `
-                <td>${frequency}</td>
+                <td>${formattedFrequency}</td>
                 <td>${data.lightFreq.toFixed(3)}</td>
                 <td>${data.wavelength}</td>
                 <td><div class="color-box" style="background:${data.color}"></div></td>
@@ -531,11 +923,11 @@
             div.className = 'frequency-item';
             div.dataset.id = id;
             div.innerHTML = `
-                <input type="range" class="freq-range" min="1" max="20000" value="${defaultFrequency}" style="width: 120px;">
-                <input type="number" class="freq-number" value="${defaultFrequency}" style="width: 80px;">
+                <input type="range" class="freq-range" min="1" max="20000" value="${defaultFrequency}" step="0.001" style="width: 120px;">
+                <input type="number" class="freq-number" value="${defaultFrequency}" step="0.001" style="width: 80px;">
                 <br>
                 <div class="phase-control">
-                    <input type="range" class="phase-shift" min="0" max="180" value="0" step="1" style="width: 160px;">
+                    <input type="range" class="phase-shift" min="0" max="180" value="0" step="0.1" style="width: 160px;">
                     <span class="phase-value">0°</span>
                 </div>
                 <select class="pan-selector" style="width: 45px;">
@@ -586,7 +978,7 @@
 
             phaseShift.addEventListener('input', () => {
                 const deg = parseFloat(phaseShift.value);
-                phaseValue.textContent = `${deg}°`;
+                phaseValue.textContent = `${deg.toFixed(1)}°`;
                 if (channels.has(id)) {
                     const { oscillator, delayNode } = channels.get(id);
                     const freq = oscillator.frequency.value;
@@ -601,6 +993,8 @@
             row.dataset.id = id;
             document.getElementById('results').appendChild(row);
             updateVisualization(id, defaultFrequency);
+            
+            return id;
         }
 
         function removeFrequency(id) {
@@ -628,18 +1022,31 @@
                     chain.oscillator.type = type;
                 });
             }
+            
+            // Обновляем осцилляторы при переборе
+            if (isFrequencyCycling) {
+                currentPairOscillators.forEach(chain => {
+                    chain.oscillator.type = type;
+                });
+            }
         }
-
-        document.getElementById('addFrequency').addEventListener('click', () => {
-            createFrequencyControl();
-        });
-
-        document.getElementById('toggleBtn').addEventListener('click', () => {
+        
+        function togglePlayback() {
+            // Останавливаем перебор при запуске обычного воспроизведения
+            if (isFrequencyCycling) {
+                stopFrequencyCycle();
+            }
+            
             initAudio();
             isPlaying = !isPlaying;
             const toggleBtn = document.getElementById('toggleBtn');
             toggleBtn.textContent = isPlaying ? 'Стоп' : 'Старт';
             toggleBtn.classList.toggle('active', isPlaying);
+
+            // Блокировка кнопок
+            document.getElementById('addFrequency').disabled = isPlaying;
+            document.getElementById('cycleFrequencies').disabled = isPlaying;
+            toggleBtn.disabled = false;
 
             document.querySelectorAll('.frequency-item').forEach(item => {
                 const id = item.dataset.id;
@@ -659,9 +1066,265 @@
                         channels.get(id).oscillator.stop();
                         channels.delete(id);
                     }
+                    // Разблокировка кнопок при остановке
+                    document.getElementById('addFrequency').disabled = false;
+                    document.getElementById('cycleFrequencies').disabled = false;
                 }
             });
+        }
+
+        // Функции для перебора частот
+        function startFrequencyCycle() {
+            // Останавливаем обычное воспроизведение при запуске перебора
+            if (isPlaying) {
+                togglePlayback();
+            }
+            
+            // Собираем все частоты
+            const frequencyItems = document.querySelectorAll('.frequency-item');
+            if (frequencyItems.length === 0) {
+                alert('Добавьте частоты для перебора');
+                return;
+            }
+            
+            // Формируем пары частот
+            frequencyPairs = [];
+            const frequencies = [];
+            
+            frequencyItems.forEach(item => {
+                const id = item.dataset.id;
+                const freq = parseFloat(item.querySelector('.freq-range').value);
+                const phaseShift = parseFloat(item.querySelector('.phase-shift').value);
+                const pan = parseFloat(item.querySelector('.pan-selector').value);
+                
+                frequencies.push({ id, freq, phaseShift, pan });
+            });
+            
+            // Разбиваем на пары
+            for (let i = 0; i < frequencies.length; i += 2) {
+                const pair = frequencies.slice(i, i + 2);
+                frequencyPairs.push(pair);
+            }
+            
+            if (frequencyPairs.length === 0) return;
+            
+            // Вычисляем общее время
+            totalCycleTime = frequencyPairs.length * 3 * 60; // в секундах
+            remainingTime = totalCycleTime;
+            
+            // Устанавливаем флаг
+            isFrequencyCycling = true;
+            const cycleBtn = document.getElementById('cycleFrequencies');
+            cycleBtn.classList.add('active');
+            cycleBtn.textContent = formatTime(remainingTime);
+            
+            // Блокировка кнопок
+            document.getElementById('addFrequency').disabled = true;
+            document.getElementById('toggleBtn').disabled = true;
+            cycleBtn.disabled = false;
+            
+            // Начинаем с первой пары
+            currentPairIndex = 0;
+            playFrequencyPair(frequencyPairs[currentPairIndex]);
+            
+            // Запускаем таймер переключения
+            cycleInterval = setInterval(() => {
+                stopCurrentPair();
+                currentPairIndex++;
+                
+                if (currentPairIndex < frequencyPairs.length) {
+                    playFrequencyPair(frequencyPairs[currentPairIndex]);
+                } else {
+                    stopFrequencyCycle();
+                }
+            }, 3 * 60 * 1000); // 3 минуты
+            
+            // Запускаем таймер обратного отсчета
+            countdownInterval = setInterval(() => {
+                remainingTime--;
+                cycleBtn.textContent = formatTime(remainingTime);
+                
+                if (remainingTime <= 0) {
+                    clearInterval(countdownInterval);
+                }
+            }, 1000);
+        }
+        
+        function stopFrequencyCycle() {
+            clearInterval(cycleInterval);
+            clearInterval(countdownInterval);
+            stopCurrentPair();
+            
+            isFrequencyCycling = false;
+            const cycleBtn = document.getElementById('cycleFrequencies');
+            cycleBtn.classList.remove('active');
+            cycleBtn.textContent = 'перебор частот';
+            
+            // Разблокировка кнопок
+            document.getElementById('addFrequency').disabled = false;
+            document.getElementById('toggleBtn').disabled = false;
+            cycleBtn.disabled = false;
+        }
+        
+        function playFrequencyPair(pair) {
+            initAudio();
+            stopCurrentPair();
+            
+            currentPairOscillators = [];
+            pair.forEach(freqItem => {
+                const { freq, pan, phaseShift } = freqItem;
+                const chain = createOscillatorChain(freq, pan, phaseShift);
+                // Нормализация амплитуды для пары частот
+                chain.gainNode.gain.value = 0.5;
+                chain.oscillator.start();
+                currentPairOscillators.push(chain);
+            });
+        }
+        
+        function stopCurrentPair() {
+            currentPairOscillators.forEach(chain => {
+                try {
+                    chain.oscillator.stop();
+                    chain.oscillator.disconnect();
+                    
+                    // Отключаем FM
+                    if (chain.fmGain) {
+                        chain.fmGain.disconnect();
+                    }
+                } catch (e) {
+                    console.log("Ошибка при остановке осциллятора", e);
+                }
+            });
+            currentPairOscillators = [];
+        }
+        
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+        
+        // Экспорт всех пресетов в CSV
+        function exportPresets() {
+            const fileName = prompt('Введите название файла (без расширения)', 'frequency') || 'frequency';
+            const fullFileName = `${fileName}.csv`;
+            
+            // Получаем все сохраненные пресеты
+            const savedLists = getSavedFrequencyLists();
+            
+            // Преобразуем в CSV формат
+            let csvContent = "preset_name,freq,phase,pan,fm_enabled,fm_freq,fm_depth\n";
+            
+            for (const [presetName, presetData] of Object.entries(savedLists)) {
+                const fmEnabled = presetData.fm.enabled ? 1 : 0;
+                const fmFreq = parseFloat(presetData.fm.freq).toFixed(6);
+                const fmDepth = parseFloat(presetData.fm.depth).toFixed(3);
+                
+                presetData.frequencies.forEach(freqItem => {
+                    const { freq, phaseShift, pan } = freqItem;
+                    // Форматируем числа для точного представления
+                    const formattedFreq = parseFloat(freq).toFixed(6);
+                    const formattedPhase = parseFloat(phaseShift).toFixed(3);
+                    const formattedPan = parseFloat(pan).toFixed(3);
+                    
+                    csvContent += `"${presetName}",${formattedFreq},${formattedPhase},${formattedPan},${fmEnabled},${fmFreq},${fmDepth}\n`;
+                });
+            }
+            
+            // Создаем Blob и ссылку для скачивания
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", fullFileName);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+        
+        // Импорт пресетов из CSV
+        function importPresets(file) {
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                const content = e.target.result;
+                const lines = content.split('\n').filter(line => line.trim() !== '');
+                
+                // Проверяем заголовок
+                if (lines.length < 1 || !lines[0].includes('preset_name')) {
+                    alert('Неверный формат CSV файла');
+                    return;
+                }
+                
+                // Создаем объект для новых пресетов
+                const newPresets = {};
+                
+                // Парсим строки начиная с 1 (пропускаем заголовок)
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i].trim();
+                    if (!line) continue;
+                    
+                    // Разделяем значения, учитывая кавычки
+                    const values = line.split(',');
+                    if (values.length < 7) continue;
+                    
+                    // Извлекаем данные
+                    const presetName = values[0].replace(/^"|"$/g, '');
+                    const freq = parseFloat(values[1]);
+                    const phase = parseFloat(values[2]);
+                    const pan = parseFloat(values[3]);
+                    const fmEnabled = parseInt(values[4]) === 1;
+                    const fmFreq = parseFloat(values[5]);
+                    const fmDepth = parseFloat(values[6]);
+                    
+                    // Создаем пресет если его еще нет
+                    if (!newPresets[presetName]) {
+                        newPresets[presetName] = {
+                            frequencies: [],
+                            fm: { enabled: fmEnabled, freq: fmFreq, depth: fmDepth }
+                        };
+                    }
+                    
+                    // Добавляем частоту в пресет
+                    newPresets[presetName].frequencies.push({
+                        freq: parseFloat(freq.toFixed(6)),
+                        phaseShift: parseFloat(phase.toFixed(3)),
+                        pan: parseFloat(pan.toFixed(3))
+                    });
+                }
+                
+                // Получаем текущие пресеты
+                const savedLists = getSavedFrequencyLists();
+                
+                // Объединяем с новыми (новые перезаписывают старые с тем же именем)
+                const mergedPresets = { ...savedLists, ...newPresets };
+                
+                // Сохраняем объединенные пресеты
+                saveFrequencyLists(mergedPresets);
+                
+                // Обновляем отображение
+                renderSavedLists();
+                
+                alert('Пресеты успешно импортированы!');
+            };
+            
+            reader.readAsText(file);
+        }
+        
+        // Переключение информации
+        function toggleInfo() {
+            const content = document.getElementById('infoContent');
+            content.style.display = content.style.display === 'block' ? 'none' : 'block';
+        }
+
+        document.getElementById('addFrequency').addEventListener('click', () => {
+            createFrequencyControl();
         });
+
+        document.getElementById('toggleBtn').addEventListener('click', togglePlayback);
 
         // Инициализация кнопок волн
         document.getElementById('sineBtn').addEventListener('click', () => setWaveType('sine'));
@@ -671,6 +1334,30 @@
         document.getElementById('fmEnabled').addEventListener('change', updateFMParams);
         document.getElementById('fmFreq').addEventListener('input', updateFMParams);
         document.getElementById('fmDepth').addEventListener('input', updateFMParams);
+        
+        // Обработчик кнопки сохранения списка
+        document.getElementById('saveListBtn').addEventListener('click', showNamePrompt);
+        
+        // Обработчик кнопки перебора частот
+        document.getElementById('cycleFrequencies').addEventListener('click', () => {
+            if (isFrequencyCycling) {
+                stopFrequencyCycle();
+            } else {
+                startFrequencyCycle();
+            }
+        });
+        
+        // Обработчики экспорта/импорта
+        document.getElementById('exportBtn').addEventListener('click', exportPresets);
+        document.getElementById('importBtn').addEventListener('click', () => {
+            document.getElementById('csvFileInput').click();
+        });
+        document.getElementById('csvFileInput').addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                importPresets(e.target.files[0]);
+                e.target.value = ''; // Сбрасываем значение для повторной загрузки
+            }
+        });
 
         function openModal() {
             document.getElementById('infoModal').style.display = 'block';
@@ -686,7 +1373,19 @@
             if (event.target === modal) {
                 modal.style.display = 'none';
             }
+            
+            const nameModal = document.getElementById('namePromptModal');
+            if (event.target === nameModal) {
+                nameModal.style.display = 'none';
+            }
         }
+        
+        // Инициализация при загрузке
+        window.addEventListener('DOMContentLoaded', () => {
+            // Создаем начальный элемент управления
+            createFrequencyControl(432);
+            renderSavedLists();
+        });
     </script>
 </body>
 </html>
