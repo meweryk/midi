@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Колокольный звук + визуализация</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body {
+      padding: 5px;
+      max-width: 800px;
+      margin: 0 auto;
+      background-color: #f8f9fa;
+      font-size: 0.85rem;
+    }
+    .card {
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      margin-bottom: 10px;
+      border: none;
+    }
+    canvas {
+      width: 100%;
+      height: 200px;
+      background: #000;
+      display: block;
+      margin-top: 20px;
+      border-radius: 4px;
+    }
+    .btn-group-custom {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    .btn-group-custom .btn {
+      flex: 1;
+      min-width: 120px;
+    }
+    .info-text {
+      font-size: 0.8rem;
+      color: #495057;
+    }
+    .input-group-custom {
+      display: flex;
+      gap: 5px;
+    }
+    .input-group-custom > * {
+      flex: 1;
+    }
+    .form-control {
+    transition: 
+    background-color 0.3s ease,
+    border-color 0.3s ease,
+    box-shadow 0.3s ease;
+    }
+    
+    .form-control:focus {
+    background-color: #f1f8e9;
+    border-color: #4fc3f7;
+    box-shadow: 0 0 8px rgba(79, 195, 247, 0.6);
+    }
+    
+    footer {
+      margin-top: 20px;
+      padding-top: 10px;
+      border-top: 1px solid #dee2e6;
+      text-align: center;
+      font-size: 0.8rem;
+      color: #6c757d;
+    }
+    /* Уменьшаем отступы и размер шрифта в аккордеоне */
+    #chakrasAccordion .accordion-button {
+    padding: 0.6rem 0.5rem;
+    font-size: 0.9rem;
+    }
+  
+    /* Если нужно уменьшить заголовок и тело */
+  </style>
+</head>
+<body>
+  <div class="container-fluid p-0">
+    <div class="card p-0 mb-2">
+      <h5 class="mb-3 mt-2 text-center">🔔 Генератор Колокольного Звука</h6>
+
+      <div class="mb-3 mt-1">
+        <label class="form-label mb-1"><b>Выбор инструмента:</b></label>
+        <select class="form-select form-select-sm" id="instrument">
+          <option value="bell">Колокол</option>
+          <option value="bowl">Чаша</option>
+          <option value="smallbell">Колокольчик</option>
+          <option value="custom">Свои настройки</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label mb-1"><b>Основная частота (Гц):</b></label>
+        <input type="number" class="form-control form-control-sm" id="freq" value="500">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label mb-1"><b>Обертона (множитель:амплитуда):</b></label>
+        <textarea class="form-control form-control-sm" id="partials" rows="1" style="resize: none; overflow-y: hidden;" oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px'">1:0.4, 2:1.0, 2.4:0.6, 3:0.3, 4:0.2, 6:0.1, 8:0.05</textarea>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label mb-1"><b>Набор частот (Гц, через запятую):</b></label>
+        <input class="form-control form-control-sm" id="setFrequencies" placeholder="500, 625, 750">
+      </div>
+
+      <div class="mb-3 form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="loopSet" checked>
+        <label class="form-check-label" for="loopSet">Непрерывное проигрывание</label>
+      </div>
+
+      <div class="input-group-custom mb-3">
+        <div>
+          <label class="form-label mb-1"><small>Пауза между ударами (мс)</small></label>
+          <input type="number" class="form-control form-control-sm" id="hitDelay" value="1000">
+        </div>
+        <div>
+          <label class="form-label mb-1"><small>Пауза между циклами (мс)</small></label>
+          <input type="number" class="form-control form-control-sm" id="cycleDelay" value="3000">
+        </div>
+      </div>
+
+      <div class="btn-group-custom mb-2">
+        <button id="toggle" class="btn btn-success btn-sm">▶️ Старт</button>
+        <button id="save" class="btn btn-outline-primary btn-sm">💾 Сохранить WAV</button>
+        <button id="playSet" class="btn btn-primary btn-sm">🔔 Проиграть набор</button>
+      </div>
+    </div>
+
+    <canvas id="spectrum"></canvas>
+
+    <div class="card p-3 mt-3">
+      <p class="info-text">Частоты звуков церковных колоколов могут варьироваться в широких пределах, но обычно они лежат в диапазоне от 60 Гц до 2000 Гц. Звучание колокола зависит от его размера, формы, толщины стенок, материала и, конечно же, от того, как его ударяют.</p>
+      <p class="info-text"><b>Благовестник (самый большой колокол):</b></p>
+      <p class="info-text">Частота основного тона может быть от 60 Гц до 200 Гц. Например, в Ростовском кремле колокол "Сысой" (2000 пудов) имеет частоту 131 Гц, а колокол "Лебедь" (500 пудов) - 196 Гц, сообщает сайт Елькина.</p>
+      <p class="info-text">На сайте <a href="https://www.planetware.de/octave/" target="_blank">Planetware</a> приведён список частот планет нашей солнечной системы - это периоды обращения октавно увеличенные до звуковаго диапазона.<br>
+      Этот список содержит частоты в герцах: 126.22, 141.27, 221.23, 144.72, 194.18, 210.42, 136.10, 183.58, 147.85, 207.36, 211.44, 140.64, 172.06. Там же есть звучание этих частот на чашах, но увеличенных в 2 раза.</p>
+      <p>Частоты сольфеджио: 174, 285, 396, 417, 528, 639, 741, 852, 963.</p>
+      <p class="info-text"><b>Совет:</b> Подбирайте установки инструмента и самостоятельно задавайте значения в поле ввода, чтоб добиться идеального звука. Сумма коэффициентов амплитуд обертонов не должна превышать 2.7.<br>
+      Пример обертонов для чаш:<br>
+      1:1, 2.1:0.7, 3.2:0.5, 4.5:0.3, 5.8:0.1, 7:0.03, 11: 0.02<br>
+      или этот:<br>
+      0.6:0.4, 1:1, 2.03:0.1, 2.87:0.5, 5.37:0.3, 8.57:0.2, 11.95:0.05, 21.24:0.05, 49.243:0.01</p>
+      
+    </div>
+    
+    <div class="container">
+    <div class="header">
+    <h5><i class="fas fa-music me-2"></i>Частоты Чакр Вознесения</h5>
+    <p class="subtitle">Целительные вибрации для гармонизации энергии</p>
+    </div>
+    
+    <div class="accordion" id="chakrasAccordion">
+    <!-- Нулевая чакра -->
+    <div class="accordion-item">
+    <h5 class="accordion-header" id="headingOne">
+    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+    <span class="frequency-badge">174 Гц - Нулевая чакра</span> 
+    </button>
+    </h5>
+    <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#chakrasAccordion">
+    <div class="accordion-body">
+    <div class="chakra-info">
+    <div class="chakra-icon">
+    <i class="fas fa-mountain"></i>
+    </div>
+    <div>
+    <h6>Базовая настройка и чувство безопасности</h6>
+    <p class="mb-1">Естественный анестетик: уменьшает физическую и душевную боль, создаёт чувство безопасности. Базовая частота для подготовки к сеансам.</p>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    
+    <!-- Муладхара -->
+    <div class="accordion-item">
+    <h5 class="accordion-header" id="headingTwo">
+    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
+    <span class="frequency-badge">285 Гц - Муладхара</span> 
+    </button>
+    </h5>
+    <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#chakrasAccordion">
+    <div class="accordion-body">
+    <div class="chakra-info">
+    <div class="chakra-icon">
+    <i class="fas fa-seedling"></i>
+    </div>
+    <div>
+    <h6>Восстановление тканей и омоложение</h6>
+    <p class="mb-1">Ускоряет регенерацию клеток, "перезаписывает" память повреждённых органов. Освобождает от чувства вины.</p>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    
+    <!-- Свадхистана -->
+    <div class="accordion-item">
+    <h5 class="accordion-header" id="headingThree">
+    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
+    <span class="frequency-badge">396 Гц - Свадхистана</span> 
+    </button>
+    </h5>
+    <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#chakrasAccordion">
+    <div class="accordion-body">
+    <div class="chakra-info">
+    <div class="chakra-icon">
+    <i class="fas fa-water"></i>
+    </div>
+    <div>
+    <h6>Снятие страхов и трансформация программ</h6>
+    <p class="mb-1">Устраняет подсознательные блоки, страхи, ложные установки. Помогает преодолеть чувство вины и привлечь успех.</p>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    
+    <!-- Манипура -->
+    <div class="accordion-item">
+    <h5 class="accordion-header " id="headingFour">
+    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
+    <span class="frequency-badge">417 Гц - Манипура</span> 
+    </button>
+    </h5>
+    <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#chakrasAccordion">
+    <div class="accordion-body">
+    <div class="chakra-info">
+    <div class="chakra-icon">
+    <i class="fas fa-sun"></i>
+    </div>
+    <div>
+    <h6>Активация энергии и инициация перемен</h6>
+    <p class="mb-1">Стимулирует энергию для трансформации: ломает старые шаблоны поведения, облегчает принятие перемен.</p>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    
+    <!-- Анахата -->
+    <div class="accordion-item">
+    <h5 class="accordion-header" id="headingFive">
+    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
+    <span class="frequency-badge">528 Гц - Анахата</span> 
+    </button>
+    </h5>
+    <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#chakrasAccordion">
+    <div class="accordion-body">
+    <div class="chakra-info">
+    <div class="chakra-icon">
+    <i class="fas fa-heart"></i>
+    </div>
+    <div>
+    <h6>Исцеление ДНК и пробуждение любви</h6>
+    <p class="mb-1">Ключевая "частота ДНК": используется для восстановления повреждённой ДНК. Активирует творчество и любовь.</p>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    
+    <!-- Вишуддха -->
+    <div class="accordion-item">
+    <h5 class="accordion-header" id="headingSix">
+    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSix" aria-expanded="false" aria-controls="collapseSix">
+    <span class="frequency-badge">639 Гц - Вишуддха</span> 
+    </button>
+    </h5>
+    <div id="collapseSix" class="accordion-collapse collapse" aria-labelledby="headingSix" data-bs-parent="#chakrasAccordion">
+    <div class="accordion-body">
+    <div class="chakra-info">
+    <div class="chakra-icon">
+    <i class="fas fa-comments"></i>
+    </div>
+    <div>
+    <h6>Гармонизация отношений и безусловная любовь</h6>
+    <p class="mb-1">Гармонизирует отношения, развивает эмпатию и терпимость. Помогает в построении социальных связей.</p>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    
+    <!-- Аджна -->
+    <div class="accordion-item">
+    <h5 class="accordion-header" id="headingSeven">
+    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSeven" aria-expanded="false" aria-controls="collapseSeven">
+    <span class="frequency-badge">741 Гц - Аджна</span> 
+    </button>
+    </h5>
+    <div id="collapseSeven" class="accordion-collapse collapse" aria-labelledby="headingSeven" data-bs-parent="#chakrasAccordion">
+    <div class="accordion-body">
+    <div class="chakra-info">
+    <div class="chakra-icon">
+    <i class="fas fa-eye"></i>
+    </div>
+    <div>
+    <h6>Очищение и раскрытие предназначения</h6>
+    <p class="mb-1">Очищает организм от токсинов и ментальных "паразитов". Усиливает интуицию, помогает найти предназначение.</p>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    
+    <!-- Сахасрара -->
+    <div class="accordion-item">
+    <h5 class="accordion-header" id="headingEight">
+    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEight" aria-expanded="false" aria-controls="collapseEight">
+    <span class="frequency-badge">852 Гц - Сахасрара</span> 
+    </button>
+    </h5>
+    <div id="collapseEight" class="accordion-collapse collapse" aria-labelledby="headingEight" data-bs-parent="#chakrasAccordion">
+    <div class="accordion-body">
+    <div class="chakra-info">
+    <div class="chakra-icon">
+    <i class="fas fa-crown"></i>
+    </div>
+    <div>
+    <h6>Активация интуиции и восстановление связей</h6>
+    <p class="mb-1">Активирует высшие психические функции: ясновидение, интуицию. Восстанавливает нейронные связи.</p>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    
+    <!-- Надкоронная -->
+    <div class="accordion-item">
+    <h5 class="accordion-header" id="headingNine">
+    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNine" aria-expanded="false" aria-controls="collapseNine">
+    <span class="frequency-badge">963 Гц - Надкоронная</span>  чакра
+    </button>
+    </h5>
+    <div id="collapseNine" class="accordion-collapse collapse" aria-labelledby="headingNine" data-bs-parent="#chakrasAccordion">
+    <div class="accordion-body">
+    <div class="chakra-info">
+    <div class="chakra-icon">
+    <i class="fas fa-star"></i>
+    </div>
+    <div>
+    <h6>Соединение с высшим сознанием</h6>
+    <p class="mb-1">Открывает канал связи с высшими силами, стирает границы между личностью и космосом.</p>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    </div>
+    
+    <div class="footer text-center">
+    <p>Для достижения оптимального эффекта рекомендуется прослушивание частот в наушниках по 15-30 минут в день</p>
+    </div>
+    </div>
+    
+    <div class="text-center mb-2">
+    <a href="http://www.mif-ua.com/m/archive/article/51055" target="_blank">Про колокола</a><br>
+    <a href="https://meweryk.github.io/Wave-of-land/index.html" target="_blank">Ещё проекты</a>
+    </div>
+    <div class="text-center">
+    <p class="mb-0">© Автор</p>
+    </div>
+    
+  </div>
+
+  <!-- Bootstrap JS (необходим для некоторых компонентов) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  	
+  <script>
+    const instrumentPresets = {
+      bell: '1:0.4, 2:1.0, 2.4:0.6, 3:0.3, 4:0.2, 6:0.1, 8:0.05',
+      bowl: '1:0.5, 1.5:1.0, 2:0.7, 2.5:0.4, 3:0.2',
+      smallbell: '1:1.0, 2:0.6, 3:0.3, 4:0.1',
+      /*custom: '1:0.4, 2:1.0, 2.4:0.4, 3:0.2, 4:0.1, 6:0.05, 8:0.02'*/
+    };
+
+    const instrumentSelect = document.getElementById('instrument');
+    instrumentSelect.addEventListener('change', () => {
+      if (instrumentSelect.value !== 'custom') {
+        document.getElementById('partials').value = instrumentPresets[instrumentSelect.value];
+      }
+    });
+
+    const freqInput = document.getElementById('freq');
+    const partialsInput = document.getElementById('partials');
+    const toggleBtn = document.getElementById('toggle');
+    const saveBtn = document.getElementById('save');
+    const playSetBtn = document.getElementById('playSet');
+    const canvas = document.getElementById('spectrum');
+    const ctxCanvas = canvas.getContext('2d');
+    const setFreqsInput = document.getElementById('setFrequencies');
+    const loopCheckbox = document.getElementById('loopSet');
+    const hitDelayInput = document.getElementById('hitDelay');
+    const cycleDelayInput = document.getElementById('cycleDelay');
+
+    let audioCtx;
+    let gainNodes = [];
+    let oscillators = [];
+    let analyser;
+    let isPlaying = false;
+    let isPlayingSet = false;
+
+    const MAX_VOLUME = 0.34;
+    const ATTACK = 0.01;
+    const RELEASE = 5.5;
+
+    function parsePartials(inputText) {
+      return inputText.split(',').map(p => {
+        const [r, a] = p.trim().split(':').map(Number);
+        return (!isNaN(r) && !isNaN(a)) ? { ratio: r, amp: a } : null;
+      }).filter(Boolean);
+    }
+
+    function createImpulseResponse(ctx, duration = 3, decay = 2) {
+      const len = ctx.sampleRate * duration;
+      const buffer = ctx.createBuffer(2, len, ctx.sampleRate);
+      for (let ch = 0; ch < 2; ch++) {
+        const data = buffer.getChannelData(ch);
+        for (let i = 0; i < len; i++) {
+          data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+        }
+      }
+      return buffer;
+    }
+
+    function drawSpectrum() {
+      if (!analyser) return;
+      requestAnimationFrame(drawSpectrum);
+      const bufferLength = analyser.frequencyBinCount;
+      const data = new Uint8Array(bufferLength);
+      analyser.getByteFrequencyData(data);
+
+      ctxCanvas.clearRect(0, 0, canvas.width, canvas.height);
+      ctxCanvas.fillStyle = '#0f0';
+      const barWidth = canvas.width / bufferLength;
+      for (let i = 0; i < bufferLength; i++) {
+        const barHeight = data[i];
+        ctxCanvas.fillRect(i * barWidth, canvas.height - barHeight, barWidth, barHeight);
+      }
+    }
+
+    function startBell(f0, partials) {
+      return new Promise(resolve => {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        const convolver = audioCtx.createConvolver();
+        convolver.buffer = createImpulseResponse(audioCtx);
+
+        analyser = audioCtx.createAnalyser();
+        analyser.fftSize = 2048;
+
+        const masterGain = audioCtx.createGain();
+        masterGain.gain.value = 1.0;
+        convolver.connect(masterGain).connect(analyser).connect(audioCtx.destination);
+
+        const now = audioCtx.currentTime;
+
+        partials.forEach(p => {
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+
+          const vibrato = audioCtx.createOscillator();
+          const vibratoGain = audioCtx.createGain();
+
+          osc.type = 'sine';
+          osc.frequency.value = f0 * p.ratio + (Math.random() * 2 - 1);
+
+          vibrato.frequency.value = 5 + Math.random() * 2;
+          vibratoGain.gain.value = 1 + Math.random();
+
+          vibrato.connect(vibratoGain).connect(osc.frequency);
+          vibrato.start(now);
+
+          gain.gain.setValueAtTime(0, now);
+          gain.gain.linearRampToValueAtTime(MAX_VOLUME * p.amp, now + ATTACK);
+          gain.gain.linearRampToValueAtTime(0, now + ATTACK + RELEASE);
+
+          osc.connect(gain).connect(convolver);
+          osc.start(now);
+          osc.stop(now + ATTACK + RELEASE + 0.2);
+
+          oscillators.push(osc, vibrato);
+          gainNodes.push(gain);
+        });
+
+        drawSpectrum();
+        setTimeout(() => resolve(), (ATTACK + RELEASE + 0.2) * 1000);
+      });
+    }
+
+    toggleBtn.onclick = () => {
+      const f0 = parseFloat(freqInput.value);
+      const partials = parsePartials(partialsInput.value);
+      if (isPlaying || isNaN(f0) || !partials.length) return;
+      startBell(f0, partials);
+      isPlaying = true;
+      toggleBtn.textContent = '⏳ Звук...';
+      toggleBtn.classList.remove('btn-success');
+      toggleBtn.classList.add('btn-secondary');
+      setTimeout(() => {
+        isPlaying = false;
+        toggleBtn.textContent = '▶️ Старт';
+        toggleBtn.classList.remove('btn-secondary');
+        toggleBtn.classList.add('btn-success');
+      }, 3500);
+    };
+
+    playSetBtn.onclick = async () => {
+      if (isPlayingSet) {
+        isPlayingSet = false;
+        playSetBtn.textContent = '🔔 Проиграть набор';
+        playSetBtn.classList.remove('btn-danger');
+        playSetBtn.classList.add('btn-primary');
+        return;
+      }
+      
+      isPlayingSet = true;
+      playSetBtn.textContent = '⏹ Остановить';
+      playSetBtn.classList.remove('btn-primary');
+      playSetBtn.classList.add('btn-danger');
+      
+      const freqs = setFreqsInput.value.split(',')
+        .map(v => parseFloat(v.trim()))
+        .filter(v => !isNaN(v));
+        
+      if (freqs.length === 0) {
+        isPlayingSet = false;
+        playSetBtn.textContent = '🔔 Проиграть набор';
+        playSetBtn.classList.remove('btn-danger');
+        playSetBtn.classList.add('btn-primary');
+        return;
+      }
+      
+      const partials = parsePartials(partialsInput.value);
+      if (partials.length === 0) {
+        isPlayingSet = false;
+        playSetBtn.textContent = '🔔 Проиграть набор';
+        playSetBtn.classList.remove('btn-danger');
+        playSetBtn.classList.add('btn-primary');
+        return;
+      }
+      
+      const hitDelay = parseInt(hitDelayInput.value) || 0;
+      const cycleDelay = parseInt(cycleDelayInput.value) || 0;
+
+      do {
+        for (const freq of freqs) {
+          if (!isPlayingSet) break;
+          await startBell(freq, partials);
+          if (!isPlayingSet) break;
+          await new Promise(resolve => setTimeout(resolve, hitDelay));
+        }
+        if (!isPlayingSet) break;
+        if (!loopCheckbox.checked) break;
+        await new Promise(resolve => setTimeout(resolve, cycleDelay));
+      } while (isPlayingSet && loopCheckbox.checked);
+      
+      isPlayingSet = false;
+      playSetBtn.textContent = '🔔 Проиграть набор';
+      playSetBtn.classList.remove('btn-danger');
+      playSetBtn.classList.add('btn-primary');
+    };
+    
+    // Функция для кодирования аудиобуфера в WAV
+    function bufferToWav(buffer) {
+    const numChannels = buffer.numberOfChannels;
+    const sampleRate = buffer.sampleRate;
+    const format = 3; // float
+    const bitDepth = 32;
+    const bytesPerSample = bitDepth / 8;
+    const blockAlign = numChannels * bytesPerSample;
+    
+    const dataLength = buffer.length * numChannels * bytesPerSample;
+    const bufferSize = 44 + dataLength;
+    const arrayBuffer = new ArrayBuffer(bufferSize);
+    const view = new DataView(arrayBuffer);
+    
+    // Запись заголовка WAV
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + dataLength, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, format, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * blockAlign, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitDepth, true);
+    writeString(view, 36, 'data');
+    view.setUint32(40, dataLength, true);
+    
+    // Запись аудиоданных
+    let offset = 44;
+    for (let i = 0; i < buffer.length; i++) {
+    for (let ch = 0; ch < numChannels; ch++) {
+    const sample = buffer.getChannelData(ch)[i];
+    view.setFloat32(offset, sample, true);
+    offset += 4;
+    }
+    }
+    
+    return new Blob([view], { type: 'audio/wav' });
+    }
+    
+    function writeString(view, offset, string) {
+    for (let i = 0; i < string.length; i++) {
+    view.setUint8(offset + i, string.charCodeAt(i));
+    }
+    }
+    
+    function downloadWav(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    }, 100);
+    }
+    
+    saveBtn.onclick = async () => {
+    const freqs = setFreqsInput.value.split(',')
+    .map(v => parseFloat(v.trim()))
+    .filter(v => !isNaN(v));
+    
+    if (freqs.length === 0) {
+    alert("Набор частот пуст. Добавьте частоты.");
+    return;
+    }
+    
+    const repeats = prompt("Введите количество повторов набора частот:", "1");
+    if (!repeats || isNaN(repeats) || parseInt(repeats) <= 0) {
+    return;
+    }
+    const repeatCount = parseInt(repeats);
+    
+    let filenamePrefix = "";
+    switch (instrumentSelect.value) {
+    case "bell": filenamePrefix = "Колокол"; break;
+    case "bowl": filenamePrefix = "Чаша"; break;
+    case "smallbell": filenamePrefix = "Колокольчики"; break;
+    }
+    
+    const additionalName = prompt("Введите дополнительное название для файла:", "");
+    const filename = (filenamePrefix ? filenamePrefix + "-" : "") + 
+    (additionalName || "звук") + ".wav";
+    
+    const partials = parsePartials(partialsInput.value);
+    if (partials.length === 0) {
+    alert("Ошибка: не заданы обертона.");
+    return;
+    }
+    
+    const hitDelay = parseInt(hitDelayInput.value) || 0;
+    const cycleDelay = parseInt(cycleDelayInput.value) || 0;
+    const bellDuration = ATTACK + RELEASE + 0.2;
+    const hitDelayInSeconds = hitDelay / 1000;
+    const cycleDelayInSeconds = cycleDelay / 1000;
+    
+    const cycleDuration = freqs.length * bellDuration + 
+    (freqs.length - 1) * hitDelayInSeconds + 
+    cycleDelayInSeconds;
+    const totalDuration = cycleDuration * repeatCount;
+    
+    const sampleRate = 44100;
+    const offlineCtx = new OfflineAudioContext(2, totalDuration * sampleRate, sampleRate);
+    
+    const convolverBuffer = createImpulseResponse(offlineCtx);
+    
+    for (let repeat = 0; repeat < repeatCount; repeat++) {
+    for (let i = 0; i < freqs.length; i++) {
+    const startTime = repeat * cycleDuration + i * (bellDuration + hitDelayInSeconds);
+    generateBellForOffline(offlineCtx, startTime, freqs[i], partials, convolverBuffer);
+    }
+    }
+    
+    try {
+    const renderedBuffer = await offlineCtx.startRendering();
+    const wavBlob = bufferToWav(renderedBuffer);
+    downloadWav(wavBlob, filename);
+    } catch (e) {
+    console.error("Ошибка генерации:", e);
+    alert("Ошибка при создании файла: " + e.message);
+    }
+    };
+    
+    function generateBellForOffline(ctx, startTime, f0, partials, convolverBuffer) {
+    const convolver = ctx.createConvolver();
+    convolver.buffer = convolverBuffer;
+    
+    const masterGain = ctx.createGain();
+    masterGain.gain.value = 1.0;
+    
+    convolver.connect(masterGain);
+    masterGain.connect(ctx.destination);
+    
+    partials.forEach(p => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    
+    const vibrato = ctx.createOscillator();
+    const vibratoGain = ctx.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.value = f0 * p.ratio + (Math.random() * 2 - 1);
+    
+    vibrato.frequency.value = 5 + Math.random() * 2;
+    vibratoGain.gain.value = 1 + Math.random();
+    
+    vibrato.connect(vibratoGain).connect(osc.frequency);
+    
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(MAX_VOLUME * p.amp, startTime + ATTACK);
+    gain.gain.linearRampToValueAtTime(0, startTime + ATTACK + RELEASE);
+    
+    osc.connect(gain).connect(convolver);
+    
+    osc.start(startTime);
+    osc.stop(startTime + ATTACK + RELEASE + 0.2);
+    vibrato.start(startTime);
+    vibrato.stop(startTime + ATTACK + RELEASE + 0.2);
+    });
+    }
+    
+  </script>
+</body>
+</html>
