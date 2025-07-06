@@ -80,9 +80,9 @@
 <body>
   <div class="container-fluid p-0">
     <div class="card p-0 mb-2">
-      <h5 class="mb-3 mt-2 text-center">🔔 Генератор Колокольного Звука</h6>
+      <h5 class="mb-2 mt-2 text-center">🔔 Генератор Колокольного Звука</h6>
 
-      <div class="mb-3 mt-1">
+      <div class="mb-2 mt-1">
         <label class="form-label mb-1"><b>Выбор инструмента:</b></label>
         <select class="form-select form-select-sm" id="instrument">
           <option value="bell">Колокол</option>
@@ -91,28 +91,42 @@
           <option value="custom">Свои настройки</option>
         </select>
       </div>
-
-      <div class="mb-3">
-        <label class="form-label mb-1"><b>Основная частота (Гц):</b></label>
-        <input type="number" class="form-control form-control-sm" id="freq" value="500">
+      <div class="mb-2">
+      	<label class="form-label mb-1"><b>Основная частота (Гц):</b></label>
+      	<input type="number" class="form-control form-control-sm" id="freq" value="500">
+      </div>
+      
+      <div class="input-group-custom mb-2">
+      	<div class="mb-2">
+      		<label class="form-label mb-1"><small>Время атаки (с):</small></label>
+      		<input type="number" class="form-control form-control-sm" id="attack" value="0.01" min="0.001" step="0.001">
+      	</div>
+      	<div>
+      		<label class="form-label mb-1"><small>Звучание (с)</small></label>
+      		<input type="number" class="form-control form-control-sm" id="long" value="0" min="0" step="0.1">
+      	</div>
+      	<div>
+      		<label class="form-label mb-1"><small>Затухание (с)</small></label>
+      		<input type="number" class="form-control form-control-sm" id="release" value="5.5" min="0.001" step="0.1">
+      	</div>
       </div>
 
-      <div class="mb-3">
+      <div class="mb-2">
         <label class="form-label mb-1"><b>Обертона (множитель:амплитуда):</b></label>
         <textarea class="form-control form-control-sm" id="partials" rows="1" style="resize: none; overflow-y: hidden;" oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px'">1:0.4, 2:1.0, 2.4:0.6, 3:0.3, 4:0.2, 6:0.1, 8:0.05</textarea>
       </div>
 
-      <div class="mb-3">
+      <div class="mb-2">
         <label class="form-label mb-1"><b>Набор частот (Гц, через запятую):</b></label>
         <input class="form-control form-control-sm" id="setFrequencies" placeholder="500, 625, 750">
       </div>
 
-      <div class="mb-3 form-check form-switch">
+      <div class="mb-2 form-check form-switch">
         <input class="form-check-input" type="checkbox" id="loopSet" checked>
         <label class="form-check-label" for="loopSet">Непрерывное проигрывание</label>
       </div>
 
-      <div class="input-group-custom mb-3">
+      <div class="input-group-custom mb-2">
         <div>
           <label class="form-label mb-1"><small>Пауза между ударами (мс)</small></label>
           <input type="number" class="form-control form-control-sm" id="hitDelay" value="1000">
@@ -133,18 +147,32 @@
     <canvas id="spectrum"></canvas>
 
     <div class="card p-3 mt-3">
-      <p class="info-text">Частоты звуков церковных колоколов могут варьироваться в широких пределах, но обычно они лежат в диапазоне от 60 Гц до 2000 Гц. Звучание колокола зависит от его размера, формы, толщины стенок, материала и, конечно же, от того, как его ударяют.</p>
-      <p class="info-text"><b>Благовестник (самый большой колокол):</b></p>
-      <p class="info-text">Частота основного тона может быть от 60 Гц до 200 Гц. Например, в Ростовском кремле колокол "Сысой" (2000 пудов) имеет частоту 131 Гц, а колокол "Лебедь" (500 пудов) - 196 Гц, сообщает сайт Елькина.</p>
-      <p class="info-text">На сайте <a href="https://www.planetware.de/octave/" target="_blank">Planetware</a> приведён список частот планет нашей солнечной системы - это периоды обращения октавно увеличенные до звуковаго диапазона.<br>
-      Этот список содержит частоты в герцах: 126.22, 141.27, 221.23, 144.72, 194.18, 210.42, 136.10, 183.58, 147.85, 207.36, 211.44, 140.64, 172.06. Там же есть звучание этих частот на чашах, но увеличенных в 2 раза.</p>
-      <p>Частоты сольфеджио: 174, 285, 396, 417, 528, 639, 741, 852, 963.</p>
+      <p class="info-text">Частоты звуков церковных колоколов могут варьироваться в широких пределах, но обычно они лежат в диапазоне от 60 Гц до 2000 Гц.<br> 
+      Звучание колокола зависит от его размера, формы, толщины стенок, материала и, конечно же, от того, как его ударяют.</p>
+      <p class="info-text">Частота основного тона может быть от 60 Гц до 200 Гц. Например, колокол "Сысой" (2000 пудов) имеет частоту 131 Гц, а колокол "Лебедь" (500 пудов) - 196 Гц.</p>
       <p class="info-text"><b>Совет:</b> Подбирайте установки инструмента и самостоятельно задавайте значения в поле ввода, чтоб добиться идеального звука. Сумма коэффициентов амплитуд обертонов не должна превышать 2.7.<br>
-      Пример обертонов для чаш:<br>
-      1:1, 2.1:0.7, 3.2:0.5, 4.5:0.3, 5.8:0.1, 7:0.03, 11: 0.02<br>
-      или этот:<br>
-      0.6:0.4, 1:1, 2.03:0.1, 2.87:0.5, 5.37:0.3, 8.57:0.2, 11.95:0.05, 21.24:0.05, 49.243:0.01</p>
+      <b>Пример обертонов для колокола:</b></p>
+      <ul>
+      	<li>Колокол с низкой тональностью: 1.0:1.0, 1.5:0.7, 2.4:0.4, 2.9:0.2, 3.8:0.1</li>
+      	<li>Церковный колокол: 1.0:0.9, 1.33:1.0, 1.8:0.6, 2.1:0.3, 2.8:0.15</li>
+      	<li>фландрийский: 1.00:1.0, 1.20:0.8, 1.51:0.5, 2.05:0.3, 2.55:0.2, 3.05:0.1</li>
+      	<li>азиатский, тонкий бронзовый: 1.00:1.0, 1.25:0.9, 1.68:0.6, 2.30:0.3, 3.00:0.1</li>
+      	<li>1:1, 2.1:0.7, 3.2:0.5, 4.5:0.3, 5.8:0.1, 7:0.03, 11: 0.021:1, 2.1:0.7, 3.2:0.5, 4.5:0.3, 5.8:0.1, 7:0.03, 11:0.02</li>
+      </ul>
+      <p><b>Пример обертонов для поющих чаш:</b></p>
+      <ul>
+      	<li>Малая медная чаша: 1: 1.0:1.0, 1.02:0.9, 1.5:0.6, 2.1:0.4, 2.7:0.2, 3.3:0.1</li>
+      	<li>Большая бронзовая чаша: 1.0:1.0, 1.48:0.7, 2.05:0.5, 2.6:0.3, 3.2:0.15</li>
+      	<li>высокая вибрация, лёгкая: 1.00:1.0, 1.03:0.85, 1.55:0.6, 2.20:0.4, 2.85:0.2, 3.5:0.05</li>
+      	<li>старая чаша с двойной частотой: 1.00:1.0, 1.01:0.95, 1.50:0.5, 2.02:0.3, 2.98:0.1</li>
+        <li>0.6:0.4, 1:1.1, 2.03:0.3, 2.87:0.25, 5.37:0.1, 8.57:0.08, 11.95:0.05, 21.24:0.02</li>
+      </ul>
       
+      <p class="info-text"><b>По частотам</b> - на сайте <a href="https://www.planetware.de/octave/" target="_blank">Planetware</a> приведён список частот планет нашей солнечной системы - это периоды обращения октавно увеличенные до звуковаго диапазона.<br>
+      Этот список содержит частоты в герцах:</p> 
+      <ul>
+      	<li>Планеты: 126.22, 141.27, 221.23, 144.72, 194.18, 210.42, 136.10, 183.58, 147.85, 207.36, 140.64, 211.44, 172.06</li>
+   		<li>Частоты сольфеджио: 174, 285, 396, 417, 528, 639, 741, 852, 963.</li>
     </div>
     
     <div class="container">
@@ -359,7 +387,6 @@
     </div>
     
     <div class="text-center mb-2">
-    <a href="https://meweryk.github.io/midi/index.html">Генератор частот</a><br>
     <a href="http://www.mif-ua.com/m/archive/article/51055" target="_blank">Про колокола</a><br>
     <a href="https://meweryk.github.io/Wave-of-land/index.html" target="_blank">Ещё проекты</a>
     </div>
@@ -375,9 +402,8 @@
   <script>
     const instrumentPresets = {
       bell: '1:0.4, 2:1.0, 2.4:0.6, 3:0.3, 4:0.2, 6:0.1, 8:0.05',
-      bowl: '1:0.5, 1.5:1.0, 2:0.7, 2.5:0.4, 3:0.2',
+      bowl: '0.6:0.4, 1:1.1, 2.03:0.3, 2.87:0.25, 5.37:0.1, 8.57:0.08, 11.95:0.05, 21.24:0.02',
       smallbell: '1:1.0, 2:0.6, 3:0.3, 4:0.1',
-      /*custom: '1:0.4, 2:1.0, 2.4:0.4, 3:0.2, 4:0.1, 6:0.05, 8:0.02'*/
     };
 
     const instrumentSelect = document.getElementById('instrument');
@@ -406,9 +432,7 @@
     let isPlaying = false;
     let isPlayingSet = false;
 
-    const MAX_VOLUME = 0.34;
-    const ATTACK = 0.01;
-    const RELEASE = 5.5;
+    const MAX_VOLUME = 0.30;
 
     function parsePartials(inputText) {
       return inputText.split(',').map(p => {
@@ -447,6 +471,12 @@
 
     function startBell(f0, partials) {
       return new Promise(resolve => {
+        // Получаем значения из полей ввода
+        const attackTime = parseFloat(document.getElementById('attack').value) || 0.01;
+        const sustainTime = parseFloat(document.getElementById('long').value) || 0;
+        const releaseTime = parseFloat(document.getElementById('release').value) || 5.5;
+        const totalDuration = attackTime + sustainTime + releaseTime;
+
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
         const convolver = audioCtx.createConvolver();
@@ -478,19 +508,25 @@
           vibrato.start(now);
 
           gain.gain.setValueAtTime(0, now);
-          gain.gain.linearRampToValueAtTime(MAX_VOLUME * p.amp, now + ATTACK);
-          gain.gain.linearRampToValueAtTime(0, now + ATTACK + RELEASE);
+          gain.gain.linearRampToValueAtTime(MAX_VOLUME * p.amp, now + attackTime);
+          
+          // Добавляем поддержку sustain времени
+          if (sustainTime > 0) {
+            gain.gain.setValueAtTime(MAX_VOLUME * p.amp, now + attackTime + sustainTime);
+          }
+          
+          gain.gain.linearRampToValueAtTime(0, now + attackTime + sustainTime + releaseTime);
 
           osc.connect(gain).connect(convolver);
           osc.start(now);
-          osc.stop(now + ATTACK + RELEASE + 0.2);
+          osc.stop(now + attackTime + sustainTime + releaseTime + 0.2);
 
           oscillators.push(osc, vibrato);
           gainNodes.push(gain);
         });
 
         drawSpectrum();
-        setTimeout(() => resolve(), (ATTACK + RELEASE + 0.2) * 1000);
+        setTimeout(() => resolve(), (attackTime + sustainTime + releaseTime + 0.2) * 1000);
       });
     }
 
@@ -503,12 +539,19 @@
       toggleBtn.textContent = '⏳ Звук...';
       toggleBtn.classList.remove('btn-success');
       toggleBtn.classList.add('btn-secondary');
+      
+      // Получаем значения времени
+      const attackTime = parseFloat(document.getElementById('attack').value) || 0.01;
+      const sustainTime = parseFloat(document.getElementById('long').value) || 0;
+      const releaseTime = parseFloat(document.getElementById('release').value) || 5.5;
+      const totalDuration = (attackTime + sustainTime + releaseTime + 0.2) * 1000 + 300;
+      
       setTimeout(() => {
         isPlaying = false;
         toggleBtn.textContent = '▶️ Старт';
         toggleBtn.classList.remove('btn-secondary');
         toggleBtn.classList.add('btn-success');
-      }, 3500);
+      }, totalDuration);
     };
 
     playSetBtn.onclick = async () => {
@@ -663,7 +706,13 @@
     
     const hitDelay = parseInt(hitDelayInput.value) || 0;
     const cycleDelay = parseInt(cycleDelayInput.value) || 0;
-    const bellDuration = ATTACK + RELEASE + 0.2;
+    
+    // Получаем значения времени
+    const attackTime = parseFloat(document.getElementById('attack').value) || 0.01;
+    const sustainTime = parseFloat(document.getElementById('long').value) || 0;
+    const releaseTime = parseFloat(document.getElementById('release').value) || 5.5;
+    const bellDuration = attackTime + sustainTime + releaseTime + 0.2;
+    
     const hitDelayInSeconds = hitDelay / 1000;
     const cycleDelayInSeconds = cycleDelay / 1000;
     
@@ -704,6 +753,11 @@
     convolver.connect(masterGain);
     masterGain.connect(ctx.destination);
     
+    // Получаем значения времени
+    const attackTime = parseFloat(document.getElementById('attack').value) || 0.01;
+    const sustainTime = parseFloat(document.getElementById('long').value) || 0;
+    const releaseTime = parseFloat(document.getElementById('release').value) || 5.5;
+    
     partials.forEach(p => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -720,15 +774,21 @@
     vibrato.connect(vibratoGain).connect(osc.frequency);
     
     gain.gain.setValueAtTime(0, startTime);
-    gain.gain.linearRampToValueAtTime(MAX_VOLUME * p.amp, startTime + ATTACK);
-    gain.gain.linearRampToValueAtTime(0, startTime + ATTACK + RELEASE);
+    gain.gain.linearRampToValueAtTime(MAX_VOLUME * p.amp, startTime + attackTime);
+    
+    // Добавляем поддержку sustain времени
+    if (sustainTime > 0) {
+      gain.gain.setValueAtTime(MAX_VOLUME * p.amp, startTime + attackTime + sustainTime);
+    }
+    
+    gain.gain.linearRampToValueAtTime(0, startTime + attackTime + sustainTime + releaseTime);
     
     osc.connect(gain).connect(convolver);
     
     osc.start(startTime);
-    osc.stop(startTime + ATTACK + RELEASE + 0.2);
+    osc.stop(startTime + attackTime + sustainTime + releaseTime + 0.2);
     vibrato.start(startTime);
-    vibrato.stop(startTime + ATTACK + RELEASE + 0.2);
+    vibrato.stop(startTime + attackTime + sustainTime + releaseTime + 0.2);
     });
     }
     
