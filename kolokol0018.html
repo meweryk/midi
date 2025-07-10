@@ -88,6 +88,57 @@
       box-shadow: 0 0 8px rgba(255, 193, 7, 0.6) !important;
       transition: all 0.5s ease;
     }
+    
+    /* Новые стили для сохранённых наборов */
+    .saved-sets-container {
+      margin-top: 20px;
+      padding: 15px;
+      background-color: #f8f9fa;
+      border-radius: 5px;
+      border: 1px solid #dee2e6;
+    }
+    .saved-set-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 10px;
+      margin-bottom: 5px;
+      background-color: white;
+      border-radius: 4px;
+      border: 1px solid #dee2e6;
+      transition: all 0.3s ease;
+    }
+    .saved-set-item:hover {
+      background-color: #e9ecef;
+    }
+    .set-name {
+      cursor: pointer;
+      flex-grow: 1;
+    }
+    .set-name:hover {
+      text-decoration: underline;
+      color: #0d6efd;
+    }
+    .delete-set {
+      cursor: pointer;
+      color: #dc3545;
+      margin-left: 10px;
+    }
+    .sets-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+    .csv-buttons {
+      display: flex;
+      gap: 5px;
+    }
+    .hidden {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -106,7 +157,7 @@
       </div>
       <div class="mb-2">
       	<label class="form-label mb-1"><b>Основная частота (Гц):</b></label>
-      	<input type="number" class="form-control form-control-sm" id="freq" value="500">
+      	<input type="number" class="form-control form-control-sm" id="freq" value="174">
       </div>
       
       <div class="input-group-custom mb-2">
@@ -120,7 +171,7 @@
       	</div>
       	<div>
       		<label class="form-label mb-1"><small>Затухание (с)</small></label>
-      		<input type="number" class="form-control form-control-sm" id="release" value="5.5" min="0.001" step="0.1">
+      		<input type="number" class="form-control form-control-sm" id="release" value="3.5" min="0.001" step="0.1">
       	</div>
       </div>
 
@@ -154,6 +205,7 @@
         <button id="toggle" class="btn btn-success btn-sm">▶️ Старт</button>
         <button id="save" class="btn btn-outline-primary btn-sm">💾 Сохранить WAV</button>
         <button id="playSet" class="btn btn-primary btn-sm">🔔 Проиграть набор</button>
+        <button id="saveSetBtn" class="btn btn-outline-secondary btn-sm">💾 Сохранить набор</button>
       </div>
     </div>
 
@@ -411,6 +463,46 @@
     <p class="mb-0">© Автор</p>
     </div>
     
+    <!-- Контейнер для сохранённых наборов -->
+    <div class="saved-sets-container">
+      <div class="sets-header">
+        <h5>Сохранённые наборы частот</h5>
+        <div class="csv-buttons">
+          <button id="clearSets" class="btn btn-sm btn-outline-danger">Очистить все</button>
+          <button id="exportCSV" class="btn btn-sm btn-outline-success">Экспорт CSV</button>
+          <button id="importCSV" class="btn btn-sm btn-outline-info">Импорт CSV</button>
+        </div>
+      </div>
+      <div id="savedSetsList"></div>
+      <input type="file" id="csvFileInput" class="hidden" accept=".csv">
+    </div>
+    
+  </div>
+
+  <!-- Модальное окно для сохранения набора -->
+  <div class="modal fade" id="saveSetModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Сохранить набор частот</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="setNameInput" class="form-label">Название набора:</label>
+            <input type="text" class="form-control" id="setNameInput" placeholder="Введите название">
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Частоты:</label>
+            <div id="setFrequenciesPreview" class="form-control" style="height: auto; min-height: 38px;"></div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+          <button type="button" class="btn btn-primary" id="confirmSaveSet">Сохранить</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Bootstrap JS (необходим для некоторых компонентов) -->
@@ -460,8 +552,6 @@
     const cycleDelayInput = document.getElementById('cycleDelay');
 
     let audioCtx;
-    let gainNodes = [];
-    let oscillators = [];
     let analyser;
     let isPlaying = false;
     let isPlayingSet = false;
@@ -508,10 +598,13 @@
         // Получаем значения из полей ввода
         const attackTime = parseFloat(document.getElementById('attack').value) || 0.01;
         const sustainTime = parseFloat(document.getElementById('long').value) || 0;
-        const releaseTime = parseFloat(document.getElementById('release').value) || 5.5;
+        const releaseTime = parseFloat(document.getElementById('release').value) || 3.5;
         const totalDuration = attackTime + sustainTime + releaseTime;
 
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        // Создаем AudioContext при первом использовании
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
 
         const convolver = audioCtx.createConvolver();
         convolver.buffer = createImpulseResponse(audioCtx);
@@ -524,6 +617,10 @@
         convolver.connect(masterGain).connect(analyser).connect(audioCtx.destination);
 
         const now = audioCtx.currentTime;
+
+        // Массивы для текущих узлов
+        const currentOscillators = [];
+        const currentGainNodes = [];
 
         partials.forEach(p => {
           const osc = audioCtx.createOscillator();
@@ -555,12 +652,22 @@
           osc.start(now);
           osc.stop(now + attackTime + sustainTime + releaseTime + 0.2);
 
-          oscillators.push(osc, vibrato);
-          gainNodes.push(gain);
+          currentOscillators.push(osc, vibrato);
+          currentGainNodes.push(gain);
         });
 
         drawSpectrum();
-        setTimeout(() => resolve(), (attackTime + sustainTime + releaseTime + 0.2) * 1000);
+        setTimeout(() => {
+          // Очищаем узлы после завершения
+          currentOscillators.forEach(node => {
+            try {
+              node.stop();
+              node.disconnect();
+            } catch(e) {}
+          });
+          currentGainNodes.forEach(node => node.disconnect());
+          resolve();
+        }, (attackTime + sustainTime + releaseTime + 0.2) * 1000);
       });
     }
 
@@ -568,24 +675,18 @@
       const f0 = parseFloat(freqInput.value);
       const partials = parsePartials(partialsInput.value);
       if (isPlaying || isNaN(f0) || !partials.length) return;
-      startBell(f0, partials);
+      
       isPlaying = true;
       toggleBtn.textContent = '⏳ Звук...';
       toggleBtn.classList.remove('btn-success');
       toggleBtn.classList.add('btn-secondary');
       
-      // Получаем значения времени
-      const attackTime = parseFloat(document.getElementById('attack').value) || 0.01;
-      const sustainTime = parseFloat(document.getElementById('long').value) || 0;
-      const releaseTime = parseFloat(document.getElementById('release').value) || 5.5;
-      const totalDuration = (attackTime + sustainTime + releaseTime + 0.2) * 1000 + 300;
-      
-      setTimeout(() => {
+      startBell(f0, partials).then(() => {
         isPlaying = false;
         toggleBtn.textContent = '▶️ Старт';
         toggleBtn.classList.remove('btn-secondary');
         toggleBtn.classList.add('btn-success');
-      }, totalDuration);
+      });
     };
 
     playSetBtn.onclick = async () => {
@@ -602,10 +703,12 @@
       playSetBtn.classList.remove('btn-primary');
       playSetBtn.classList.add('btn-danger');
       
-      const freqs = setFreqsInput.value.split(',')
-        .map(v => parseFloat(v.trim()))
-        .filter(v => !isNaN(v));
-        
+      const freqs = setFreqsInput.value
+    	.split(/[,;]+/) // Разделение по запятым или точкам с запятой
+    	.map(v => parseFloat(v.trim())) // Преобразование в числа
+    	.filter(v => !isNaN(v)) // Удаление не-чисел
+    	.filter(v => v >= 80 && v <= 10000); // Фильтр диапазона
+      
       if (freqs.length === 0) {
         isPlayingSet = false;
         playSetBtn.textContent = '🔔 Проиграть набор';
@@ -851,6 +954,287 @@
         }
       });
     });
+    
+    // ======= ИСПРАВЛЕННЫЙ КОД ДЛЯ СОХРАНЕНИЯ НАБОРОВ =======
+    const SAVED_SETS_KEY = 'savedFrequencySets';
+    
+    // Функция для получения всех сохранённых наборов (исправлена)
+    function getSavedSets() {
+      const data = localStorage.getItem(SAVED_SETS_KEY);
+      if (!data) return {};
+      
+      try {
+        return JSON.parse(data);
+      } catch (e) {
+        console.error("Ошибка при чтении наборов:", e);
+        return {};
+      }
+    }
+    
+    // Функция для сохранения наборов в localStorage (исправлена)
+    function saveFrequencySet(name, frequencies) {
+      // Получаем текущие сохранённые наборы
+      const savedSets = getSavedSets();
+      
+      // Добавляем новый набор
+      savedSets[name] = frequencies;
+      
+      // Сохраняем обратно как JSON строку
+      localStorage.setItem(SAVED_SETS_KEY, JSON.stringify(savedSets));
+      
+      // Обновляем список на странице
+      renderSavedSets();
+    }
+    
+    // Функция для удаления набора по имени
+    function deleteFrequencySet(name) {
+      const savedSets = getSavedSets();
+      delete savedSets[name];
+      localStorage.setItem(SAVED_SETS_KEY, JSON.stringify(savedSets));
+      renderSavedSets();
+    }
+    
+    // Функция для очистки всех наборов
+    function clearAllSets() {
+      localStorage.removeItem(SAVED_SETS_KEY);
+      renderSavedSets();
+    }
+    
+    // Функция для отображения сохранённых наборов
+    function renderSavedSets() {
+      const savedSets = getSavedSets();
+      const container = document.getElementById('savedSetsList');
+      
+      // Очищаем контейнер
+      container.innerHTML = '';
+      
+      // Если наборов нет
+      const keys = Object.keys(savedSets);
+      if (keys.length === 0) {
+        container.innerHTML = '<div class="text-center py-3">Нет сохранённых наборов</div>';
+        return;
+      }
+      
+      // Сортируем названия по алфавиту
+      const sortedNames = keys.sort();
+      
+      // Создаём элементы для каждого набора
+      sortedNames.forEach(name => {
+        const frequencies = savedSets[name];
+        
+        const setElement = document.createElement('div');
+        setElement.className = 'saved-set-item';
+        
+        const nameElement = document.createElement('div');
+        nameElement.className = 'set-name';
+        nameElement.textContent = name;
+        nameElement.title = frequencies.join(', ');
+        
+        // Обработчик клика для добавления частот в поле ввода
+        nameElement.addEventListener('click', () => {
+          setFreqsInput.value = frequencies.join(', ');
+          
+          // Подсвечиваем поле ввода
+          setFreqsInput.classList.add('highlight');
+          setTimeout(() => {
+            setFreqsInput.classList.remove('highlight');
+          }, 1000);
+        });
+        
+        const deleteElement = document.createElement('span');
+        deleteElement.className = 'delete-set';
+        deleteElement.innerHTML = '❌';
+        deleteElement.title = 'Удалить набор';
+        
+        // Обработчик удаления набора
+        deleteElement.addEventListener('click', (e) => {
+          e.stopPropagation(); // Предотвращаем срабатывание клика по названию
+          if (confirm(`Удалить набор "${name}"?`)) {
+            deleteFrequencySet(name);
+          }
+        });
+        
+        setElement.appendChild(nameElement);
+        setElement.appendChild(deleteElement);
+        container.appendChild(setElement);
+      });
+    }
+    
+    // ======= НОВЫЙ КОД ДЛЯ РАБОТЫ С CSV =======
+    
+    // Экспорт наборов в CSV
+    function exportToCSV() {
+      const savedSets = getSavedSets();
+      if (Object.keys(savedSets).length === 0) {
+        alert("Нет наборов для экспорта");
+        return;
+      }
+      
+      // Создаем CSV содержимое
+      let csvContent = "Название,Частоты\n";
+      
+      for (const [name, frequencies] of Object.entries(savedSets)) {
+        // Экранируем названия с запятыми
+        const escapedName = name.includes(',') ? `"${name}"` : name;
+        csvContent += `${escapedName},${frequencies.join(',')}\n`;
+      }
+      
+      // Создаем Blob и скачиваем
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'frequency_sets.csv';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => {
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }, 100);
+    }
+    
+    // Импорт наборов из CSV
+    function importFromCSV(file) {
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const content = e.target.result;
+          const lines = content.split('\n').slice(1); // Пропускаем заголовок
+          const savedSets = getSavedSets();
+          let importedCount = 0;
+          
+          for (const line of lines) {
+            if (!line.trim()) continue;
+            
+            // Обрабатываем строки с экранированными запятыми
+            let parts = [];
+            let inQuotes = false;
+            let current = '';
+            
+            for (let i = 0; i < line.length; i++) {
+              const char = line[i];
+              
+              if (char === '"') {
+                inQuotes = !inQuotes;
+              } else if (char === ',' && !inQuotes) {
+                parts.push(current);
+                current = '';
+              } else {
+                current += char;
+              }
+            }
+            parts.push(current);
+            
+            if (parts.length < 2) continue;
+            
+            const name = parts[0].trim();
+            const frequencies = parts.slice(1)
+              .map(v => parseFloat(v.trim()))
+              .filter(v => !isNaN(v))
+              .filter(v => v >= 80 && v <= 10000);
+            
+            if (name && frequencies.length > 0) {
+              savedSets[name] = frequencies;
+              importedCount++;
+            }
+          }
+          
+          if (importedCount > 0) {
+            localStorage.setItem(SAVED_SETS_KEY, JSON.stringify(savedSets));
+            renderSavedSets();
+            alert(`Успешно импортировано наборов: ${importedCount}`);
+          } else {
+            alert("Не удалось импортировать ни одного набора");
+          }
+        } catch (error) {
+          console.error("Ошибка при импорте CSV:", error);
+          alert("Ошибка при импорте файла: " + error.message);
+        }
+      };
+      
+      reader.readAsText(file);
+    }
+    
+    // ======= ОБРАБОТЧИКИ СОБЫТИЙ =======
+    
+    // Обработчик клика по кнопке сохранения набора
+    document.getElementById('saveSetBtn').addEventListener('click', () => {
+      // Получаем текущие частоты
+      const freqs = setFreqsInput.value
+        .split(/[,;]+/) 
+        .map(v => parseFloat(v.trim()))
+        .filter(v => !isNaN(v))
+        .filter(v => v >= 80 && v <= 10000);
+      
+      if (freqs.length === 0) {
+        alert('Добавьте частоты для сохранения набора');
+        return;
+      }
+      
+      // Показываем предпросмотр частот
+      document.getElementById('setFrequenciesPreview').textContent = freqs.join(', ');
+      
+      // Сбрасываем поле ввода названия
+      document.getElementById('setNameInput').value = '';
+      
+      // Показываем модальное окно
+      const modal = new bootstrap.Modal(document.getElementById('saveSetModal'));
+      modal.show();
+    });
+    
+    // Обработчик подтверждения сохранения в модальном окне (исправлен)
+    document.getElementById('confirmSaveSet').addEventListener('click', () => {
+      const name = document.getElementById('setNameInput').value.trim();
+      const freqsText = document.getElementById('setFrequenciesPreview').textContent;
+      
+      if (!name) {
+        alert('Введите название для набора');
+        return;
+      }
+      
+      // Правильно парсим частоты из preview
+      const freqs = freqsText.split(',')
+        .map(v => parseFloat(v.trim()))
+        .filter(v => !isNaN(v));
+      
+      saveFrequencySet(name, freqs);
+      
+      // Закрываем модальное окно
+      const modal = bootstrap.Modal.getInstance(document.getElementById('saveSetModal'));
+      modal.hide();
+      
+      alert(`Набор "${name}" успешно сохранён!`);
+    });
+    
+    // Обработчик очистки всех наборов
+    document.getElementById('clearSets').addEventListener('click', () => {
+      if (confirm('Вы уверены, что хотите удалить все сохранённые наборы?')) {
+        clearAllSets();
+      }
+    });
+    
+    // Обработчик экспорта в CSV
+    document.getElementById('exportCSV').addEventListener('click', exportToCSV);
+    
+    // Обработчик импорта из CSV
+    document.getElementById('importCSV').addEventListener('click', () => {
+      document.getElementById('csvFileInput').click();
+    });
+    
+    // Обработчик выбора файла для импорта
+    document.getElementById('csvFileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        if (confirm("Импортировать наборы из CSV? Существующие наборы с такими же именами будут перезаписаны.")) {
+          importFromCSV(file);
+        }
+      }
+      // Сбрасываем значение, чтобы можно было загрузить тот же файл снова
+      e.target.value = '';
+    });
+    
+    // Инициализируем список наборов при загрузке
+    document.addEventListener('DOMContentLoaded', renderSavedSets);
   </script>
 </body>
 </html>
