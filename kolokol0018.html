@@ -6,6 +6,8 @@
   <title>Колокольный звук + визуализация</title>
   <!-- Bootstrap 5 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
   <style>
     body {
       padding: 5px;
@@ -139,6 +141,127 @@
     .hidden {
       display: none;
     }
+    
+    
+    .container {
+    max-width: 800px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+    }
+    .header {
+    text-align: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    background: #fff;
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    border: 1px solid #eee;
+    }
+    .frequencies-list {
+    background: #fff;
+    padding: 10px;
+    border-radius: 10px;
+    margin-bottom: 10px;
+    text-align: center;
+    font-size: 0.9rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    border: 1px solid #eee;
+    }
+    .accordion {
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .accordion-item {
+    background: #fff;
+    border: 1px solid #eee;
+    margin-bottom: 8px;
+    border-radius: 8px !important;
+    transition: all 0.2s ease;
+    }
+    .accordion-button {
+    background: #9fc3;  
+    color: #333;
+    font-weight: 600;
+    font-size: 0.9rem;
+    padding: 9px 12px;
+    border-radius: 8px !important;
+    box-shadow: none !important;
+    }
+    .accordion-button:not(.collapsed) {
+    background: #9fc3f;
+    color: #333;
+    box-shadow: none;
+    }
+    .accordion-button:focus {
+    box-shadow: none;
+    }
+    .accordion-button::after {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23333'%3e%3cpath fill-rule='evenodd' d='M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z'/%3e%3c/svg%3e");
+    background-size: 0.9rem;
+    }
+    .accordion-body {
+    background: #9fc1;
+    padding: 10px;
+    border-top: 1px solid #eee;
+    color: #444;
+    font-size: 0.85rem;
+    }
+    .chakra-info {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 10px;
+    }
+    .chakra-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 12px;
+    font-size: 1rem;
+    flex-shrink: 0;
+    background: #f0f0f0;
+    color: #555;
+    }
+    .frequency-badge {
+    background: #e9ecef;
+    padding: 3px 10px;
+    border-radius: 15px;
+    font-weight: bold;
+    margin-right: 8px;
+    font-size: 0.9rem;
+    color: #495057;
+    }
+    .footer {
+    text-align: center;
+    margin-top: 15px;
+    font-size: 0.85rem;
+    color: #6c757d;
+    }
+    h1 {
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: #333;
+    }
+    .subtitle {
+    color: #6c757d;
+    font-size: 0.95rem;
+    }
+    .badge {
+    font-weight: 500;
+    padding: 5px 10px;
+    margin: 0 4px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    }
+    .accordion-button:not(.collapsed) .chakra-icon {
+    background-color: #e9ecef;
+    }
+    .accordion-button:not(.collapsed) .frequency-badge {
+    background-color: #dee2e6;
+    }
   </style>
 </head>
 <body>
@@ -238,26 +361,30 @@
       </ul>
       
       <p class="info-text"><b>По частотам</b> - на сайте <a href="https://www.planetware.de/octave/" target="_blank">Planetware</a> приведён список частот планет нашей солнечной системы - это периоды обращения октавно увеличенные до звуковаго диапазона.<br>
-      Этот список содержит частоты в герцах:</p> 
-      <ul>
-      	<li>Планеты: 126.22, 141.27, 221.23, 144.72, 194.18, 210.42, 136.10, 183.58, 147.85, 207.36, 140.64, 211.44, 172.06</li>
-   		<li>Частоты сольфеджио: 174, 285, 396, 417, 528, 639, 741, 852, 963.</li>
+      Этот список содержит частоты в герцах:</p>
+      <p><i class="fas fa-wave-square me-2"></i>Планеты: 
+      	126.22, 141.27, 221.23, 144.72, 194.18, 210.42, 136.10, 183.58, 147.85, 207.36, 140.64, 211.44, 172.06 Гц
+      </p>
+
     </div>
     
     <div class="container">
     <div class="header">
-    <h5><i class="fas fa-music me-2"></i>Частоты Чакр Вознесения</h5>
+    <h1><i class="fas fa-music me-2"></i>Частоты Чакр Вознесения</h1>
     <p class="subtitle">Целительные вибрации для гармонизации энергии</p>
+    <p><i class="fas fa-wave-square me-2"></i>Частоты: 
+    174, 285, 396, 417, 528, 639, 741, 852, 963 Гц
+    </p>
     </div>
     
     <div class="accordion" id="chakrasAccordion">
     <!-- Нулевая чакра -->
     <div class="accordion-item">
-    <h5 class="accordion-header" id="headingOne">
+    <h2 class="accordion-header" id="headingOne">
     <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-    <span class="frequency-badge">174 Гц - Нулевая чакра</span> 
+    <span class="frequency-badge">174 Гц</span> Нулевая чакра
     </button>
-    </h5>
+    </h2>
     <div id="collapseOne" class="accordion-collapse collapse show" aria-labelledby="headingOne" data-bs-parent="#chakrasAccordion">
     <div class="accordion-body">
     <div class="chakra-info">
@@ -275,11 +402,11 @@
     
     <!-- Муладхара -->
     <div class="accordion-item">
-    <h5 class="accordion-header" id="headingTwo">
+    <h2 class="accordion-header" id="headingTwo">
     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseTwo" aria-expanded="false" aria-controls="collapseTwo">
-    <span class="frequency-badge">285 Гц - Муладхара</span> 
+    <span class="frequency-badge">285 Гц</span> Муладхара
     </button>
-    </h5>
+    </h2>
     <div id="collapseTwo" class="accordion-collapse collapse" aria-labelledby="headingTwo" data-bs-parent="#chakrasAccordion">
     <div class="accordion-body">
     <div class="chakra-info">
@@ -297,11 +424,11 @@
     
     <!-- Свадхистана -->
     <div class="accordion-item">
-    <h5 class="accordion-header" id="headingThree">
+    <h2 class="accordion-header" id="headingThree">
     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseThree" aria-expanded="false" aria-controls="collapseThree">
-    <span class="frequency-badge">396 Гц - Свадхистана</span> 
+    <span class="frequency-badge">396 Гц</span> Свадхистана
     </button>
-    </h5>
+    </h2>
     <div id="collapseThree" class="accordion-collapse collapse" aria-labelledby="headingThree" data-bs-parent="#chakrasAccordion">
     <div class="accordion-body">
     <div class="chakra-info">
@@ -319,11 +446,11 @@
     
     <!-- Манипура -->
     <div class="accordion-item">
-    <h5 class="accordion-header " id="headingFour">
+    <h2 class="accordion-header" id="headingFour">
     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFour" aria-expanded="false" aria-controls="collapseFour">
-    <span class="frequency-badge">417 Гц - Манипура</span> 
+    <span class="frequency-badge">417 Гц</span> Манипура
     </button>
-    </h5>
+    </h2>
     <div id="collapseFour" class="accordion-collapse collapse" aria-labelledby="headingFour" data-bs-parent="#chakrasAccordion">
     <div class="accordion-body">
     <div class="chakra-info">
@@ -341,11 +468,11 @@
     
     <!-- Анахата -->
     <div class="accordion-item">
-    <h5 class="accordion-header" id="headingFive">
+    <h2 class="accordion-header" id="headingFive">
     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseFive" aria-expanded="false" aria-controls="collapseFive">
-    <span class="frequency-badge">528 Гц - Анахата</span> 
+    <span class="frequency-badge">528 Гц</span> Анахата
     </button>
-    </h5>
+    </h2>
     <div id="collapseFive" class="accordion-collapse collapse" aria-labelledby="headingFive" data-bs-parent="#chakrasAccordion">
     <div class="accordion-body">
     <div class="chakra-info">
@@ -363,11 +490,11 @@
     
     <!-- Вишуддха -->
     <div class="accordion-item">
-    <h5 class="accordion-header" id="headingSix">
+    <h2 class="accordion-header" id="headingSix">
     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSix" aria-expanded="false" aria-controls="collapseSix">
-    <span class="frequency-badge">639 Гц - Вишуддха</span> 
+    <span class="frequency-badge">639 Гц</span> Вишуддха
     </button>
-    </h5>
+    </h2>
     <div id="collapseSix" class="accordion-collapse collapse" aria-labelledby="headingSix" data-bs-parent="#chakrasAccordion">
     <div class="accordion-body">
     <div class="chakra-info">
@@ -385,11 +512,11 @@
     
     <!-- Аджна -->
     <div class="accordion-item">
-    <h5 class="accordion-header" id="headingSeven">
+    <h2 class="accordion-header" id="headingSeven">
     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseSeven" aria-expanded="false" aria-controls="collapseSeven">
-    <span class="frequency-badge">741 Гц - Аджна</span> 
+    <span class="frequency-badge">741 Гц</span> Аджна
     </button>
-    </h5>
+    </h2>
     <div id="collapseSeven" class="accordion-collapse collapse" aria-labelledby="headingSeven" data-bs-parent="#chakrasAccordion">
     <div class="accordion-body">
     <div class="chakra-info">
@@ -407,11 +534,11 @@
     
     <!-- Сахасрара -->
     <div class="accordion-item">
-    <h5 class="accordion-header" id="headingEight">
+    <h2 class="accordion-header" id="headingEight">
     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseEight" aria-expanded="false" aria-controls="collapseEight">
-    <span class="frequency-badge">852 Гц - Сахасрара</span> 
+    <span class="frequency-badge">852 Гц</span> Сахасрара
     </button>
-    </h5>
+    </h2>
     <div id="collapseEight" class="accordion-collapse collapse" aria-labelledby="headingEight" data-bs-parent="#chakrasAccordion">
     <div class="accordion-body">
     <div class="chakra-info">
@@ -429,11 +556,11 @@
     
     <!-- Надкоронная -->
     <div class="accordion-item">
-    <h5 class="accordion-header" id="headingNine">
+    <h2 class="accordion-header" id="headingNine">
     <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseNine" aria-expanded="false" aria-controls="collapseNine">
-    <span class="frequency-badge">963 Гц - Надкоронная</span>  чакра
+    <span class="frequency-badge">963 Гц</span> Надкоронная чакра
     </button>
-    </h5>
+    </h2>
     <div id="collapseNine" class="accordion-collapse collapse" aria-labelledby="headingNine" data-bs-parent="#chakrasAccordion">
     <div class="accordion-body">
     <div class="chakra-info">
@@ -450,18 +577,16 @@
     </div>
     </div>
     
-    <div class="footer text-center">
+    <div class="footer">
     <p>Для достижения оптимального эффекта рекомендуется прослушивание частот в наушниках по 15-30 минут в день</p>
     </div>
     </div>
-    
-    
-    
+            
     <!-- Контейнер для сохранённых наборов -->
     <div class="saved-sets-container">
       <div class="sets-header">
         <h5>Сохранённые наборы частот</h5>
-        <div class="csv-buttons">
+        <div class="csv-buttons btn-group-custom mb-2">       
           <button id="clearSets" class="btn btn-sm btn-outline-danger">Очистить все</button>
           <button id="exportCSV" class="btn btn-sm btn-outline-success">Экспорт CSV</button>
           <button id="importCSV" class="btn btn-sm btn-outline-info">Импорт CSV</button>
@@ -473,7 +598,7 @@
     
     <div class="text-center mb-2">
     <a href="http://www.mif-ua.com/m/archive/article/51055" target="_blank">Про колокола</a><br>
-    <a href="https://meweryk.github.io/Wave-of-land/index.html" target="_blank">Ещё проекты</a>
+    <a href="https://meweryk.github.io/Wave-of-land/index.html" target="_blank">Другие проекты</a>
     </div>
     <div class="text-center">
     <p class="mb-0">© Автор</p>
@@ -511,6 +636,12 @@
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   	
   <script>
+    // Константы ограничений
+    const MAX_FREQUENCIES = 100; // Максимальное количество частот в наборе
+    const MAX_PARTIALS = 15;     // Максимальное количество обертонов
+    const MAX_REPEATS = 20;      // Максимальное количество повторов
+    const MAX_DURATION = 600;   // Максимальная длительность файла в секундах (10 минут)
+
     const instrumentPresets = {
       bell: '1:0.4, 2:1.0, 2.4:0.6, 3:0.3, 4:0.2, 6:0.1, 8:0.05',
       bowl: '0.6:0.4, 1:1.1, 2.03:0.3, 2.87:0.25, 5.37:0.1, 8.57:0.08, 11.95:0.05, 21.24:0.02',
@@ -624,7 +755,13 @@
         const currentOscillators = [];
         const currentGainNodes = [];
 
-        partials.forEach(p => {
+        // Ограничиваем количество обертонов
+        const limitedPartials = partials.slice(0, MAX_PARTIALS);
+        if (partials.length > MAX_PARTIALS) {
+            console.warn(`Используются первые ${MAX_PARTIALS} обертонов из ${partials.length}`);
+        }
+
+        limitedPartials.forEach(p => {
           const osc = audioCtx.createOscillator();
           const gain = audioCtx.createGain();
 
@@ -705,7 +842,7 @@
       playSetBtn.classList.remove('btn-primary');
       playSetBtn.classList.add('btn-danger');
       
-      const freqs = setFreqsInput.value
+      let freqs = setFreqsInput.value
     	.split(/[,;]+/) // Разделение по запятым или точкам с запятой
     	.map(v => parseFloat(v.trim())) // Преобразование в числа
     	.filter(v => !isNaN(v)) // Удаление не-чисел
@@ -717,6 +854,12 @@
         playSetBtn.classList.remove('btn-danger');
         playSetBtn.classList.add('btn-primary');
         return;
+      }
+      
+      // Проверка количества частот
+      if (freqs.length > MAX_FREQUENCIES) {
+          alert(`Слишком много частот! Максимум: ${MAX_FREQUENCIES}. Будут использованы первые ${MAX_FREQUENCIES}.`);
+          freqs = freqs.slice(0, MAX_FREQUENCIES);
       }
       
       const partials = parsePartials(partialsInput.value);
@@ -811,7 +954,7 @@
     }
     
     saveBtn.onclick = async () => {
-    const freqs = setFreqsInput.value.split(',')
+    let freqs = setFreqsInput.value.split(',')
     .map(v => parseFloat(v.trim()))
     .filter(v => !isNaN(v));
     
@@ -820,11 +963,23 @@
     return;
     }
     
+    // Проверка количества частот
+    if (freqs.length > MAX_FREQUENCIES) {
+        alert(`Превышено максимальное количество частот: ${MAX_FREQUENCIES}`);
+        return;
+    }
+    
     const repeats = prompt("Введите количество повторов набора частот:", "1");
     if (!repeats || isNaN(repeats) || parseInt(repeats) <= 0) {
     return;
     }
     const repeatCount = parseInt(repeats);
+    
+    // Проверка количества повторов
+    if (repeatCount > MAX_REPEATS) {
+        alert(`Превышено максимальное количество повторов: ${MAX_REPEATS}`);
+        return;
+    }
     
     let filenamePrefix = "";
     switch (instrumentSelect.value) {
@@ -859,6 +1014,14 @@
     (freqs.length - 1) * hitDelayInSeconds + 
     cycleDelayInSeconds;
     const totalDuration = cycleDuration * repeatCount;
+    
+    // Проверка длительности
+    if (totalDuration > MAX_DURATION) {
+        alert(`Превышена максимальная длительность (${MAX_DURATION} сек). Уменьшите количество частот или повторов.`);
+        return;
+    } else {
+    	alert(`Длительность ${totalDuration} сек. Генерация файла займёт некоторое время.`);
+    }
     
     const sampleRate = 44100;
     const offlineCtx = new OfflineAudioContext(2, totalDuration * sampleRate, sampleRate);
@@ -897,7 +1060,13 @@
     const sustainTime = parseFloat(document.getElementById('long').value) || 0;
     const releaseTime = parseFloat(document.getElementById('release').value) || 5.5;
     
-    partials.forEach(p => {
+    // Ограничиваем количество обертонов
+    const limitedPartials = partials.slice(0, MAX_PARTIALS);
+    if (partials.length > MAX_PARTIALS) {
+        console.warn(`Используются первые ${MAX_PARTIALS} обертонов из ${partials.length}`);
+    }
+    
+    limitedPartials.forEach(p => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     
