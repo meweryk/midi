@@ -857,10 +857,10 @@
       }
       
       // Проверка количества частот
-      if (freqs.length > MAX_FREQUENCIES) {
+      /*if (freqs.length > MAX_FREQUENCIES) {
           alert(`Слишком много частот! Максимум: ${MAX_FREQUENCIES}. Будут использованы первые ${MAX_FREQUENCIES}.`);
           freqs = freqs.slice(0, MAX_FREQUENCIES);
-      }
+      }*/
       
       const partials = parsePartials(partialsInput.value);
       if (partials.length === 0) {
