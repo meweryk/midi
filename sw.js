@@ -1,4 +1,4 @@
-const CACHE_NAME = 'midi-bells-v1';
+const CACHE_NAME = 'midi-bells-v2';
 const DYNAMIC_CACHE = 'dynamic-cache-v2';
 const urlsToCache = [
   '/midi/',
