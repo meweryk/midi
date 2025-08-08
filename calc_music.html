@@ -460,7 +460,7 @@
                     </p>
                     <p>В примере введены действительные частоты планет Солнечной системы (в центре Солнце и далее до Плутон), октавно увеличенные до звукового диапазона. Визуализация орбит масштабирована до размеров экрана<br>
                     </p>
-                    <p>Звук каждой точки-частоты начинается с нулевой фазы и пол периода возрастает, а половину убывает по синусоиде, что создаёт по отношению к соседним точкам частотную и амплитудную модуляцию.
+                    <p>Звук каждой точки-частоты начинается с нулевой фазы и пол период возрастает, а половину убывает по синусоиде, что создаёт по отношению к соседним точкам частотную и амплитудную модуляцию.
                     </p>
                 </div>
             </div>
@@ -1077,19 +1077,75 @@
             	playBtn.textContent = isPlaying ? '■ Стоп' : '▶ Ра';
             }
             
+            // Функция интеллектуального расчета громкости
+            function calculateDynamicVolume(numPoints) {
+            	const MIN_MASTER = 0.1;   // Минимальная общая громкость
+            	const MAX_MASTER = 0.8;   // Максимальная общая громкость
+            	const BASE = 1.5;         // Коэффициент уменьшения
+            
+            	// Логарифмическое уменьшение громкости
+            	const master = Math.max(MIN_MASTER, MAX_MASTER / Math.log(numPoints + BASE));
+            
+            	// Компенсация для каждого канала
+            	const perChannel = 0.5 * Math.min(1, 2 / numPoints);
+            
+            	return {
+            		master,
+            		perChannel
+            	};
+            }
+            
             function startAudio() {
             	if (!audioContext) return;
             
             	stopAudio();
             	activeCountEl.textContent = visualPoints.length;
             
+            	// Цепочка эффектов компрессора
+            	const compressor = audioContext.createDynamicsCompressor();
+            	compressor.threshold.value = -20;
+            	compressor.knee.value = 10;
+            	compressor.ratio.value = 12;
+            	compressor.attack.value = 0.01;
+            	compressor.release.value = 0.25;
+            	compressor.connect(audioContext.destination);
+            
+            	const volumeControl = calculateDynamicVolume(visualPoints.length);
+            	const masterGain = audioContext.createGain();
+            	masterGain.gain.value = volumeControl.master;
+            	masterGain.connect(compressor);
+            
+            	// Создаем ChannelMerger для стерео выхода
+            	const merger = audioContext.createChannelMerger(2);
+            	merger.connect(compressor);
+            	//merger.connect(audioContext.destination);
+            
+            	// Создаем общий гейн для управления громкостью
+            	//const masterGain = audioContext.createGain();
+            	//masterGain.connect(audioContext.destination);
+            
             	visualPoints.forEach(point => {
-            		const osc = audioContext.createOscillator();
-            		const gain = audioContext.createGain();
+            
+            		// Создаем два осциллятора для левого и правого каналов
+            		const oscLeft = audioContext.createOscillator();
+            		const oscRight = audioContext.createOscillator();
+            
+            		// Устанавливаем одинаковый тип для обоих каналов
+            		oscLeft.type = 'sine';
+            		oscRight.type = 'sine';
+            
+            		// Устанавливаем частоту
+            		oscLeft.frequency.value = point.inputFreq;
+            		oscRight.frequency.value = point.inputFreq;
+            
+            		// Создаем гейны для каждого канала
+            		const gainLeft = audioContext.createGain();
+            		const gainRight = audioContext.createGain();
+            
+            		// Создаем LFO для модуляции амплитуды
             		const lfo = audioContext.createOscillator();
             		const lfoGain = audioContext.createGain();
             		const constantOffset = audioContext.createConstantSource();
-            		const masterGain = audioContext.createGain();
             
             		// Настройка LFO
             		lfo.frequency.value = 1 / point.period;
@@ -1102,43 +1158,53 @@
             		// Настройка постоянного смещения
             		constantOffset.offset.value = 0.5;
             
-                	// Подключение LFO и смещения к gain-узлу
+            		// Подключение LFO и смещения к гейнам
             		lfo.connect(lfoGain);
-            		lfoGain.connect(gain.gain);
-        		    constantOffset.connect(gain.gain);
+            		lfoGain.connect(gainLeft.gain);
+            		lfoGain.connect(gainRight.gain);
+            		constantOffset.connect(gainLeft.gain);
+            		constantOffset.connect(gainRight.gain);
             
-         		    // Основная цепочка аудио
-         		    osc.connect(gain);
-        		    gain.connect(masterGain);
-       		   	    masterGain.connect(audioContext.destination);
+            		// Подключение осцилляторов к гейнам
+            		oscLeft.connect(gainLeft);
+            		oscRight.connect(gainRight);
             
-            		// Настройки основного осциллятора
-            		osc.frequency.value = point.inputFreq;
-            		osc.type = 'sine';
-            		
-            		//Устанавливаем начальную фазу через смещение
+            		// Подключение гейнов к merger (левый - канал 0, правый - канал 1)
+            		gainLeft.connect(merger, 0, 0);
+            		gainRight.connect(merger, 0, 1);
+            
+            		// Устанавливаем начальное значение гейна
             		const initialValue = 0.5 - 0.5 * Math.cos(point.angle);
-            		gain.gain.setValueAtTime(initialValue, audioContext.currentTime);
+            		gainLeft.gain.setValueAtTime(initialValue, audioContext.currentTime);
+            		gainRight.gain.setValueAtTime(initialValue, audioContext.currentTime);
             
-            		// Плавное появление звука
-            		masterGain.gain.setValueAtTime(0, audioContext.currentTime);
-            		masterGain.gain.linearRampToValueAtTime(
-            			0.5 / visualPoints.length, 
-            			audioContext.currentTime + 0.5
-            		);
+            		// Фазовый сдвиг 90° для правого канала
+            		// Запускаем правый канал с задержкой в 1/4 периода
+            		const startTime = audioContext.currentTime;
+            		const period = 1 / point.inputFreq;
+            		oscLeft.start(startTime);
+            		oscRight.start(startTime + 0.25 * period);
             
-            		// Запуск всех компонентов
-            		constantOffset.start();
-            		lfo.start();
-            		osc.start();
+            		// Запускаем остальные компоненты
+            		constantOffset.start(startTime);
+            		lfo.start(startTime);
             
+            		console.log(`Freq: ${point.inputFreq}Hz, 
+            			Period: ${period.toFixed(6)}s, 
+            			Shift: ${(0.25*period).toFixed(6)}s,
+            			Angle: ${point.angle}`);
+            
+            		// Сохраняем узлы для управления
             		oscillators.push({ 
-            			osc, 
-            			gain, 
-            			masterGain,
+            			oscLeft, 
+            			oscRight, 
+            			gainLeft, 
+            			gainRight,
             			lfo, 
             			lfoGain, 
-            			constantOffset 
+            			constantOffset,
+            			merger,
+            			masterGain
             		});
             	});
             }
@@ -1146,15 +1212,23 @@
             function stopAudio() {
             oscillators.forEach(osc => {
             // Плавное затухание через masterGain
-            osc.masterGain.gain.exponentialRampToValueAtTime(
-            0.001, 
-            audioContext.currentTime + 0.5
-            );
+            if (osc.masterGain) {
+                osc.masterGain.gain.exponentialRampToValueAtTime(
+                    0.001, 
+                    audioContext.currentTime + 0.5
+                );
+            }
             
             setTimeout(() => {
-            osc.osc.stop();
-            osc.lfo.stop();
-            osc.constantOffset.stop();
+                if (osc.oscLeft) osc.oscLeft.stop();
+                if (osc.oscRight) osc.oscRight.stop();
+                if (osc.lfo) osc.lfo.stop();
+                if (osc.constantOffset) osc.constantOffset.stop();
+                // Отключаем все узлы
+                if (osc.gainLeft) osc.gainLeft.disconnect();
+                if (osc.gainRight) osc.gainRight.disconnect();
+                if (osc.merger) osc.merger.disconnect();
+                if (osc.masterGain) osc.masterGain.disconnect();
             }, 500);
             });
             
