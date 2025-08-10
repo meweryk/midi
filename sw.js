@@ -1,8 +1,9 @@
-const CACHE_NAME = 'midi-bells-v2';
-const DYNAMIC_CACHE = 'dynamic-cache-v2';
+const CACHE_NAME = 'midi-bells-v3';
+const DYNAMIC_CACHE = 'dynamic-cache-v3';
 const urlsToCache = [
   '/midi/',
   '/midi/index.html',
+  '/midi/processorG.html',
   '/midi/kolokol0018.html',
   '/midi/calc_music.html',
   '/midi/icon-192.png',
