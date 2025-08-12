@@ -1,5 +1,5 @@
-const CACHE_NAME = 'midi-bells-v6';
-const DYNAMIC_CACHE = 'dynamic-cache-v6';
+const CACHE_NAME = 'midi-bells-v7';
+const DYNAMIC_CACHE = 'dynamic-cache-v7';
 const FALLBACK_HTML = '/midi/index.html';
 const FALLBACK_IMAGE = '/midi/icon-192.png';
 
@@ -23,6 +23,7 @@ const urlsToCache = [
   // Внешние зависимости
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
+  'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
    
   // Аудиоресурсы (пример)
   //'/midi/audio/bell.mp3'
