@@ -1,5 +1,5 @@
-const CACHE_NAME = 'midi-bells-v5';
-const DYNAMIC_CACHE = 'dynamic-cache-v5';
+const CACHE_NAME = 'midi-bells-v6';
+const DYNAMIC_CACHE = 'dynamic-cache-v6';
 const FALLBACK_HTML = '/midi/index.html';
 const FALLBACK_IMAGE = '/midi/icon-192.png';
 
@@ -18,7 +18,7 @@ const urlsToCache = [
   
   // Скрипты и стили (добавьте ваши реальные пути)
   //'/midi/main.js',
-  /)'/midi/styles.css',
+  //'/midi/styles.css',
   
   // Внешние зависимости
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
