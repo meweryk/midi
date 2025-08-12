@@ -454,6 +454,91 @@
             font-size: 14px;
         }
         
+        /* Стили для плейлиста */
+        .playlist {
+            margin-top: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            display: none;
+        }
+        
+        .playlist-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .playlist-title {
+            font-size: 16px;
+            color: #6a9eff;
+        }
+        
+        .clear-playlist {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .playlist-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .playlist-item:hover {
+            background: rgba(106, 158, 255, 0.1);
+        }
+        
+        .playlist-item.active {
+            background: rgba(106, 158, 255, 0.2);
+            border-left: 3px solid #6a9eff;
+        }
+        
+        .playlist-item-info {
+            flex: 1;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+        
+        .playlist-item-name {
+            font-size: 14px;
+        }
+        
+        .playlist-item-size {
+            font-size: 12px;
+            color: #a0a0b0;
+        }
+        
+        .playlist-item-status {
+            margin-left: 10px;
+            font-size: 12px;
+            color: #6a9eff;
+        }
+        
+        .remove-btn {
+            background: none;
+            border: none;
+            color: #ff6b6b;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        
         @media (max-width: 600px) {
             .container {
                 padding: 20px 15px;
@@ -487,9 +572,9 @@
         
         <div class="upload-area" id="uploadArea">
             <i>🎵</i>
-            <h3>Перетащите или выберите аудиофайл</h3>
+            <h3>Перетащите или выберите аудиофайлы</h3>
             <p>Поддерживаются MP3 и WAV файлы</p>
-            <input type="file" id="fileInput" accept="audio/*" style="display:none">
+            <input type="file" id="fileInput" accept="audio/*" style="display:none" multiple>
         </div>
                
         <div class="player-controls" id="playControl"></div>
@@ -528,8 +613,15 @@
             <canvas id="canvas"></canvas>
         </div>
         
-        <div class="file-info" id="fileInfo">
-            <!-- Информация о файле будет добавлена здесь -->
+        <!-- Плейлист -->
+        <div class="playlist" id="playlist">
+            <div class="playlist-header">
+                <div class="playlist-title">Плейлист</div>
+                <button class="clear-playlist" id="clearPlaylist">
+                    <i class="fas fa-trash"></i> Очистить
+                </button>
+            </div>
+            <div id="playlistItems"></div>
         </div>
         
         <!-- Модальное окно настроек -->
@@ -546,7 +638,7 @@
                     <div class="setting-item">
                         <div class="setting-label">
                             <span>Минимальная частота (Гц)</span>
-                            <span class="setting-value" id="minFreqValue">100</span>
+                            <span class="setting-value" id="minFreqValue">50</span>
                         </div>
                         <div class="setting-control">
                             <input type="range" id="minFreqSlider" min="50" max="300" step="10" value="100">
@@ -663,128 +755,128 @@
         
         <!-- Модальное окно информации -->
         <div class="modal" id="infoModal">
-        <div class="modal-content">
-        <button class="close-modal" id="closeInfo">
-        <i class="fas fa-times"></i>
-        </button>
-        <h2 class="modal-title">Аудио Фазовращатель: принцип работы и настройка</h2>
-        
-        <div class="info-content">
-        <div class="info-section">
-        <h3 class="section-title">О фазовом вращении</h3>
-        <div class="description">
-        <p>Фазовое вращение на 90° между каналами - мощный аудиоэффект, создающий объёмный звук и глубину. Метод основан на преобразовании, сдвигающем фазу сигнала при сохранении амплитуды.</p>
-        <p>В акустике фазовый сдвиг создаёт "вихревые резонансы", когда звук кажется исходящим из разных точек пространства. Это происходит за счёт интерференционных картин, усиливающих или ослабляющих определённые частоты.</p>
-        </div>
-        </div>
-        
-        <div class="info-section">
-        <h3 class="section-title">Настройка параметров</h3>
-        
-        <div class="param-list">
-        <div class="param-item">
-        <div class="param-header">
-        <span class="param-name">Мин. частота</span>
-        <span class="param-value">100 Гц</span>
-        </div>
-        <div class="param-description">Нижняя граница частотного диапазона. Для басов: 50-150 Гц</div>
-        </div>
-        
-        <div class="param-item">
-        <div class="param-header">
-        <span class="param-name">Макс. частота</span>
-        <span class="param-value">10000 Гц</span>
-        </div>
-        <div class="param-description">Верхняя граница диапазона. Для высоких частот: 8000-12000 Гц</div>
-        </div>
-        
-        <div class="param-item">
-        <div class="param-header">
-        <span class="param-name">Фильтры</span>
-        <span class="param-value">9</span>
-        </div>
-        <div class="param-description">Количество фильтров (5-15). Больше = точнее сдвиг, но выше задержка</div>
-        </div>
-        
-        <div class="param-item">
-        <div class="param-header">
-        <span class="param-name">Добротность</span>
-        <span class="param-value">1.0</span>
-        </div>
-        <div class="param-description">Регулирует крутизну среза фильтров (0.8-1.2 оптимально)</div>
-        </div>
-        
-        <div class="param-item">
-        <div class="param-header">
-        <span class="param-name">Задержка</span>
-        <span class="param-value">8 мс</span>
-        </div>
-        <div class="param-description">Компенсация рассинхронизации каналов. Тестируйте с шагом 1 мс</div>
-        </div>
-        </div>
-        </div>
-        
-        <div class="info-section">
-        <h3 class="section-title">Визуализация сигнала</h3>
-        
-        <div class="param-list">
-        <div class="param-item">
-        <div class="param-header">
-        <span class="param-name">Сэмплы</span>
-        <span class="param-value">512</span>
-        </div>
-        <div class="param-description">Отображаемое временное окно. Для НЧ: 1024, для ВЧ: 256</div>
-        </div>
-        
-        <div class="param-item">
-        <div class="param-header">
-        <span class="param-name">Амплитуда</span>
-        <span class="param-value">0.8</span>
-        </div>
-        <div class="param-description">Масштаб сигнала на графике. Уменьшайте при перекрытии</div>
-        </div>
-        
-        <div class="param-item">
-        <div class="param-header">
-        <span class="param-name">Толщина</span>
-        <span class="param-value">2</span>
-        </div>
-        <div class="param-description">Толщина линий графика. Для деталей: 1, для чёткости: 3</div>
-        </div>
-        </div>
-        </div>
-        
-        <div class="info-section">
-        <h3 class="section-title">Практические рекомендации</h3>
-        
-        <div class="recommendation">
-        <div class="recommendation-title">Точность сдвига:</div>
-        <ul>
-        <li>Используйте синус 1 кГц и белый шум для теста</li>
-        <li>Пики одного канала должны совпадать с нулями другого</li>
-        <li>Корректируйте задержку при рассинхронизации</li>
-        </ul>
-        </div>
-        
-        <div class="recommendation">
-        <div class="recommendation-title">Оптимизация:</div>
-        <ul>
-        <li>Для минимальной задержки: 7 фильтров + 1024 сэмпла</li>
-        <li>При искажениях регулируйте добротность (0.7-1.3)</li>
-        <li>Для сложных сигналов: 11 фильтров</li>
-        </ul>
-        </div>
-        </div>
-        
-        <div class="info-section">
-        <h3 class="section-title">Физика вихревых резонансов</h3>
-        <div class="description">
-        <p>Эффект создаёт иллюзию объёмного звучания через имитацию разницы времени прихода звука к ушам (эффект Хааса). При точном 90° сдвиге возникают стоячие волны с круговой поляризацией, вызывающие резонансные явления в помещениях.</p>
-        <p>Взаимодействие фазово-сдвинутых волн создаёт области усиления/ослабления звука, формируя акустический вихрь. Экспериментируя с настройками, можно управлять плотностью этого вихря - от мягкого вращения до интенсивной турбулентности.</p>
-        </div>
-        </div>
-        </div>
-        </div>
+            <div class="modal-content">
+                <button class="close-modal" id="closeInfo">
+                    <i class="fas fa-times"></i>
+                </button>
+                <h2 class="modal-title">Аудио Фазовращатель: принцип работы и настройка</h2>
+                
+                <div class="info-content">
+                    <div class="info-section">
+                        <h3 class="section-title">О фазовом вращении</h3>
+                        <div class="description">
+                            <p>Фазовое вращение на 90° между каналами - мощный аудиоэффект, создающий объёмный звук и глубину. Метод основан на преобразовании, сдвигающем фазу сигнала при сохранении амплитуды.</p>
+                            <p>В акустике фазовый сдвиг создаёт "вихревые резонансы", когда звук кажется исходящим из разных точек пространства. Это происходит за счёт интерференционных картин, усиливающих или ослабляющих определённые частоты.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="info-section">
+                        <h3 class="section-title">Настройка параметров</h3>
+                        
+                        <div class="param-list">
+                            <div class="param-item">
+                                <div class="param-header">
+                                    <span class="param-name">Мин. частота</span>
+                                    <span class="param-value">100 Гц</span>
+                                </div>
+                                <div class="param-description">Нижняя граница частотного диапазона. Для басов: 50-150 Гц</div>
+                            </div>
+                            
+                            <div class="param-item">
+                                <div class="param-header">
+                                    <span class="param-name">Макс. частота</span>
+                                    <span class="param-value">10000 Гц</span>
+                                </div>
+                                <div class="param-description">Верхняя граница диапазона. Для высоких частот: 8000-12000 Гц</div>
+                            </div>
+                            
+                            <div class="param-item">
+                                <div class="param-header">
+                                    <span class="param-name">Фильтры</span>
+                                    <span class="param-value">9</span>
+                                </div>
+                                <div class="param-description">Количество фильтров (5-15). Больше = точнее сдвиг, но выше задержка</div>
+                            </div>
+                            
+                            <div class="param-item">
+                                <div class="param-header">
+                                    <span class="param-name">Добротность</span>
+                                    <span class="param-value">1.0</span>
+                                </div>
+                                <div class="param-description">Регулирует крутизну среза фильтров (0.8-1.2 оптимально)</div>
+                            </div>
+                            
+                            <div class="param-item">
+                                <div class="param-header">
+                                    <span class="param-name">Задержка</span>
+                                    <span class="param-value">8 мс</span>
+                                </div>
+                                <div class="param-description">Компенсация рассинхронизации каналов. Тестируйте с шагом 1 мс</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-section">
+                        <h3 class="section-title">Визуализация сигнала</h3>
+                        
+                        <div class="param-list">
+                            <div class="param-item">
+                                <div class="param-header">
+                                    <span class="param-name">Сэмплы</span>
+                                    <span class="param-value">512</span>
+                                </div>
+                                <div class="param-description">Отображаемое временное окно. Для НЧ: 1024, для ВЧ: 256</div>
+                            </div>
+                            
+                            <div class="param-item">
+                                <div class="param-header">
+                                    <span class="param-name">Амплитуда</span>
+                                    <span class="param-value">0.8</span>
+                                </div>
+                                <div class="param-description">Масштаб сигнала на графике. Уменьшайте при перекрытии</div>
+                            </div>
+                            
+                            <div class="param-item">
+                                <div class="param-header">
+                                    <span class="param-name">Толщина</span>
+                                    <span class="param-value">2</span>
+                                </div>
+                                <div class="param-description">Толщина линий графика. Для деталей: 1, для чёткости: 3</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="info-section">
+                        <h3 class="section-title">Практические рекомендации</h3>
+                        
+                        <div class="recommendation">
+                            <div class="recommendation-title">Точность сдвига:</div>
+                            <ul>
+                                <li>Используйте синус 1 кГц и белый шум для теста</li>
+                                <li>Пики одного канала должны совпадать с нулями другого</li>
+                                <li>Корректируйте задержку при рассинхронизации</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="recommendation">
+                            <div class="recommendation-title">Оптимизация:</div>
+                            <ul>
+                                <li>Для минимальной задержки: 7 фильтров + 1024 сэмпла</li>
+                                <li>При искажениях регулируйте добротность (0.7-1.3)</li>
+                                <li>Для сложных сигналов: 11 фильтров</li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <div class="info-section">
+                        <h3 class="section-title">Физика вихревых резонансов</h3>
+                        <div class="description">
+                            <p>Эффект создаёт иллюзию объёмного звучания через имитацию разницы времени прихода звука к ушам (эффект Хааса). При точном 90° сдвиге возникают стоячие волны с круговой поляризацией, вызывающие резонансные явления в помещениях.</p>
+                            <p>Взаимодействие фазово-сдвинутых волн создаёт области усиления/ослабления звука, формируя акустический вихрь. Экспериментируя с настройками, можно управлять плотностью этого вихря - от мягкого вращения до интенсивной турбулентности.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         
         <div class="player-controls">
@@ -815,7 +907,6 @@
         
         // Элементы DOM
         const uploadArea = document.getElementById('uploadArea');
-        const playControl = document.getElementById('playControl')
         const fileInput = document.getElementById('fileInput');
         const playBtn = document.getElementById('playBtn');
         const phaseBtn = document.getElementById('phaseBtn');
@@ -829,13 +920,15 @@
         const phaseInfo = document.getElementById('phaseInfo');
         const settingsBtn = document.getElementById('settingsBtn');
         const infoBtn = document.getElementById('infoBtn');
+        const playlist = document.getElementById('playlist');
+        const playlistItems = document.getElementById('playlistItems');
+        const clearPlaylist = document.getElementById('clearPlaylist');
         const settingsModal = document.getElementById('settingsModal');
         const infoModal = document.getElementById('infoModal');
         const closeSettings = document.getElementById('closeSettings');
         const closeInfo = document.getElementById('closeInfo');
         const applySettingsBtn = document.getElementById('applySettingsBtn');
         const resetSettingsBtn = document.getElementById('resetSettingsBtn');
-        const fileInfo = document.getElementById('fileInfo');
         
         // Элементы настроек
         const minFreqSlider = document.getElementById('minFreqSlider');
@@ -872,12 +965,17 @@
         let isPlaying = false;
         let isPaused = false;
         let phaseShiftActive = false;
-        let currentFile = null;
         let startTime = 0;
         let pausedTime = 0;
         let progressAnimationId;
         let visualizerAnimationId;
         let leftAnalyser, rightAnalyser;
+        
+        // Плейлист
+        let playlistData = [];
+        let currentTrackIndex = -1;
+        let autoPlayNext = false;
+        let isEnded = false; // Флаг окончания трека
         
         // Инициализация настроек
         function initSettings() {
@@ -921,9 +1019,12 @@
         // Обработчики событий
         uploadArea.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', handleFileSelect);
-        playBtn.addEventListener('click', playAudio);
+        playBtn.addEventListener('click', togglePlayPause);
         phaseBtn.addEventListener('click', togglePhaseShift);
         stopBtn.addEventListener('click', stopAudio);
+        clearPlaylist.addEventListener('click', clearPlaylistHandler);
+        
+        // Обработчики для модальных окон
         settingsBtn.addEventListener('click', () => settingsModal.style.display = 'flex');
         infoBtn.addEventListener('click', () => infoModal.style.display = 'flex');
         closeSettings.addEventListener('click', () => settingsModal.style.display = 'none');
@@ -939,183 +1040,202 @@
         
         // Связывание элементов настроек
         minFreqSlider.addEventListener('input', function() {
-            minFreqInput.value = this.value;
-            minFreqValue.textContent = this.value;
+        minFreqInput.value = this.value;
+        minFreqValue.textContent = this.value;
         });
         
         minFreqInput.addEventListener('input', function() {
-            minFreqSlider.value = this.value;
-            minFreqValue.textContent = this.value;
+        minFreqSlider.value = this.value;
+        minFreqValue.textContent = this.value;
         });
         
         maxFreqSlider.addEventListener('input', function() {
-            maxFreqInput.value = this.value;
-            maxFreqValue.textContent = this.value;
+        maxFreqInput.value = this.value;
+        maxFreqValue.textContent = this.value;
         });
         
         maxFreqInput.addEventListener('input', function() {
-            maxFreqSlider.value = this.value;
-            maxFreqValue.textContent = this.value;
+        maxFreqSlider.value = this.value;
+        maxFreqValue.textContent = this.value;
         });
         
         numFiltersSlider.addEventListener('input', function() {
-            numFiltersInput.value = this.value;
-            numFiltersValue.textContent = this.value;
+        numFiltersInput.value = this.value;
+        numFiltersValue.textContent = this.value;
         });
         
         numFiltersInput.addEventListener('input', function() {
-            numFiltersSlider.value = this.value;
-            numFiltersValue.textContent = this.value;
+        numFiltersSlider.value = this.value;
+        numFiltersValue.textContent = this.value;
         });
         
         qSlider.addEventListener('input', function() {
-            qInput.value = this.value;
-            qValue.textContent = this.value;
+        qInput.value = this.value;
+        qValue.textContent = this.value;
         });
         
         qInput.addEventListener('input', function() {
-            qSlider.value = this.value;
-            qValue.textContent = this.value;
+        qSlider.value = this.value;
+        qValue.textContent = this.value;
         });
         
         delaySlider.addEventListener('input', function() {
-            delayInput.value = this.value;
-            delayValue.textContent = this.value;
+        delayInput.value = this.value;
+        delayValue.textContent = this.value;
         });
         
         delayInput.addEventListener('input', function() {
-            delaySlider.value = this.value;
-            delayValue.textContent = this.value;
+        delaySlider.value = this.value;
+        delayValue.textContent = this.value;
         });
         
         samplesSlider.addEventListener('input', function() {
-            samplesInput.value = this.value;
-            samplesValue.textContent = this.value;
+        samplesInput.value = this.value;
+        samplesValue.textContent = this.value;
         });
         
         samplesInput.addEventListener('input', function() {
-            samplesSlider.value = this.value;
-            samplesValue.textContent = this.value;
+        samplesSlider.value = this.value;
+        samplesValue.textContent = this.value;
         });
         
         amplitudeSlider.addEventListener('input', function() {
-            amplitudeInput.value = this.value;
-            amplitudeValue.textContent = this.value;
+        amplitudeInput.value = this.value;
+        amplitudeValue.textContent = this.value;
         });
         
         amplitudeInput.addEventListener('input', function() {
-            amplitudeSlider.value = this.value;
-            amplitudeValue.textContent = this.value;
+        amplitudeSlider.value = this.value;
+        amplitudeValue.textContent = this.value;
         });
         
         lineWidthSlider.addEventListener('input', function() {
-            lineWidthInput.value = this.value;
-            lineWidthValue.textContent = this.value;
+        lineWidthInput.value = this.value;
+        lineWidthValue.textContent = this.value;
         });
         
         lineWidthInput.addEventListener('input', function() {
-            lineWidthSlider.value = this.value;
-            lineWidthValue.textContent = this.value;
+        lineWidthSlider.value = this.value;
+        lineWidthValue.textContent = this.value;
         });
-        
-        // Применение настроек
-        function applySettings() {
-            // Обновление конфигурации
-            config.hilbertMinFreq = parseInt(minFreqInput.value);
-            config.hilbertMaxFreq = parseInt(maxFreqInput.value);
-            config.hilbertNumFilters = parseInt(numFiltersInput.value);
-            config.hilbertQ = parseFloat(qInput.value);
-            config.delayCompensation = parseFloat(delayInput.value) / 1000;
-            config.visibleSamples = parseInt(samplesInput.value);
-            config.amplitudeScale = parseFloat(amplitudeInput.value);
-            config.leftChannelColor = leftColorPicker.value;
-            config.rightChannelColor = rightColorPicker.value;
-            config.lineWidth = parseFloat(lineWidthInput.value);
-            
-            // Перезапуск воспроизведения, если оно активно
-            if (isPlaying) {
-                pauseAudio();
-                playAudio();
-            }
-            
-            // Скрываем панель настроек
-            settingsModal.style.display = 'none';
-        }
-        
-        // Сброс настроек
-        function resetSettings() {
-            // Восстановление значений по умолчанию
-            config = {
-                hilbertMinFreq: 100,
-                hilbertMaxFreq: 10000,
-                hilbertNumFilters: 9,
-                hilbertQ: 1.0,
-                delayCompensation: 0.008,
-                visibleSamples: 512,
-                amplitudeScale: 0.8,
-                leftChannelColor: '#FFFF00',
-                rightChannelColor: '#00FF00',
-                lineWidth: 2
-            };
-            
-            // Обновление UI
-            initSettings();
-            
-            // Перезапуск воспроизведения, если оно активно
-            if (isPlaying) {
-                pauseAudio();
-                playAudio();
-            }
-        }
         
         // Выбор файла
         function handleFileSelect(e) {
-            const file = e.target.files[0];
-            if (!file) return;
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
             
-            // Проверка типа файла
-            if (!file.type.match('audio.*')) {
-                alert('Пожалуйста, выберите аудиофайл (MP3 или WAV)');
-                return;
+            // Добавляем файлы в плейлист
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                
+                // Проверка типа файла
+                if (!file.type.match('audio.*')) {
+                    alert(`Файл "${file.name}" не является аудиофайлом и будет пропущен`);
+                    continue;
+                }
+                
+                // Добавляем файл в плейлист
+                playlistData.push({
+                    file: file,
+                    analyzed: false,
+                    buffer: null
+                });
             }
             
-            // Сброс состояния
-            resetState();
-            currentFile = file;
+            // Показываем плейлист
+            playlist.style.display = 'block';
             
+            // Обновляем отображение плейлиста
+            updatePlaylist();
+            
+            // Автоматически выбираем первый файл, если ничего не выбрано
+            if (currentTrackIndex === -1) {
+                selectTrack(0);
+            }
+        }
+        
+        // Обновление плейлиста
+        function updatePlaylist() {
+            playlistItems.innerHTML = '';
+            
+            playlistData.forEach((track, index) => {
+                const item = document.createElement('div');
+                item.className = `playlist-item ${index === currentTrackIndex ? 'active' : ''}`;
+                item.innerHTML = `
+                    <div class="playlist-item-info">
+                        <div class="playlist-item-name">${track.file.name}</div>
+                        <div class="playlist-item-size">${formatFileSize(track.file.size)}</div>
+                    </div>
+                    ${track.analyzed ? '<div class="playlist-item-status"><i class="fas fa-check"></i></div>' : ''}
+                    <button class="remove-btn" data-index="${index}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                `;
+                
+                item.addEventListener('click', () => selectTrack(index));
+                
+                const removeBtn = item.querySelector('.remove-btn');
+                removeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    removeTrack(index);
+                });
+                
+                playlistItems.appendChild(item);
+            });
+        }
+        
+        // Выбор трека
+        function selectTrack(index) {
+            if (index < 0 || index >= playlistData.length) return;
+            
+            // Останавливаем текущее воспроизведение
+            stopAudio();
+            
+            // Обновляем текущий трек
+            currentTrackIndex = index;
+            const track = playlistData[index];
+            
+            // Обновляем область загрузки
             uploadArea.innerHTML = `
                 <i>🎵</i>
-                <h3>${file.name}</h3>
-                <p>${formatFileSize(file.size)}</p>
-                <p>Нажмите "Анализировать"</p>
+                <h3>${track.file.name}</h3>
+                <p>${formatFileSize(track.file.size)}</p>
+                ${track.analyzed ? generateFileInfoHTML(track.buffer) : '<p id="analysisStatus">Анализ файла...</p>'}
+                <button id="addFilesBtn" class="secondary-btn" style="margin-top: 10px;">Добавить файлы</button>
             `;
             
-            // Показываем кнопку анализа
-            const analyzeBtn = document.createElement('button');
-            analyzeBtn.id = 'analyzeBtn';
-            analyzeBtn.className = 'secondary-btn';
-            analyzeBtn.textContent = 'Анализировать';
-            analyzeBtn.onclick = analyzeAudio;
-            playControl.appendChild(analyzeBtn);
-        }
-        
-        // Сброс состояния
-        function resetState() {
-            stopAudio();
-            phaseShiftActive = false;
-            phaseInfo.style.display = 'none';
-            phaseBtn.textContent = 'Применить сдвиг';
-            visualizer.style.display = 'none';
-            progressContainer.style.display = 'none';
-            fileInfo.style.display = 'none';
-            fileInfo.innerHTML = '';
-        }
-        
-        // Анализ аудиофайла
-        function analyzeAudio() {
-            if (!currentFile) return;
+            // Обработчик для кнопки добавления файлов
+            document.getElementById('addFilesBtn').addEventListener('click', () => {
+                fileInput.click();
+            });
             
+            // Если трек еще не анализировался - анализируем
+            if (!track.analyzed) {
+                analyzeTrack(index);
+            } else {
+                // Если уже анализирован - активируем кнопки
+                playBtn.disabled = false;
+                phaseBtn.disabled = false;
+                stopBtn.disabled = false;
+                
+                // Показываем элементы
+                visualizer.style.display = 'block';
+                progressContainer.style.display = 'block';
+                initVisualizer();
+                
+                // Обновляем общее время
+                totalTime.textContent = formatTime(track.buffer.duration);
+            }
+            
+            // Обновляем плейлист
+            updatePlaylist();
+        }
+        
+        // Анализ трека
+        function analyzeTrack(index) {
+            const track = playlistData[index];
             const reader = new FileReader();
+            
             reader.onload = function(e) {
                 const arrayBuffer = e.target.result;
                 
@@ -1127,13 +1247,23 @@
                 // Декодируем аудиоданные
                 audioContext.decodeAudioData(arrayBuffer)
                     .then(buffer => {
-                        audioBuffer = buffer;
+                        // Сохраняем буфер в треке
+                        track.buffer = buffer;
+                        track.analyzed = true;
                         
-                        // Обновляем общее время
-                        totalTime.textContent = formatTime(audioBuffer.duration);
+                        // Обновляем интерфейс
+                        uploadArea.innerHTML = `
+                            <i>🎵</i>
+                            <h3>${track.file.name}</h3>
+                            <p>${formatFileSize(track.file.size)}</p>
+                            ${generateFileInfoHTML(buffer)}
+                            <button id="addFilesBtn" class="secondary-btn" style="margin-top: 10px;">Добавить файлы</button>
+                        `;
                         
-                        // Показываем информацию о файле
-                        displayFileInfo(buffer);
+                        // Обработчик для кнопки добавления файлов
+                        document.getElementById('addFilesBtn').addEventListener('click', () => {
+                            fileInput.click();
+                        });
                         
                         // Активируем кнопки
                         playBtn.disabled = false;
@@ -1143,63 +1273,148 @@
                         // Показываем элементы
                         visualizer.style.display = 'block';
                         progressContainer.style.display = 'block';
-                        fileInfo.style.display = 'block';
                         initVisualizer();
                         
-                        // Убираем кнопку анализа
-                        const analyzeBtn = document.getElementById('analyzeBtn');
-                        if (analyzeBtn) analyzeBtn.remove();
+                        // Обновляем общее время
+                        totalTime.textContent = formatTime(buffer.duration);
+                        
+                        // Обновляем плейлист
+                        updatePlaylist();
+                        
+                        // Автовоспроизведение, если был запущен плейлист
+                        if (autoPlayNext) {
+                            playAudio();
+                        }
                     })
                     .catch(error => {
                         console.error('Ошибка декодирования аудио:', error);
-                        alert('Ошибка при обработке аудиофайла: ' + error.message);
+                        
+                        // Обновляем статус
+                        const statusElement = document.getElementById('analysisStatus');
+                        if (statusElement) {
+                            statusElement.textContent = 'Ошибка анализа файла';
+                            statusElement.style.color = '#ff6b6b';
+                        }
                     });
             };
-            reader.readAsArrayBuffer(currentFile);
+            
+            reader.readAsArrayBuffer(track.file);
         }
         
-        // Отображение информации о файле
-        function displayFileInfo(buffer) {
+        // Удаление трека
+        function removeTrack(index) {
+            // Если удаляем текущий трек - останавливаем воспроизведение
+            if (index === currentTrackIndex) {
+                stopAudio();
+                resetUploadArea();
+            }
+            
+            // Удаляем трек из плейлиста
+            playlistData.splice(index, 1);
+            
+            // Обновляем текущий индекс
+            if (index === currentTrackIndex) {
+                if (playlistData.length > 0) {
+                    currentTrackIndex = Math.min(index, playlistData.length - 1);
+                    selectTrack(currentTrackIndex);
+                } else {
+                    currentTrackIndex = -1;
+                    resetUploadArea();
+                    playlist.style.display = 'none';
+                }
+            } else if (index < currentTrackIndex) {
+                currentTrackIndex--;
+            }
+            
+            // Обновляем плейлист
+            updatePlaylist();
+        }
+        
+        // Очистка плейлиста
+        function clearPlaylistHandler() {
+            playlistData = [];
+            currentTrackIndex = -1;
+            playlist.style.display = 'none';
+            stopAudio();
+            resetUploadArea();
+        }
+        
+        // Сброс области загрузки
+        function resetUploadArea() {
+            uploadArea.innerHTML = `
+                <i>🎵</i>
+                <h3>Перетащите или выберите аудиофайлы</h3>
+                <p>Поддерживаются MP3 и WAV файлы</p>
+                <input type="file" id="fileInput" accept="audio/*" style="display:none" multiple>
+            `;
+            // Перепривязываем обработчик
+            document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+        }
+        
+        // Генерация информации о файле
+        function generateFileInfoHTML(buffer) {
+            const track = playlistData[currentTrackIndex];
+            if (!track) return '';
+            
             const channels = buffer.numberOfChannels;
             const duration = buffer.duration;
             const sampleRate = buffer.sampleRate;
             const bitDepth = 32;
-            const bitrate = (currentFile.size * 8) / duration;
+            const bitrate = (track.file.size * 8) / duration;
             
-            fileInfo.innerHTML = `
-                <div class="info-item">
-                    <span class="info-label">Длительность:</span>
-                    <span class="info-value">${formatTime(duration)}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Каналы:</span>
-                    <span class="info-value">${channels === 1 ? 'Моно' : 'Стерео'}</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Частота дискретизации:</span>
-                    <span class="info-value">${sampleRate.toLocaleString()} Гц</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Битрейт:</span>
-                    <span class="info-value">${Math.round(bitrate / 1000)} кбит/с</span>
-                </div>
-                <div class="info-item">
-                    <span class="info-label">Битовая глубина:</span>
-                    <span class="info-value">${bitDepth}-бит</span>
+            return `
+                <div class="file-info-in-upload">
+                    <div class="info-item">
+                        <span class="info-label">Длительность:</span>
+                        <span class="info-value">${formatTime(duration)}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Каналы:</span>
+                        <span class="info-value">${channels === 1 ? 'Моно' : 'Стерео'}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Частота дискретизации:</span>
+                        <span class="info-value">${sampleRate.toLocaleString()} Гц</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Битрейт:</span>
+                        <span class="info-value">${Math.round(bitrate / 1000)} кбит/с</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Битовая глубина:</span>
+                        <span class="info-value">${bitDepth}-бит</span>
+                    </div>
                 </div>
             `;
         }
         
+        // функция переключения состояний
+        function togglePlayPause() {
+        	if (isPlaying) {
+        		pauseAudio();
+        	} else {
+        		playAudio();
+        	}
+        }
+        
         // Воспроизведение аудио
         function playAudio() {
-            if (!audioBuffer || !audioContext) return;
+        	if (currentTrackIndex === -1 || !playlistData[currentTrackIndex]?.buffer || !audioContext) return;        
+               
+            const track = playlistData[currentTrackIndex];
+            audioBuffer = track.buffer;
             
+            // Если трек на паузе - возобновляем
+            if (isPaused) {
+            	startPlayback();
+            return;
+            }
+            
+            // Если не играет и не на паузе - начинаем заново
             if (audioContext.state === 'suspended') {
-                audioContext.resume().then(() => {
-                    startPlayback();
-                });
+            	audioContext.resume().then(startPlayback);
             } else {
-                startPlayback();
+            	startPlayback();
             }
         }
         
@@ -1216,86 +1431,176 @@
             }
         }
         
-        // Запуск воспроизведения с точным 90° фазовым сдвигом
+        // Запуск воспроизведения
         function startPlayback() {
-            // Останавливаем предыдущее воспроизведение
-            if (audioSource) audioSource.stop();
-            
-            // Создаем источник
-            audioSource = audioContext.createBufferSource();
-            audioSource.buffer = audioBuffer;
-            
-            // Создаем анализаторы для визуализации
-            leftAnalyser = audioContext.createAnalyser();
-            leftAnalyser.fftSize = 2048;
-            leftAnalyser.smoothingTimeConstant = 0.8;
-            
-            rightAnalyser = audioContext.createAnalyser();
-            rightAnalyser.fftSize = 2048;
-            rightAnalyser.smoothingTimeConstant = 0.8;
-            
-            // Создаем мерджер для объединения каналов
-            const merger = audioContext.createChannelMerger(2);
-            
-            // Основной граф обработки
-            if (phaseShiftActive) {
-                // Применяем точный 90° фазовый сдвиг
-                applyHilbertTransform(audioSource, merger);
-            } else {
-                // Прямое воспроизведение без изменений
-                const numChannels = audioBuffer.numberOfChannels;
-                const splitter = audioContext.createChannelSplitter(numChannels);
-                audioSource.connect(splitter);
-                
-                if (numChannels === 1) {
-                    // Моно в стерео: дублируем сигнал
-                    splitter.connect(merger, 0, 0);
-                    splitter.connect(merger, 0, 1);
-                    
-                    // Подключаем к анализаторам
-                    splitter.connect(leftAnalyser, 0);
-                    splitter.connect(rightAnalyser, 0);
-                } else {
-                    // Стерео: каждый канал на свое место
-                    splitter.connect(merger, 0, 0);
-                    splitter.connect(merger, 1, 1);
-                    
-                    // Подключаем к анализаторам
-                    splitter.connect(leftAnalyser, 0);
-                    splitter.connect(rightAnalyser, 1);
-                }
-            }
-            
-            // Подключаем к выходу
-            merger.connect(audioContext.destination);
-            
-            // Запоминаем время начала
-            startTime = audioContext.currentTime;
-            
-            // Если была пауза, воспроизводим с сохраненного времени
-            const startOffset = isPaused ? pausedTime : 0;
-            
-            // Запуск воспроизведения
-            audioSource.start(0, startOffset);
-            
-            // Обновление состояния
-            isPlaying = true;
-            isPaused = false;
-            
-            // Обновление кнопок
-            playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-            playBtn.classList.add('playing');
-            stopBtn.disabled = false;
-            phaseBtn.disabled = false;
-            
-            // Обработчик окончания
-            audioSource.onended = () => {
-                stopAudio();
-            };
-            
-            // Запуск визуализации
-            updateProgress();
-            drawVisualizer();
+        	// Останавливаем предыдущее воспроизведение
+        	if (audioSource) {
+        		audioSource.onended = null;
+        		audioSource.stop();
+        		audioSource = null;
+        	}
+        
+        	// Создаем новый источник
+        	audioSource = audioContext.createBufferSource();
+        	audioSource.buffer = playlistData[currentTrackIndex].buffer;
+        
+        	// Рассчитываем время начала с учетом паузы
+        	const startOffset = isPaused ? pausedTime : 0;
+        
+        	// Настройка обработчика окончания трека
+        	audioSource.onended = () => {
+        		// Упрощаем проверку - полагаемся на сам факт окончания
+        		if (isPlaying) {
+        			handleTrackEnded();
+        		}
+        	};
+        	
+        	isEnded = false;
+        
+        // Создаем анализаторы для визуализации
+        leftAnalyser = audioContext.createAnalyser();
+        leftAnalyser.fftSize = 2048;
+        leftAnalyser.smoothingTimeConstant = 0.8;
+        
+        rightAnalyser = audioContext.createAnalyser();
+        rightAnalyser.fftSize = 2048;
+        rightAnalyser.smoothingTimeConstant = 0.8;
+        
+        // Создаем мерджер для объединения каналов
+        const merger = audioContext.createChannelMerger(2);
+        
+        // Подключаем эффекты в зависимости от состояния фазового сдвига
+        if (phaseShiftActive) {
+        applyHilbertTransform(audioSource, merger);
+        } else {
+        const numChannels = audioSource.buffer.numberOfChannels;
+        const splitter = audioContext.createChannelSplitter(numChannels);
+        audioSource.connect(splitter);
+        
+        if (numChannels === 1) {
+        // Моно в стерео
+        splitter.connect(merger, 0, 0);
+        splitter.connect(merger, 0, 1);
+        splitter.connect(leftAnalyser, 0);
+        splitter.connect(rightAnalyser, 0);
+        } else {
+        // Стерео
+        splitter.connect(merger, 0, 0);
+        splitter.connect(merger, 1, 1);
+        splitter.connect(leftAnalyser, 0);
+        splitter.connect(rightAnalyser, 1);
+        }
+        }
+        
+        // Подключаем к выходу
+        merger.connect(audioContext.destination);
+        
+        // Устанавливаем время начала с учетом паузы
+        startTime = audioContext.currentTime - startOffset;
+        
+        // Запускаем воспроизведение
+        audioSource.start(0, startOffset);
+        
+        // Обновляем состояние
+        isPlaying = true;
+        isPaused = false;
+        
+        	// Обновляем UI
+        	playBtn.innerHTML = '<i class="fas fa-pause"></i>';
+        	playBtn.classList.add('playing');
+        	stopBtn.disabled = false;
+        	phaseBtn.disabled = false;
+        
+        	// Запускаем обновление прогресса и визуализацию
+        	updateProgress();
+        	drawVisualizer();
+        }
+        
+        // Обработка окончания трека
+        function handleTrackEnded() {
+        	// Помечаем, что трек закончился естественным образом
+        	isEnded = true;
+        	
+        	// Останавливаем аудио
+        	stopAudio();
+        	
+        	// Запускаем следующий трек, если есть
+        	if (playlistData.length > 0) {
+        		playNextTrack();
+        	}
+        }
+        
+        // Воспроизведение следующего трека
+        function playNextTrack() {
+        	if (playlistData.length === 0) return;
+        	
+        	const nextIndex = (currentTrackIndex + 1) % playlistData.length;
+        	currentTrackIndex = nextIndex;
+        	
+        	const nextTrack = playlistData[nextIndex];
+        	
+        	// Обновляем UI
+        	selectTrack(nextIndex);
+        	
+        	// Если трек уже проанализирован - запускаем воспроизведение
+        	if (nextTrack.analyzed) {
+        		autoPlayNext = true;
+        		playAudio();
+        	} else {
+        		// Если не проанализирован - установим флаг для автозапуска после анализа
+        		autoPlayNext = true;
+        		analyzeTrack(nextIndex);
+        	}
+        }
+        
+        // Пауза аудио
+        function pauseAudio() {
+        if (!isPlaying) return;
+        
+        // Сохраняем текущую позицию
+        pausedTime = audioContext.currentTime - startTime;
+        isPlaying = false;
+        isPaused = true;
+        
+        // Останавливаем источник
+        if (audioSource) {
+        	audioSource.stop(0);
+        	audioSource = null;
+        }
+        
+        // Отменяем анимации
+        cancelAnimationFrame(visualizerAnimationId);
+        cancelAnimationFrame(progressAnimationId);
+        
+        // Обновляем UI
+        playBtn.innerHTML = '<i class="fas fa-play"></i>';
+        playBtn.classList.remove('playing');
+        }
+        
+        // Остановка воспроизведения
+        function stopAudio() {
+        if (audioSource) {
+        	audioSource.onended = null; // Удаляем обработчик
+        	audioSource.stop();
+        	audioSource = null;
+        }
+        
+        cancelAnimationFrame(visualizerAnimationId);
+        cancelAnimationFrame(progressAnimationId);
+        
+        isPlaying = false;
+        isPaused = false;
+        pausedTime = 0;
+        
+        // Сбрасываем флаг автопроигрывания, если трек не закончился естественно
+        if (!isEnded) {
+        	autoPlayNext = false;
+        }
+        
+        playBtn.innerHTML = '<i class="fas fa-play"></i>';
+        playBtn.classList.remove('playing');
+        progressBar.style.width = '0%';
+        currentTime.textContent = '0:00';
         }
         
         // Применение преобразования Гильберта для 90° сдвига
@@ -1383,56 +1688,6 @@
                 input: delay,
                 output: delay
             };
-        }
-        
-        // Пауза аудио
-        function pauseAudio() {
-            if (!audioSource || !isPlaying) return;
-            
-            // Сохраняем текущую позицию
-            pausedTime = audioContext.currentTime - startTime;
-            
-            // Останавливаем воспроизведение
-            audioSource.stop();
-            audioSource = null;
-            
-            // Отменяем анимации
-            cancelAnimationFrame(visualizerAnimationId);
-            cancelAnimationFrame(progressAnimationId);
-            
-            // Обновление состояния
-            isPlaying = false;
-            isPaused = true;
-            
-            // Обновление кнопок
-            playBtn.innerHTML = '<i class="fas fa-play"></i>';
-            playBtn.classList.remove('playing');
-        }
-        
-        // Остановка воспроизведения
-        function stopAudio() {
-            if (audioSource) {
-                audioSource.stop();
-                audioSource = null;
-            }
-            
-            // Отменяем анимации
-            cancelAnimationFrame(visualizerAnimationId);
-            cancelAnimationFrame(progressAnimationId);
-            
-            // Сбрасываем состояние
-            isPlaying = false;
-            isPaused = false;
-            pausedTime = 0;
-            
-            // Обновление кнопок
-            playBtn.innerHTML = '<i class="fas fa-play"></i>';
-            playBtn.classList.remove('playing');
-            stopBtn.disabled = false;
-            
-            // Сбрасываем прогресс-бар
-            progressBar.style.width = '0%';
-            currentTime.textContent = '0:00';
         }
         
         // Инициализация визуализатора
@@ -1525,23 +1780,25 @@
         
         // Обновление прогресс-бара
         function updateProgress() {
-            if (!isPlaying || !audioBuffer || !audioContext) {
-                return;
-            }
-            
-            // Рассчитываем текущую позицию
-            const currentTimeValue = audioContext.currentTime - startTime;
-            const progress = Math.min(1, currentTimeValue / audioBuffer.duration);
-            
-            // Обновляем прогресс-бар
-            progressBar.style.width = `${progress * 100}%`;
-            
-            // Обновляем отображение времени
-            currentTime.textContent = formatTime(currentTimeValue);
-            
-            if (isPlaying) {
-                progressAnimationId = requestAnimationFrame(updateProgress);
-            }
+        if (!isPlaying || !audioBuffer || !audioContext) return;
+        
+        // Рассчитываем текущую позицию с учетом паузы
+        const currentTimeValue = isPaused ? pausedTime : audioContext.currentTime - startTime;
+        const progress = Math.min(1, currentTimeValue / audioBuffer.duration);
+        
+        // Обновляем прогресс-бар
+        progressBar.style.width = `${progress * 100}%`;
+        currentTime.textContent = formatTime(currentTimeValue);
+        
+        // Если трек закончился - обрабатываем окончание
+        if (progress >= 0.999 && !isPaused) {
+        	handleTrackEnded();
+        	return;
+        }
+        
+        if (isPlaying) {
+        	progressAnimationId = requestAnimationFrame(updateProgress);
+        }
         }
         
         // Форматирование размера файла
@@ -1558,12 +1815,64 @@
             return `${min}:${sec < 10 ? '0' : ''}${sec}`;
         }
         
+        // Применение настроек
+        function applySettings() {
+            // Обновление конфигурации
+            config.hilbertMinFreq = parseInt(minFreqInput.value);
+            config.hilbertMaxFreq = parseInt(maxFreqInput.value);
+            config.hilbertNumFilters = parseInt(numFiltersInput.value);
+            config.hilbertQ = parseFloat(qInput.value);
+            config.delayCompensation = parseFloat(delayInput.value) / 1000;
+            config.visibleSamples = parseInt(samplesInput.value);
+            config.amplitudeScale = parseFloat(amplitudeInput.value);
+            config.leftChannelColor = leftColorPicker.value;
+            config.rightChannelColor = rightColorPicker.value;
+            config.lineWidth = parseFloat(lineWidthInput.value);
+            
+            // Перезапуск воспроизведения, если оно активно
+            if (isPlaying) {
+                pauseAudio();
+                playAudio();
+            }
+            
+            // Скрываем панель настроек
+            settingsModal.style.display = 'none';
+        }
+        
+        // Сброс настроек
+        function resetSettings() {
+            // Восстановление значений по умолчанию
+            config = {
+                hilbertMinFreq: 100,
+                hilbertMaxFreq: 10000,
+                hilbertNumFilters: 9,
+                hilbertQ: 1.0,
+                delayCompensation: 0.008,
+                visibleSamples: 512,
+                amplitudeScale: 0.8,
+                leftChannelColor: '#FFFF00',
+                rightChannelColor: '#00FF00',
+                lineWidth: 2
+            };
+            
+            // Обновление UI
+            initSettings();
+            
+            // Перезапуск воспроизведения, если оно активно
+            if (isPlaying) {
+                pauseAudio();
+                playAudio();
+            }
+        }
+        
         // Адаптация под размер экрана
         window.addEventListener('resize', initVisualizer);
         
         // Инициализация при загрузке
         window.addEventListener('load', function() {
             initSettings();
+            // Разрешаем выбор нескольких файлов
+            fileInput.multiple = true;
         });
     </script>
 </body>
