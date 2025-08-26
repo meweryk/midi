@@ -1,5 +1,5 @@
-const CACHE_NAME = 'midi-bells-v8';
-const DYNAMIC_CACHE = 'dynamic-cache-v8';
+const CACHE_NAME = 'midi-bells-v9';
+const DYNAMIC_CACHE = 'dynamic-cache-v9';
 const FALLBACK_HTML = '/midi/index.html';
 const FALLBACK_IMAGE = '/midi/icon-192.png';
 
