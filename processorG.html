@@ -1769,129 +1769,131 @@
         
         // Отрисовка визуализатора с двумя каналаи
         function drawVisualizer() {
-            if (!isPlaying || !leftAnalyser || !rightAnalyser) return;
-            
-            const oscWidth = oscilloscopeCanvas.width;
-            const oscHeight = oscilloscopeCanvas.height;
-            const lissWidth = lissajousCanvas.width;
-            const lissHeight = lissajousCanvas.height;
-            
-            // Очищаем оба canvas
-            oscilloscopeCtx.clearRect(0, 0, oscWidth, oscHeight);
-            lissajousCtx.clearRect(0, 0, lissWidth, lissHeight);
-            
-            // Получаем данные для левого и правого каналов
-            const bufferLength = leftAnalyser.fftSize;
-            const leftData = new Uint8Array(bufferLength);
-            const rightData = new Uint8Array(bufferLength);
-            
-            leftAnalyser.getByteTimeDomainData(leftData);
-            rightAnalyser.getByteTimeDomainData(rightData);
-            
-            // Автоматическое масштабирование по оси X
-            const visibleSamples = Math.min(bufferLength, config.visibleSamples);
-            const startIndex = Math.max(0, Math.floor(bufferLength / 2 - visibleSamples / 2));
-            const sliceWidth = oscWidth / visibleSamples;
-            
-            // Рисуем осциллограмму на нижнем canvas
-            oscilloscopeCtx.beginPath();
-            oscilloscopeCtx.strokeStyle = config.leftChannelColor;
-            oscilloscopeCtx.lineWidth = config.lineWidth;
-            oscilloscopeCtx.lineCap = 'round';
-            oscilloscopeCtx.lineJoin = 'round';
-            
-            let x = 0;
-            for (let i = 0; i < visibleSamples; i++) {
-                const index = startIndex + i;
-                const amplitude = (leftData[index] - 128) / 128;
-                const y = oscHeight / 2 + amplitude * (oscHeight / 2 * config.amplitudeScale);
-                
-                if (i === 0) {
-                    oscilloscopeCtx.moveTo(x, y);
-                } else {
-                    oscilloscopeCtx.lineTo(x, y);
-                }
-                
-                x += sliceWidth;
-            }
-            oscilloscopeCtx.stroke();
-            
-            // Рисуем правый канал
-            oscilloscopeCtx.beginPath();
-            oscilloscopeCtx.strokeStyle = config.rightChannelColor;
-            oscilloscopeCtx.lineWidth = config.lineWidth;
-            oscilloscopeCtx.lineCap = 'round';
-            oscilloscopeCtx.lineJoin = 'round';
-            
-            x = 0;
-            for (let i = 0; i < visibleSamples; i++) {
-                const index = startIndex + i;
-                const amplitude = (rightData[index] - 128) / 128;
-                const y = oscHeight / 2 + amplitude * (oscHeight / 2 * config.amplitudeScale);
-                
-                if (i === 0) {
-                    oscilloscopeCtx.moveTo(x, y);
-                } else {
-                    oscilloscopeCtx.lineTo(x, y);
-                }
-                
-                x += sliceWidth;
-            }
-            oscilloscopeCtx.stroke();
-            
-            // Рисуем центральную линию
-            oscilloscopeCtx.beginPath();
-            oscilloscopeCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-            oscilloscopeCtx.lineWidth = 1;
-            oscilloscopeCtx.moveTo(0, oscHeight / 2);
-            oscilloscopeCtx.lineTo(oscWidth, oscHeight / 2);
-            oscilloscopeCtx.stroke();
-            
-            // Рисуем фигуру Лиссажу на верхнем canvas
-            lissajousCtx.beginPath();
-            lissajousCtx.strokeStyle = '#FF00FF';
-            lissajousCtx.lineWidth = 1;
-            lissajousCtx.lineCap = 'round';
-            lissajousCtx.lineJoin = 'round';
-            
-            const scale = 0.8;
-            const centerX = lissWidth / 2;
-            const centerY = lissHeight / 2;
-            
-            for (let i = 0; i < visibleSamples; i++) {
-                const index = startIndex + i;
-                const xAmplitude = (leftData[index] - 128) / 128;
-                const yAmplitude = (rightData[index] - 128) / 128;
-                
-                const x = centerX + xAmplitude * centerX * scale;
-                const y = centerY + yAmplitude * centerY * scale;
-                
-                if (i === 0) {
-                    lissajousCtx.moveTo(x, y);
-                } else {
-                    lissajousCtx.lineTo(x, y);
-                }
-            }
-            
-            lissajousCtx.stroke();
-            
-            // Рисуем перекрестие в центре фигуры Лиссажу
-            lissajousCtx.beginPath();
-            lissajousCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-            lissajousCtx.lineWidth = 1;
-            
-            // Вертикальная линия
-            lissajousCtx.moveTo(centerX, 0);
-            lissajousCtx.lineTo(centerX, lissHeight);
-            
-            // Горизонтальная линия
-            lissajousCtx.moveTo(0, centerY);
-            lissajousCtx.lineTo(lissWidth, centerY);
-            
-            lissajousCtx.stroke();
-            
-            // Запускаем анимацию
-            visualizerAnimationId = requestAnimationFrame(drawVisualizer);
+        if (!isPlaying || !leftAnalyser || !rightAnalyser) return;
+        
+        const oscWidth = oscilloscopeCanvas.width;
+        const oscHeight = oscilloscopeCanvas.height;
+        const lissWidth = lissajousCanvas.width;
+        const lissHeight = lissajousCanvas.height;
+        
+        // Очищаем оба canvas
+        oscilloscopeCtx.clearRect(0, 0, oscWidth, oscHeight);
+        lissajousCtx.clearRect(0, 0, lissWidth, lissHeight);
+        
+        // Получаем данные для левого и правого каналов
+        const bufferLength = leftAnalyser.fftSize;
+        const leftData = new Uint8Array(bufferLength);
+        const rightData = new Uint8Array(bufferLength);
+        
+        leftAnalyser.getByteTimeDomainData(leftData);
+        rightAnalyser.getByteTimeDomainData(rightData);
+        
+        // Автоматическое масштабирование по оси X
+        const visibleSamples = Math.min(bufferLength, config.visibleSamples);
+        const startIndex = Math.max(0, Math.floor(bufferLength / 2 - visibleSamples / 2));
+        const sliceWidth = oscWidth / visibleSamples;
+        
+        // Рисуем осциллограмму на нижнем canvas
+        oscilloscopeCtx.beginPath();
+        oscilloscopeCtx.strokeStyle = config.leftChannelColor;
+        oscilloscopeCtx.lineWidth = config.lineWidth;
+        oscilloscopeCtx.lineCap = 'round';
+        oscilloscopeCtx.lineJoin = 'round';
+        
+        let x = 0;
+        for (let i = 0; i < visibleSamples; i++) {
+        const index = startIndex + i;
+        const amplitude = (leftData[index] - 128) / 128;
+        const y = oscHeight / 2 + amplitude * (oscHeight / 2 * config.amplitudeScale);
+        
+        if (i === 0) {
+        oscilloscopeCtx.moveTo(x, y);
+        } else {
+        oscilloscopeCtx.lineTo(x, y);
+        }
+        
+        x += sliceWidth;
+        }
+        oscilloscopeCtx.stroke();
+        
+        // Рисуем правый канал
+        oscilloscopeCtx.beginPath();
+        oscilloscopeCtx.strokeStyle = config.rightChannelColor;
+        oscilloscopeCtx.lineWidth = config.lineWidth;
+        oscilloscopeCtx.lineCap = 'round';
+        oscilloscopeCtx.lineJoin = 'round';
+        
+        x = 0;
+        for (let i = 0; i < visibleSamples; i++) {
+        const index = startIndex + i;
+        const amplitude = (rightData[index] - 128) / 128;
+        const y = oscHeight / 2 + amplitude * (oscHeight / 2 * config.amplitudeScale);
+        
+        if (i === 0) {
+        oscilloscopeCtx.moveTo(x, y);
+        } else {
+        oscilloscopeCtx.lineTo(x, y);
+        }
+        
+        x += sliceWidth;
+        }
+        oscilloscopeCtx.stroke();
+        
+        // Рисуем центральную линию
+        oscilloscopeCtx.beginPath();
+        oscilloscopeCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        oscilloscopeCtx.lineWidth = 1;
+        oscilloscopeCtx.moveTo(0, oscHeight / 2);
+        oscilloscopeCtx.lineTo(oscWidth, oscHeight / 2);
+        oscilloscopeCtx.stroke();
+        
+        // Рисуем фигуру Лиссажу на верхнем canvas
+        lissajousCtx.beginPath();
+        lissajousCtx.strokeStyle = '#FF00FF';
+        lissajousCtx.lineWidth = 1;
+        lissajousCtx.lineCap = 'round';
+        lissajousCtx.lineJoin = 'round';
+        
+        // Используем минимальное измерение для создания квадратной области
+        const squareSize = Math.min(lissWidth, lissHeight) * 0.8;
+        const centerX = lissWidth / 2;
+        const centerY = lissHeight / 2;
+        
+        for (let i = 0; i < visibleSamples; i++) {
+        const index = startIndex + i;
+        const xAmplitude = (leftData[index] - 128) / 128;
+        const yAmplitude = (rightData[index] - 128) / 128;
+        
+        // Используем одинаковый масштаб для обеих осей
+        const x = centerX + xAmplitude * squareSize / 2;
+        const y = centerY + yAmplitude * squareSize / 2;
+        
+        if (i === 0) {
+        lissajousCtx.moveTo(x, y);
+        } else {
+        lissajousCtx.lineTo(x, y);
+        }
+        }
+        
+        lissajousCtx.stroke();
+        
+        // Рисуем перекрестие в центре фигуры Лиссажу
+        lissajousCtx.beginPath();
+        lissajousCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        lissajousCtx.lineWidth = 1;
+        
+        // Вертикальная линия
+        lissajousCtx.moveTo(centerX, centerY - squareSize/2);
+        lissajousCtx.lineTo(centerX, centerY + squareSize/2);
+        
+        // Горизонтальная линия
+        lissajousCtx.moveTo(centerX - squareSize/2, centerY);
+        lissajousCtx.lineTo(centerX + squareSize/2, centerY);
+        
+        lissajousCtx.stroke();
+        
+        // Запускаем анимацию
+        visualizerAnimationId = requestAnimationFrame(drawVisualizer);
         }
         
         // Обновление прогресс-бара
