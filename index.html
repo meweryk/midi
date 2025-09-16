@@ -547,6 +547,22 @@
             align-items: center;
             gap: 5px;
         }
+        
+        /* Стили для визуализации */
+        .visualizer-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .visualizer-canvas {
+            width: 100%;
+            height: 200px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: #000;
+        }
     </style>
 </head>
 <body>
@@ -573,6 +589,15 @@
             
             <span class="fm-label">Девиация (%):</span>
             <input type="number" id="fmDepth" min="0" max="5" value="0" step="0.01" style="width: 70px;">
+        </div>
+    </div>
+    
+    <!-- Контейнер для визуализации -->
+    <div class="control">
+        <h6 style="text-align: center;">Визуализация выходного сигнала</h3>
+        <div class="visualizer-container">
+            <canvas id="oscilloscopeCanvas" class="visualizer-canvas"></canvas>
+            <canvas id="lissajousCanvas" class="visualizer-canvas"></canvas>
         </div>
     </div>
     
@@ -870,6 +895,21 @@
         
         const frequencyListsStorageKey = 'savedFrequencyLists';
         
+        // Переменные для визуализации
+        let oscilloscopeCanvas, lissajousCanvas;
+        let oscilloscopeCtx, lissajousCtx;
+        let leftAnalyser, rightAnalyser;
+        let visualizerAnimationId;
+        
+        // Конфигурация визуализации
+        const visualizerConfig = {
+            visibleSamples: 1024,
+            amplitudeScale: 0.8,
+            lineWidth: 2,
+            leftChannelColor: '#00ff00',
+            rightChannelColor: '#ff0000'
+        };
+        
         function getSavedFrequencyLists() {
             const saved = localStorage.getItem(frequencyListsStorageKey);
             return saved ? JSON.parse(saved) : {};
@@ -1034,6 +1074,18 @@
                 masterGain.gain.value = 0.8;
                 masterGain.connect(audioContext.destination);
                 
+                // Создаем анализаторы для визуализации
+                const splitter = audioContext.createChannelSplitter(2);
+                masterGain.connect(splitter);
+                
+                leftAnalyser = audioContext.createAnalyser();
+                rightAnalyser = audioContext.createAnalyser();
+                leftAnalyser.fftSize = 2048;
+                rightAnalyser.fftSize = 2048;
+                
+                splitter.connect(leftAnalyser, 0);
+                splitter.connect(rightAnalyser, 1);
+                
                 fmOscillator = audioContext.createOscillator();
                 fmOscillator.type = 'sine';
                 fmOscillator.frequency.value = 0;
@@ -1042,41 +1094,43 @@
         }
 
         function createOscillatorChain(freq, pan, phaseShift = 0) {
-            const oscillator = audioContext.createOscillator();
-            const panner = audioContext.createStereoPanner();
-            const delayNode = audioContext.createDelay();
-            const gainNode = audioContext.createGain();
-            
-            oscillator.type = currentWaveType;
-            oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
-            panner.pan.value = pan;
-            delayNode.delayTime.value = phaseShift / (360 * freq);
-            
-            gainNode.gain.value = 1;
-            
-            oscillator.connect(delayNode);
-            delayNode.connect(gainNode);
-            gainNode.connect(panner);
-            panner.connect(masterGain);
-            
-            let fmGain = null;
-            if (fmEnabled) {
-                const deviation = freq * (fmDepth / 100);
-                
-                fmGain = audioContext.createGain();
-                fmGain.gain.value = deviation;
-                
-                fmOscillator.connect(fmGain);
-                fmGain.connect(oscillator.frequency);
-            }
-
-            return { 
-                oscillator, 
-                panner, 
-                delayNode, 
-                gainNode,
-                fmGain
-            };
+        const oscillator = audioContext.createOscillator();
+        const panner = audioContext.createStereoPanner();
+        const delayNode = audioContext.createDelay();
+        const gainNode = audioContext.createGain();
+        
+        oscillator.type = currentWaveType;
+        oscillator.frequency.setValueAtTime(freq, audioContext.currentTime);
+        panner.pan.value = pan;
+        delayNode.delayTime.value = phaseShift / (360 * freq);
+        
+        // Устанавливаем начальную громкость 1, нормализацию сделаем позже
+        gainNode.gain.value = 1;
+        
+        oscillator.connect(delayNode);
+        delayNode.connect(gainNode);
+        gainNode.connect(panner);
+        panner.connect(masterGain);
+        
+        let fmGain = null;
+        if (fmEnabled) {
+        const deviation = freq * (fmDepth / 100);
+        
+        fmGain = audioContext.createGain();
+        fmGain.gain.value = deviation;
+        
+        fmOscillator.connect(fmGain);
+        fmGain.connect(oscillator.frequency);
+        }
+        
+        return { 
+        oscillator, 
+        panner, 
+        delayNode, 
+        gainNode,
+        fmGain,
+        panValue: pan // Сохраняем значение панорамирования
+        };
         }
 
         function calculateLightParameters(frequency) {
@@ -1267,41 +1321,68 @@
         }
         
         function togglePlayback() {
-            if (isFrequencyCycling) {
-                stopFrequencyCycle();
-            }
-            
-            initAudio();
-            isPlaying = !isPlaying;
-            const toggleBtn = document.getElementById('toggleBtn');
-            toggleBtn.textContent = isPlaying ? 'Стоп' : 'Старт';
-            toggleBtn.classList.toggle('active', isPlaying);
-
-            document.getElementById('addFrequency').disabled = isPlaying;
-            document.getElementById('cycleFrequencies').disabled = isPlaying;
-            toggleBtn.disabled = false;
-
-            document.querySelectorAll('.frequency-item').forEach(item => {
-                const id = item.dataset.id;
-                const freq = parseFloat(item.querySelector('.freq-range').value);
-                const pan = parseFloat(item.querySelector('.pan-selector').value);
-                const deg = parseFloat(item.querySelector('.phase-shift').value);
-                if (isPlaying) {
-                    const chain = createOscillatorChain(freq, pan, deg);
-                    channels.set(id, chain);
-                    chain.oscillator.start();
-                    
-                    const gainValue = 1 / Math.max(1, channels.size);
-                    chain.gainNode.gain.value = gainValue;
-                } else {
-                    if (channels.has(id)) {
-                        channels.get(id).oscillator.stop();
-                        channels.delete(id);
-                    }
-                    document.getElementById('addFrequency').disabled = false;
-                    document.getElementById('cycleFrequencies').disabled = false;
-                }
-            });
+        if (isFrequencyCycling) {
+        stopFrequencyCycle();
+        }
+        
+        initAudio();
+        isPlaying = !isPlaying;
+        const toggleBtn = document.getElementById('toggleBtn');
+        toggleBtn.textContent = isPlaying ? 'Стоп' : 'Старт';
+        toggleBtn.classList.toggle('active', isPlaying);
+        
+        document.getElementById('addFrequency').disabled = isPlaying;
+        document.getElementById('cycleFrequencies').disabled = isPlaying;
+        toggleBtn.disabled = false;
+        
+        if (isPlaying) {
+        // Вычисляем суммарные коэффициенты для левого и правого каналов
+        let totalLeftGain = 0;
+        let totalRightGain = 0;
+        
+        document.querySelectorAll('.frequency-item').forEach(item => {
+        const pan = parseFloat(item.querySelector('.pan-selector').value);
+        const leftGain = pan <= 0 ? 1 : 1 - pan;
+        const rightGain = pan >= 0 ? 1 : 1 + pan;
+        totalLeftGain += leftGain;
+        totalRightGain += rightGain;
+        });
+        
+        const maxGain = Math.max(totalLeftGain, totalRightGain, 1);
+        const gainValue = 1 / maxGain;
+        
+        document.querySelectorAll('.frequency-item').forEach(item => {
+        const id = item.dataset.id;
+        const freq = parseFloat(item.querySelector('.freq-range').value);
+        const pan = parseFloat(item.querySelector('.pan-selector').value);
+        const deg = parseFloat(item.querySelector('.phase-shift').value);
+        
+        const chain = createOscillatorChain(freq, pan, deg);
+        channels.set(id, chain);
+        chain.oscillator.start();
+        
+        chain.gainNode.gain.value = gainValue;
+        });
+        } else {
+        channels.forEach(chain => {
+        chain.oscillator.stop();
+        });
+        channels.clear();
+        document.getElementById('addFrequency').disabled = false;
+        document.getElementById('cycleFrequencies').disabled = false;
+        }
+        
+        // Управление визуализацией
+        if (isPlaying) {
+        oscilloscopeCtx.clearRect(0, 0, oscilloscopeCanvas.width, oscilloscopeCanvas.height);
+        lissajousCtx.clearRect(0, 0, lissajousCanvas.width, lissajousCanvas.height);
+        
+        visualizerAnimationId = requestAnimationFrame(drawVisualizer);
+        } else {
+        cancelAnimationFrame(visualizerAnimationId);
+        //oscilloscopeCtx.clearRect(0, 0, oscilloscopeCanvas.width, oscilloscopeCanvas.height);
+        //lissajousCtx.clearRect(0, 0, lissajousCanvas.width, lissajousCanvas.height);
+        }
         }
 
         function startFrequencyCycle() {
@@ -1368,6 +1449,9 @@
                     clearInterval(countdownInterval);
                 }
             }, 1000);
+            
+            // Запускаем визуализацию
+            visualizerAnimationId = requestAnimationFrame(drawVisualizer);
         }
         
         function stopFrequencyCycle() {
@@ -1383,20 +1467,39 @@
             document.getElementById('addFrequency').disabled = false;
             document.getElementById('toggleBtn').disabled = false;
             cycleBtn.disabled = false;
+            
+            // Останавливаем визуализацию
+            cancelAnimationFrame(visualizerAnimationId);
+            // Очищаем canvas
+            //oscilloscopeCtx.clearRect(0, 0, oscilloscopeCanvas.width, oscilloscopeCanvas.height);
+            //lissajousCtx.clearRect(0, 0, lissajousCanvas.width, lissajousCanvas.height);
         }
         
         function playFrequencyPair(pair) {
-            initAudio();
-            stopCurrentPair();
-            
-            currentPairOscillators = [];
-            pair.forEach(freqItem => {
-                const { freq, pan, phaseShift } = freqItem;
-                const chain = createOscillatorChain(freq, pan, phaseShift);
-                chain.gainNode.gain.value = 0.5;
-                chain.oscillator.start();
-                currentPairOscillators.push(chain);
-            });
+        initAudio();
+        stopCurrentPair();
+        
+        // Вычисляем суммарные коэффициенты панорамирования для нормализации
+        let leftSum = 0;
+        let rightSum = 0;
+        
+        pair.forEach(freqItem => {
+        const pan = freqItem.pan;
+        leftSum += pan <= 0 ? 1 : 1 - pan;
+        rightSum += pan >= 0 ? 1 : 1 + pan;
+        });
+        
+        const maxSum = Math.max(leftSum, rightSum, 1);
+        const normalizationFactor = 1 / maxSum;
+        
+        currentPairOscillators = [];
+        pair.forEach(freqItem => {
+        const { freq, pan, phaseShift } = freqItem;
+        const chain = createOscillatorChain(freq, pan, phaseShift);
+        chain.gainNode.gain.value = normalizationFactor * 0.5; // Дополнительное масштабирование
+        chain.oscillator.start();
+        currentPairOscillators.push(chain);
+        });
         }
         
         function stopCurrentPair() {
@@ -1789,6 +1892,137 @@
             };
         }
 
+        // Инициализация визуализатора
+        function initVisualizer() {
+            oscilloscopeCanvas = document.getElementById('oscilloscopeCanvas');
+            lissajousCanvas = document.getElementById('lissajousCanvas');
+            oscilloscopeCtx = oscilloscopeCanvas.getContext('2d');
+            lissajousCtx = lissajousCanvas.getContext('2d');
+            
+            oscilloscopeCanvas.width = oscilloscopeCanvas.offsetWidth;
+            oscilloscopeCanvas.height = oscilloscopeCanvas.offsetHeight;
+            
+            lissajousCanvas.width = lissajousCanvas.offsetWidth;
+            lissajousCanvas.height = lissajousCanvas.offsetHeight;
+        }
+        
+        // Отрисовка визуализатора с двумя каналами
+        function drawVisualizer() {
+        if (!isPlaying && !isFrequencyCycling) {
+        cancelAnimationFrame(visualizerAnimationId);
+        return;
+        }
+        
+        if (!leftAnalyser || !rightAnalyser) return;
+        
+        const oscWidth = oscilloscopeCanvas.width;
+        const oscHeight = oscilloscopeCanvas.height;
+        const lissWidth = lissajousCanvas.width;
+        const lissHeight = lissajousCanvas.height;
+        
+        oscilloscopeCtx.clearRect(0, 0, oscWidth, oscHeight);
+        lissajousCtx.clearRect(0, 0, lissWidth, lissHeight);
+        
+        const bufferLength = leftAnalyser.fftSize;
+        const leftData = new Uint8Array(bufferLength);
+        const rightData = new Uint8Array(bufferLength);
+        
+        leftAnalyser.getByteTimeDomainData(leftData);
+        rightAnalyser.getByteTimeDomainData(rightData);
+        
+        const visibleSamples = Math.min(bufferLength, visualizerConfig.visibleSamples);
+        const startIndex = Math.max(0, Math.floor(bufferLength / 2 - visibleSamples / 2));
+        const sliceWidth = oscWidth / visibleSamples;
+        
+        // Рисуем левый канал
+        oscilloscopeCtx.beginPath();
+        oscilloscopeCtx.strokeStyle = visualizerConfig.leftChannelColor;
+        oscilloscopeCtx.lineWidth = visualizerConfig.lineWidth;
+        
+        let x = 0;
+        for (let i = 0; i < visibleSamples; i++) {
+        const index = startIndex + i;
+        const amplitude = (leftData[index] - 128) / 128;
+        const y = oscHeight / 2 + amplitude * (oscHeight / 2 * visualizerConfig.amplitudeScale);
+        
+        if (i === 0) {
+        oscilloscopeCtx.moveTo(x, y);
+        } else {
+        oscilloscopeCtx.lineTo(x, y);
+        }
+        
+        x += sliceWidth;
+        }
+        oscilloscopeCtx.stroke();
+        
+        // Рисуем правый канал
+        oscilloscopeCtx.beginPath();
+        oscilloscopeCtx.strokeStyle = visualizerConfig.rightChannelColor;
+        oscilloscopeCtx.lineWidth = visualizerConfig.lineWidth;
+        
+        x = 0;
+        for (let i = 0; i < visibleSamples; i++) {
+        const index = startIndex + i;
+        const amplitude = (rightData[index] - 128) / 128;
+        const y = oscHeight / 2 + amplitude * (oscHeight / 2 * visualizerConfig.amplitudeScale);
+        
+        if (i === 0) {
+        oscilloscopeCtx.moveTo(x, y);
+        } else {
+        oscilloscopeCtx.lineTo(x, y);
+        }
+        
+        x += sliceWidth;
+        }
+        oscilloscopeCtx.stroke();
+        
+        // Рисуем центральную линию
+        oscilloscopeCtx.beginPath();
+        oscilloscopeCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        oscilloscopeCtx.lineWidth = 1;
+        oscilloscopeCtx.moveTo(0, oscHeight / 2);
+        oscilloscopeCtx.lineTo(oscWidth, oscHeight / 2);
+        oscilloscopeCtx.stroke();
+        
+        // Рисуем фигуру Лиссажу
+        lissajousCtx.beginPath();
+        lissajousCtx.strokeStyle = '#FF00FF';
+        lissajousCtx.lineWidth = 1;
+        
+        const squareSize = Math.min(lissWidth, lissHeight) * 0.8;
+        const centerX = lissWidth / 2;
+        const centerY = lissHeight / 2;
+        
+        for (let i = 0; i < visibleSamples; i++) {
+        const index = startIndex + i;
+        const xAmplitude = (leftData[index] - 128) / 128;
+        const yAmplitude = (rightData[index] - 128) / 128;
+        
+        const x = centerX + xAmplitude * squareSize / 2;
+        const y = centerY + yAmplitude * squareSize / 2;
+        
+        if (i === 0) {
+        lissajousCtx.moveTo(x, y);
+        } else {
+        lissajousCtx.lineTo(x, y);
+        }
+        }
+        
+        lissajousCtx.stroke();
+        
+        // Рисуем перекрестие
+        lissajousCtx.beginPath();
+        lissajousCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+        lissajousCtx.lineWidth = 1;
+        lissajousCtx.moveTo(centerX, centerY - squareSize/2);
+        lissajousCtx.lineTo(centerX, centerY + squareSize/2);
+        lissajousCtx.moveTo(centerX - squareSize/2, centerY);
+        lissajousCtx.lineTo(centerX + squareSize/2, centerY);
+        lissajousCtx.stroke();
+        
+        visualizerAnimationId = requestAnimationFrame(drawVisualizer);
+        }
+
         document.getElementById('addFrequency').addEventListener('click', () => {
             createFrequencyControl();
         });
@@ -1910,9 +2144,13 @@
             createFrequencyControl(432);
             renderSavedLists();
             initScrollTopButton();
+            initVisualizer();
             
             document.getElementById('freqAccordion').style.display = 'block';
             document.getElementById('colorAccordion').style.display = 'block';
+            
+            // Обработка изменения размера окна
+            window.addEventListener('resize', initVisualizer);
         });
     </script>
     <script>
