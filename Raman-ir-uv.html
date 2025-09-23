@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Спектральный конвертер</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f2f5;
+            padding: 20px;
+            max-width: 100%;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 100%;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
+            font-size: 1.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus {
+            border-color: #4CAF50;
+            outline: none;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background-color 0.3s;
+        }
+
+        .btn:hover {
+            background-color: #45a049;
+        }
+
+        .btn:active {
+            transform: translateY(1px);
+        }
+
+        .info-btn {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px;
+            height: 40px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f5e8;
+            border-radius: 5px;
+            border-left: 4px solid #4CAF50;
+        }
+
+        .sound-data {
+            font-family: monospace;
+            font-size: 14px;
+            line-height: 1.4;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .database {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        .database h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .substance-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .substance-item {
+            padding: 8px 12px;
+            background-color: #e3f2fd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            text-align: center;
+        }
+
+        .substance-item:hover {
+            background-color: #bbdefb;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 90%;
+            max-height: 80%;
+            overflow-y: auto;
+            margin: 20px;
+        }
+
+        .modal h2 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .modal p {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .modal ul {
+            margin-left: 20px;
+            margin-bottom: 15px;
+        }
+
+        .modal li {
+            margin-bottom: 5px;
+        }
+
+        .close-btn {
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+        
+        footer { 
+        text-align: center; 
+        margin-top: 30px; 
+        padding: 20px 0; 
+        border-top: 1px solid #eee; 
+        }
+        footer p { margin: 5px 0; }
+        .author { margin-top: 15px; }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            
+            .container {
+                padding: 15px;
+            }
+            
+            h1 {
+                font-size: 1.3rem;
+            }
+            
+            input[type="text"] {
+                padding: 10px;
+                font-size: 14px;
+            }
+            
+            .btn {
+                padding: 12px;
+                font-size: 14px;
+            }
+            
+            .substance-list {
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            }
+            
+            .info-btn {
+                top: 10px;
+                right: 10px;
+                width: 35px;
+                height: 35px;
+                font-size: 18px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="info-btn" onclick="showInfo()">i</button>
+
+    <div class="container">
+        <h1>Конвертер спектров в звук</h1>
+        
+        <div class="form-group">
+            <label for="substance">Вещество:</label>
+            <input type="text" id="substance" placeholder="Введите название вещества">
+        </div>
+        
+        <div class="form-group">
+            <label for="link">Ссылка:</label>
+            <input type="text" id="link" placeholder="Введите ссылку">
+        </div>
+        
+        <div class="form-group">
+            <label for="raman">Спектры сдвиг Раман (см⁻¹):</label>
+            <input type="text" id="raman" placeholder="Формат: 656.346, 17; 648.494, 23">
+        </div>
+        
+        <div class="form-group">
+            <label for="ir">Спектры поглощения IR (см⁻¹):</label>
+            <input type="text" id="ir" placeholder="Формат: 400.200, 50; 500.800, 30">
+        </div>
+        
+        <div class="form-group">
+            <label for="uv">Спектры поглощения UV (см⁻¹):</label>
+            <input type="text" id="uv" placeholder="Формат: 700.400, 25; 800.900, 45">
+        </div>
+        
+        <button class="btn" onclick="convertToSound()">Перевод в спектры звука</button>
+        
+        <div class="result" id="result" style="display: none;">
+            <h3>Звуковые спектры (частота, громкость):</h3>
+            <div class="sound-data" id="soundOutput"></div>
+        </div>
+
+        <div class="database" id="database" style="display: none;">
+            <h3>База веществ:</h3>
+            <div class="substance-list" id="substanceList"></div>
+        </div>
+    </div>
+
+    <div class="modal" id="infoModal">
+        <div class="modal-content">
+            <h2>Информация о программе</h2>
+            <p><strong>Преобразование спектров вещества в низкочастотный ряд с перерасчётом громкости</strong></p>
+            
+            <p><strong>Правила записи в поля ввода:</strong></p>
+            <ul>
+                <li>Каждый спектр записывается в формате: <strong>спектр, интенсивность</strong></li>
+                <li>Спектры разделяются точкой с запятой: <strong>;</strong></li>
+                <li>Пример: <strong>656.346, 17; 648.494, 23; 317.594, 12</strong></li>
+                <li>Если интенсивность не указана, она считается равной <strong>50</strong> единиц</li>
+                <li>Десятичные дроби разделяются точкой: <strong>656.346</strong></li>
+            </ul>
+            
+            <p><strong>Методика преобразования:</strong></p>
+            <ul>
+                <li>Спектры преобразуются в герцовый диапазон</li>
+                <li>Интенсивности пересчитываются в проценты от общей суммы</li>
+                <li>Сумма процентных интенсивностей по всем спектрам не превышает 100%</li>
+            </ul>
+            
+            <button class="close-btn" onclick="hideInfo()">Закрыть</button>
+        </div>
+    </div>
+    
+    <footer>
+    <p><a href="https://meweryk.github.io/midi/kolokol0018.html">Генератор колокольного звона</a></p>
+    <p><a href="https://meweryk.github.io/midi/calc_music.html">Анализ музыкального строя</a></p>
+    <p><a href="https://meweryk.github.io/midi/processorG.html">Аудиоплеер фазовращатель</a></p>
+    <p><a href="https://meweryk.github.io/Wave-of-land/index.html">Ещё проекты</a></p>
+    <p class="author">Автор</p>
+    </footer>
+
+    <script>
+        // Константы для расчета
+        const SPEED_OF_LIGHT = 299792458; // м/с
+        const CM_TO_HZ_FACTOR = 100 * SPEED_OF_LIGHT; // 29979245800
+        const DIVISION_FACTOR = Math.pow(2, 37); // 137438953472
+        const STORAGE_KEY = 'spectraDatabase';
+        const DEFAULT_INTENSITY = 50;
+
+        // Функция для парсинга спектров с интенсивностями
+        function parseSpectraWithIntensity(inputString) {
+            if (!inputString.trim()) return { spectra: [], intensities: [] };
+            
+            const pairs = inputString.split(';')
+                .map(pair => pair.trim())
+                .filter(pair => pair !== '');
+            
+            const spectra = [];
+            const intensities = [];
+            
+            pairs.forEach(pair => {
+                const parts = pair.split(',');
+                if (parts.length >= 1) {
+                    const spectrum = parseFloat(parts[0].trim());
+                    let intensity = DEFAULT_INTENSITY;
+                    
+                    if (parts.length >= 2 && parts[1].trim() !== '') {
+                        intensity = parseFloat(parts[1].trim());
+                    }
+                    
+                    if (!isNaN(spectrum)) {
+                        spectra.push(spectrum);
+                        intensities.push(isNaN(intensity) ? DEFAULT_INTENSITY : intensity);
+                    }
+                }
+            });
+            
+            return { spectra, intensities };
+        }
+
+        // Функция для конвертации спектров в звук
+        function convertSpectrumToSound(spectrumArray) {
+            return spectrumArray.map(wavenumber => {
+                const frequencyHz = wavenumber * CM_TO_HZ_FACTOR;
+                return frequencyHz / DIVISION_FACTOR;
+            });
+        }
+
+        // Функция для расчета процентных интенсивностей
+        function calculatePercentageIntensities(allIntensities) {
+            const totalIntensity = allIntensities.reduce((sum, intensity) => sum + intensity, 0);
+            return allIntensities.map(intensity => (intensity / totalIntensity) * 100);
+        }
+
+        // Функция для форматирования чисел с точностью до 3 знаков
+        function formatNumber(num) {
+            return num.toFixed(3);
+        }
+
+        // Функция для отображения звуковых данных в новом формате
+        function displaySoundData(soundData, percentageData) {
+            const soundOutput = document.getElementById('soundOutput');
+            let allOscillators = [];
+
+            // Собираем все осцилляторы в один массив
+            if (soundData.раман && soundData.раман.length > 0) {
+                soundData.раман.forEach((freq, index) => {
+                    allOscillators.push({
+                        frequency: freq,
+                        volume: percentageData.раман[index]
+                    });
+                });
+            }
+
+            if (soundData.ir && soundData.ir.length > 0) {
+                soundData.ir.forEach((freq, index) => {
+                    allOscillators.push({
+                        frequency: freq,
+                        volume: percentageData.ir[index]
+                    });
+                });
+            }
+
+            if (soundData.uv && soundData.uv.length > 0) {
+                soundData.uv.forEach((freq, index) => {
+                    allOscillators.push({
+                        frequency: freq,
+                        volume: percentageData.uv[index]
+                    });
+                });
+            }
+
+            // Формируем строку в требуемом формате
+            const oscillatorsString = allOscillators.map(osc => 
+                `${formatNumber(osc.frequency)}, ${formatNumber(osc.volume)}`
+            ).join('; ');
+
+            soundOutput.textContent = oscillatorsString || 'Нет данных для отображения';
+        }
+
+        // Функция для сохранения в localStorage
+        function saveToLocalStorage(data) {
+            let database = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+            database[data.вещество] = data;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(database));
+        }
+
+        // Функция для загрузки базы веществ
+        function loadSubstanceDatabase() {
+            const database = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+            const substanceList = document.getElementById('substanceList');
+            
+            if (Object.keys(database).length === 0) {
+                document.getElementById('database').style.display = 'none';
+                return;
+            }
+
+            substanceList.innerHTML = '';
+            const substances = Object.keys(database).sort();
+            
+            substances.forEach(substance => {
+                const item = document.createElement('div');
+                item.className = 'substance-item';
+                item.textContent = substance;
+                item.onclick = () => loadSubstanceData(database[substance]);
+                substanceList.appendChild(item);
+            });
+
+            document.getElementById('database').style.display = 'block';
+        }
+
+        // Функция для загрузки данных вещества в форму
+        function loadSubstanceData(data) {
+            document.getElementById('substance').value = data.вещество || '';
+            document.getElementById('link').value = data.ссылка || '';
+            
+            // Восстанавливаем данные в формате для полей ввода
+            if (data.спектры?.раман && data.интенсивности?.раман) {
+                const ramanText = data.спектры.раман.map((spectrum, index) => 
+                    `${spectrum}, ${data.интенсивности.раман[index]}`
+                ).join('; ');
+                document.getElementById('raman').value = ramanText;
+            } else {
+                document.getElementById('raman').value = '';
+            }
+            
+            if (data.спектры?.ir && data.интенсивности?.ir) {
+                const irText = data.спектры.ir.map((spectrum, index) => 
+                    `${spectrum}, ${data.интенсивности.ir[index]}`
+                ).join('; ');
+                document.getElementById('ir').value = irText;
+            } else {
+                document.getElementById('ir').value = '';
+            }
+            
+            if (data.спектры?.uv && data.интенсивности?.uv) {
+                const uvText = data.спектры.uv.map((spectrum, index) => 
+                    `${spectrum}, ${data.интенсивности.uv[index]}`
+                ).join('; ');
+                document.getElementById('uv').value = uvText;
+            } else {
+                document.getElementById('uv').value = '';
+            }
+            
+            // Показываем звуковые данные если они есть
+            if (data.звук && data.процентныеИнтенсивности) {
+                displaySoundData(data.звук, data.процентныеИнтенсивности);
+                document.getElementById('result').style.display = 'block';
+            } else {
+                document.getElementById('result').style.display = 'none';
+            }
+        }
+
+        // Основная функция конвертации
+        function convertToSound() {
+            const substance = document.getElementById('substance').value.trim();
+            const link = document.getElementById('link').value.trim();
+            const ramanInput = document.getElementById('raman').value;
+            const irInput = document.getElementById('ir').value;
+            const uvInput = document.getElementById('uv').value;
+
+            if (!substance) {
+                alert('Пожалуйста, введите название вещества');
+                return;
+            }
+
+            // Парсим данные с интенсивностями
+            const ramanData = parseSpectraWithIntensity(ramanInput);
+            const irData = parseSpectraWithIntensity(irInput);
+            const uvData = parseSpectraWithIntensity(uvInput);
+
+            // Собираем все интенсивности для расчета процентов
+            const allIntensities = [
+                ...ramanData.intensities,
+                ...irData.intensities,
+                ...uvData.intensities
+            ];
+
+            if (allIntensities.length === 0) {
+                alert('Пожалуйста, введите хотя бы один спектр');
+                return;
+            }
+
+            // Рассчитываем процентные интенсивности
+            const percentageIntensities = calculatePercentageIntensities(allIntensities);
+            
+            // Распределяем проценты по типам спектров
+            let currentIndex = 0;
+            const percentageData = {
+                раман: percentageIntensities.slice(currentIndex, currentIndex + ramanData.intensities.length)
+            };
+            currentIndex += ramanData.intensities.length;
+            
+            percentageData.ir = percentageIntensities.slice(currentIndex, currentIndex + irData.intensities.length);
+            currentIndex += irData.intensities.length;
+            
+            percentageData.uv = percentageIntensities.slice(currentIndex, currentIndex + uvData.intensities.length);
+
+            const substanceData = {
+                вещество: substance,
+                ссылка: link || '',
+                спектры: {
+                    раман: ramanData.spectra,
+                    ir: irData.spectra,
+                    uv: uvData.spectra
+                },
+                интенсивности: {
+                    раман: ramanData.intensities,
+                    ir: irData.intensities,
+                    uv: uvData.intensities
+                },
+                звук: {},
+                процентныеИнтенсивности: percentageData
+            };
+
+            // Конвертируем спектры в звук
+            if (ramanData.spectra.length > 0) {
+                substanceData.звук.раман = convertSpectrumToSound(ramanData.spectra);
+            }
+
+            if (irData.spectra.length > 0) {
+                substanceData.звук.ir = convertSpectrumToSound(irData.spectra);
+            }
+
+            if (uvData.spectra.length > 0) {
+                substanceData.звук.uv = convertSpectrumToSound(uvData.spectra);
+            }
+
+            // Сохраняем в localStorage
+            saveToLocalStorage(substanceData);
+            
+            // Показываем звуковые данные
+            displaySoundData(substanceData.звук, percentageData);
+            document.getElementById('result').style.display = 'block';
+            
+            // Обновляем базу веществ
+            loadSubstanceDatabase();
+        }
+
+        // Функции для модального окна
+        function showInfo() {
+            document.getElementById('infoModal').style.display = 'flex';
+        }
+
+        function hideInfo() {
+            document.getElementById('infoModal').style.display = 'none';
+        }
+
+        // Закрытие модального окна по клику вне его
+        window.onclick = function(event) {
+            const modal = document.getElementById('infoModal');
+            if (event.target === modal) {
+                hideInfo();
+            }
+        }
+
+        // Инициализация при загрузке страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            loadSubstanceDatabase();
+            
+            const inputs = document.querySelectorAll('input[type="text"]');
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    document.getElementById('result').style.display = 'none';
+                });
+            });
+        });
+    </script>
+</body>
+</html>
