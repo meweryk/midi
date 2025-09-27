@@ -12,146 +12,258 @@
         }
 
         body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f2f5;
-            padding: 20px;
-            max-width: 100%;
-            overflow-x: hidden;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #e0e0e0;
+            padding: 15px;
+            min-height: 100vh;
+            line-height: 1.4;
         }
 
         .container {
             max-width: 100%;
             margin: 0 auto;
-            background: white;
+            background: rgba(47, 79, 79, 0.8);
+            backdrop-filter: blur(10px);
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
         }
 
         h1 {
             text-align: center;
             margin-bottom: 20px;
-            color: #333;
-            font-size: 1.5rem;
+            color: #FFDEAD;
+            font-size: 1.4rem;
+            font-weight: 300;
+            letter-spacing: 0.5px;
         }
 
         .form-group {
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
 
         label {
             display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-            color: #555;
+            margin-bottom: 4px;
+            font-weight: 500;
+            color: #a0a0c0;
+            font-size: 0.9rem;
         }
 
         input[type="text"] {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #ddd;
-            border-radius: 5px;
-            font-size: 16px;
-            transition: border-color 0.3s;
+            padding: 10px;
+            background: rgba(30, 30, 45, 0.8);
+            border: 1px solid rgba(100, 100, 150, 0.3);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: #e0e0e0;
+            transition: all 0.3s ease;
         }
 
         input[type="text"]:focus {
-            border-color: #4CAF50;
+            border-color: #64ffda;
             outline: none;
+            box-shadow: 0 0 0 2px rgba(100, 255, 218, 0.2);
+        }
+
+        /* Адаптивные текстовые поля для спектров */
+        .spectrum-input {
+            width: 100%;
+            min-height: 45px;
+            padding: 10px;
+            background: rgba(30, 30, 45, 0.8);
+            border: 1px solid rgba(100, 100, 150, 0.3);
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: #e0e0e0;
+            transition: all 0.3s ease;
+            resize: vertical;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Monaco', monospace;
+            line-height: 1.4;
+        }
+
+        .spectrum-input:focus {
+            border-color: #64ffda;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(100, 255, 218, 0.2);
         }
 
         .btn {
             width: 100%;
-            padding: 15px;
-            background-color: #4CAF50;
-            color: white;
+            padding: 12px;
+            background: linear-gradient(135deg, #64ffda 0%, #00bcd4 100%);
+            color: #1a1a2e;
             border: none;
-            border-radius: 5px;
-            font-size: 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
             cursor: pointer;
-            margin-top: 20px;
-            transition: background-color 0.3s;
+            margin-top: 15px;
+            transition: all 0.3s ease;
+            letter-spacing: 0.5px;
         }
 
         .btn:hover {
-            background-color: #45a049;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(100, 255, 218, 0.3);
         }
 
         .btn:active {
-            transform: translateY(1px);
+            transform: translateY(0);
         }
 
         .info-btn {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 40px;
-            height: 40px;
-            background-color: #2196F3;
-            color: white;
+            top: 15px;
+            right: 15px;
+            width: 36px;
+            height: 36px;
+            background: rgba(100, 255, 218, 0.9);
+            color: #1a1a2e;
             border: none;
             border-radius: 50%;
-            font-size: 20px;
+            font-size: 16px;
             font-weight: bold;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .info-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(100, 255, 218, 0.4);
         }
 
         .result {
             margin-top: 20px;
             padding: 15px;
-            background-color: #e8f5e8;
-            border-radius: 5px;
-            border-left: 4px solid #4CAF50;
+            background: rgba(20, 30, 40, 0.6);
+            border-radius: 6px;
+            border-left: 3px solid #64ffda;
+        }
+
+        .result h3 {
+            color: #64ffda;
+            font-size: 0.95rem;
+            margin-bottom: 8px;
+            font-weight: 500;
         }
 
         .sound-data {
-            font-family: monospace;
-            font-size: 14px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.85rem;
             line-height: 1.4;
-            background-color: #f8f9fa;
+            background: rgba(10, 15, 25, 0.8);
             padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #ddd;
+            border-radius: 4px;
+            border: 1px solid rgba(100, 255, 218, 0.2);
             white-space: pre-wrap;
             word-wrap: break-word;
+            color: #64ffda;
         }
 
         .database {
-            margin-top: 30px;
+            margin-top: 25px;
             padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-            border: 1px solid #ddd;
+            background: rgba(20, 30, 40, 0.6);
+            border-radius: 6px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .database h3 {
-            margin-bottom: 15px;
-            color: #333;
+            color: #64ffda;
+            font-size: 0.95rem;
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .search-container {
+            margin-bottom: 12px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 8px 10px;
+            background: rgba(20, 20, 35, 0.8);
+            border: 1px solid rgba(100, 100, 150, 0.3);
+            border-radius: 6px;
+            font-size: 0.85rem;
+            color: #e0e0e0;
+        }
+
+        .search-input:focus {
+            border-color: #64ffda;
+            outline: none;
+            box-shadow: 0 0 0 2px rgba(100, 255, 218, 0.2);
         }
 
         .substance-list {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-            gap: 10px;
-            max-height: 200px;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 8px;
+            max-height: 180px;
             overflow-y: auto;
         }
 
-        .substance-item {
-            padding: 8px 12px;
-            background-color: #e3f2fd;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            text-align: center;
+        /* Контейнер для пары кнопок */
+        .substance-pair {
+            display: flex;
+            gap: 0;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
 
-        .substance-item:hover {
-            background-color: #bbdefb;
+        /* Кнопка вещества */
+        .substance-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: rgba(40, 45, 70, 0.8);
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            color: #e0e0e0;
+            text-align: left;
+            min-height: 35px;
+            display: flex;
+            align-items: center;
+            border-radius: 4px 0 0 4px;
+        }
+
+        .substance-btn:hover {
+            background: rgba(60, 65, 90, 0.9);
+            transform: translateY(-1px);
+        }
+
+        /* Кнопка удаления */
+        .delete-btn {
+            padding: 8px 12px;
+            background: rgba(255, 71, 87, 0.9);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            font-weight: bold;
+            min-width: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .delete-btn:hover {
+            background: rgba(255, 55, 66, 1);
+            transform: translateY(-1px);
         }
 
         .modal {
@@ -161,30 +273,37 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(0,0,0,0.5);
-            z-index: 1000;
+            background-color: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 2000;
             align-items: center;
             justify-content: center;
         }
 
         .modal-content {
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            max-width: 90%;
-            max-height: 80%;
+            background: linear-gradient(135deg, #1e1e2e 0%, #252536 100%);
+            padding: 25px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
             overflow-y: auto;
-            margin: 20px;
+            border: 1px solid rgba(100, 255, 218, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
         }
 
         .modal h2 {
-            color: #333;
+            color: #64ffda;
             margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: 500;
         }
 
         .modal p {
             margin-bottom: 10px;
             line-height: 1.5;
+            font-size: 0.9rem;
+            color: #c0c0d0;
         }
 
         .modal ul {
@@ -194,26 +313,75 @@
 
         .modal li {
             margin-bottom: 5px;
+            font-size: 0.9rem;
+            color: #c0c0d0;
         }
 
         .close-btn {
-            background-color: #f44336;
+            background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 8px 16px;
+            border-radius: 4px;
             cursor: pointer;
             margin-top: 15px;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .close-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(255, 107, 107, 0.3);
         }
         
         footer { 
-        text-align: center; 
-        margin-top: 30px; 
-        padding: 20px 0; 
-        border-top: 1px solid #eee; 
+            text-align: center; 
+            margin-top: 25px; 
+            padding: 15px 0; 
+            border-top: 1px solid rgba(255, 255, 255, 0.1); 
         }
-        footer p { margin: 5px 0; }
-        .author { margin-top: 15px; }
+        
+        footer p { 
+            margin: 4px 0; 
+            font-size: 0.8rem;
+            color: #a0a0c0;
+        }
+        
+        footer a {
+            color: #64ffda;
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+        
+        footer a:hover {
+            color: #00bcd4;
+            text-decoration: underline;
+        }
+        
+        .author { 
+            margin-top: 12px; 
+            color: #8888aa;
+            font-size: 0.75rem;
+        }
+
+        /* Стилизация скроллбара */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(20, 20, 35, 0.5);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(100, 255, 218, 0.5);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(100, 255, 218, 0.7);
+        }
 
         @media (max-width: 480px) {
             body {
@@ -225,29 +393,50 @@
             }
             
             h1 {
-                font-size: 1.3rem;
+                font-size: 1.2rem;
             }
             
             input[type="text"] {
-                padding: 10px;
-                font-size: 14px;
+                padding: 8px;
+                font-size: 0.85rem;
+            }
+            
+            .spectrum-input {
+                padding: 8px;
+                font-size: 0.85rem;
+                min-height: 40px;
             }
             
             .btn {
-                padding: 12px;
-                font-size: 14px;
+                padding: 10px;
+                font-size: 0.85rem;
             }
             
             .substance-list {
-                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+                grid-template-columns: 1fr;
+            }
+            
+            .substance-btn {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+            }
+            
+            .delete-btn {
+                padding: 6px 10px;
+                font-size: 0.8rem;
+                min-width: 30px;
             }
             
             .info-btn {
                 top: 10px;
                 right: 10px;
-                width: 35px;
-                height: 35px;
-                font-size: 18px;
+                width: 32px;
+                height: 32px;
+                font-size: 14px;
+            }
+            
+            .modal-content {
+                padding: 20px;
             }
         }
     </style>
@@ -270,17 +459,17 @@
         
         <div class="form-group">
             <label for="raman">Спектры сдвиг Раман (см⁻¹):</label>
-            <input type="text" id="raman" placeholder="Формат: 656.346, 17; 648.494, 23">
+            <textarea class="spectrum-input" id="raman" placeholder="Формат: 656.346, 17; 648.494, 23" rows="1"></textarea>
         </div>
         
         <div class="form-group">
             <label for="ir">Спектры поглощения IR (см⁻¹):</label>
-            <input type="text" id="ir" placeholder="Формат: 400.200, 50; 500.800, 30">
+            <textarea class="spectrum-input" id="ir" placeholder="Формат: 400.200, 50; 500.800, 30" rows="1"></textarea>
         </div>
         
         <div class="form-group">
             <label for="uv">Спектры поглощения UV (см⁻¹):</label>
-            <input type="text" id="uv" placeholder="Формат: 700.400, 25; 800.900, 45">
+            <textarea class="spectrum-input" id="uv" placeholder="Формат: 700.400, 25; 800.900, 45" rows="1"></textarea>
         </div>
         
         <button class="btn" onclick="convertToSound()">Перевод в спектры звука</button>
@@ -292,6 +481,9 @@
 
         <div class="database" id="database" style="display: none;">
             <h3>База веществ:</h3>
+            <div class="search-container">
+                <input type="text" id="searchInput" class="search-input" placeholder="Найти вещество...">
+            </div>
             <div class="substance-list" id="substanceList"></div>
         </div>
     </div>
@@ -322,7 +514,8 @@
     </div>
     
     <footer>
-    <p><a href="https://meweryk.github.io/midi/index.html">Генератор частот</a></p>
+    <p><a href="https://meweryk.github.io/midi/index.html">Генератор колокольного звона</a></p>
+    <p><a href="https://meweryk.github.io/midi/calc_music.html">Анализ музыкального строя</a></p>
     <p class="author">Автор</p>
     </footer>
 
@@ -333,6 +526,12 @@
         const DIVISION_FACTOR = Math.pow(2, 37); // 137438953472
         const STORAGE_KEY = 'spectraDatabase';
         const DEFAULT_INTENSITY = 50;
+
+        // Функция для автоподстройки высоты текстовых полей
+        function autoResizeTextarea(textarea) {
+            textarea.style.height = 'auto';
+            textarea.style.height = (textarea.scrollHeight) + 'px';
+        }
 
         // Функция для парсинга спектров с интенсивностями
         function parseSpectraWithIntensity(inputString) {
@@ -432,10 +631,36 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(database));
         }
 
+        // Функция для удаления вещества из localStorage
+        function deleteSubstance(substanceName) {
+            if (confirm(`Вы уверены, что хотите удалить вещество "${substanceName}"?`)) {
+                let database = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+                delete database[substanceName];
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(database));
+                loadSubstanceDatabase(); // Перезагружаем базу
+            }
+        }
+
+        // Функция для фильтрации веществ
+        function filterSubstances() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const substancePairs = document.querySelectorAll('.substance-pair');
+            
+            substancePairs.forEach(pair => {
+                const substanceName = pair.querySelector('.substance-btn').textContent.toLowerCase();
+                if (substanceName.includes(searchTerm)) {
+                    pair.style.display = 'flex';
+                } else {
+                    pair.style.display = 'none';
+                }
+            });
+        }
+
         // Функция для загрузки базы веществ
         function loadSubstanceDatabase() {
             const database = JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
             const substanceList = document.getElementById('substanceList');
+            const searchInput = document.getElementById('searchInput');
             
             if (Object.keys(database).length === 0) {
                 document.getElementById('database').style.display = 'none';
@@ -446,13 +671,32 @@
             const substances = Object.keys(database).sort();
             
             substances.forEach(substance => {
-                const item = document.createElement('div');
-                item.className = 'substance-item';
-                item.textContent = substance;
-                item.onclick = () => loadSubstanceData(database[substance]);
-                substanceList.appendChild(item);
+                // Создаем контейнер для пары кнопок
+                const pairContainer = document.createElement('div');
+                pairContainer.className = 'substance-pair';
+                
+                // Кнопка вещества
+                const substanceBtn = document.createElement('button');
+                substanceBtn.className = 'substance-btn';
+                substanceBtn.textContent = substance;
+                substanceBtn.title = `Загрузить данные для ${substance}`;
+                substanceBtn.onclick = () => loadSubstanceData(database[substance]);
+                
+                // Кнопка удаления
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'delete-btn';
+                deleteBtn.textContent = '×';
+                deleteBtn.title = `Удалить ${substance}`;
+                deleteBtn.onclick = () => deleteSubstance(substance);
+                
+                // Добавляем кнопки в контейнер
+                pairContainer.appendChild(substanceBtn);
+                pairContainer.appendChild(deleteBtn);
+                substanceList.appendChild(pairContainer);
             });
 
+            // Сбрасываем поле поиска и показываем базу
+            searchInput.value = '';
             document.getElementById('database').style.display = 'block';
         }
 
@@ -467,8 +711,10 @@
                     `${spectrum}, ${data.интенсивности.раман[index]}`
                 ).join('; ');
                 document.getElementById('raman').value = ramanText;
+                autoResizeTextarea(document.getElementById('raman'));
             } else {
                 document.getElementById('raman').value = '';
+                autoResizeTextarea(document.getElementById('raman'));
             }
             
             if (data.спектры?.ir && data.интенсивности?.ir) {
@@ -476,8 +722,10 @@
                     `${spectrum}, ${data.интенсивности.ir[index]}`
                 ).join('; ');
                 document.getElementById('ir').value = irText;
+                autoResizeTextarea(document.getElementById('ir'));
             } else {
                 document.getElementById('ir').value = '';
+                autoResizeTextarea(document.getElementById('ir'));
             }
             
             if (data.спектры?.uv && data.интенсивности?.uv) {
@@ -485,8 +733,10 @@
                     `${spectrum}, ${data.интенсивности.uv[index]}`
                 ).join('; ');
                 document.getElementById('uv').value = uvText;
+                autoResizeTextarea(document.getElementById('uv'));
             } else {
                 document.getElementById('uv').value = '';
+                autoResizeTextarea(document.getElementById('uv'));
             }
             
             // Показываем звуковые данные если они есть
@@ -605,12 +855,28 @@
         document.addEventListener('DOMContentLoaded', function() {
             loadSubstanceDatabase();
             
-            const inputs = document.querySelectorAll('input[type="text"]');
-            inputs.forEach(input => {
+            // Добавляем обработчики для автоподстройки высоты текстовых полей
+            const spectrumInputs = document.querySelectorAll('.spectrum-input');
+            spectrumInputs.forEach(input => {
+                // Инициализация высоты при загрузке
+                autoResizeTextarea(input);
+                
+                // Обработчик изменения содержимого
+                input.addEventListener('input', function() {
+                    autoResizeTextarea(this);
+                    document.getElementById('result').style.display = 'none';
+                });
+            });
+            
+            const regularInputs = document.querySelectorAll('input[type="text"]');
+            regularInputs.forEach(input => {
                 input.addEventListener('input', function() {
                     document.getElementById('result').style.display = 'none';
                 });
             });
+            
+            // Добавляем обработчик для поля поиска
+            document.getElementById('searchInput').addEventListener('input', filterSubstances);
         });
     </script>
 </body>
