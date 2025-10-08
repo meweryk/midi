@@ -28,8 +28,8 @@
 -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="manifest" href="/midi/manifest.json">
-    <link rel="icon" href="icon-192.png">
+    <link rel="manifest" href="./manifest.json">
+    <link rel="icon" href="./icon-192.png">
     <meta name="theme-color" content="#3a4a58">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <title>Генератор частот с FM модуляцией</title>
@@ -38,7 +38,7 @@
             --primary-color: #3a4a58;
             --secondary-color: #5d7b94;
             --accent-color: #6bb9f0;
-            --background-color: #f5f7fa;
+            --background-color: #a6c2ec;
             --control-bg: #e8ecef;
             --border-color: #d1d9e0;
             --text-color: #333;
@@ -49,7 +49,15 @@
         
         body {
             font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-            margin: 10px;
+            /* Уменьшаем отступы, чтобы соответствовать более короткой шапке/подвалу */
+            padding-top: 45px; /* Новый отступ для короткой шапки */
+            padding-bottom: 45px; /* Новый отступ для подвала */
+            margin-left: auto; /* Центрирование содержимого */
+            margin-right: auto; /* Центрирование содержимого */
+            min-height: 100vh; 
+            display: flex;
+            flex-direction: column;
+            /*margin: 10px;*/
             max-width: 800px;
             font-size: 0.9em;
             background-color: var(--background-color);
@@ -59,13 +67,22 @@
             font-size: 0.8em;
         }
         .control {
-            margin: 8px;
+            margin: 8px 0;
             padding: 10px;
             border: 1px solid var(--border-color);
             background: var(--control-bg);
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         }
+
+        .control-block {
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            background: var(--control-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        } 
         .frequency-item {
             margin: 6px 0;
             display: flex;
@@ -105,6 +122,7 @@
             height: 6px;
             border-radius: 3px;
             background: var(--border-color);
+            appearance: none;
             -webkit-appearance: none;
         }
         input[type="range"]::-webkit-slider-thumb {
@@ -494,6 +512,10 @@
                 font-size: 0.9em;
                 padding: 10px 12px;
             }
+             /* Уменьшение отступа main-content на мобильных экранах для лучшего использования пространства */
+            .main-content {
+                padding: 10px; 
+            }
         }
         
         @keyframes fadeIn {
@@ -578,7 +600,7 @@
             display: flex;
             flex-direction: column;
             gap: 10px;
-            margin: 15px 0;
+            margin: 10px 0;
         }
         
         .visualizer-canvas {
@@ -605,10 +627,91 @@
             font-size: 16px;
             color: var(--secondary-color);
         }
+        /* Пользовательские стили для шапки (Navbar) */
+        .navbar-custom {
+            background-color: var(--primary-color) !important;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            padding-top: 5px !important; 
+            padding-bottom: 5px !important; 
+            min-height: 45px; /* Минимальная высота для короткой шапки */
+        }
+        /*Уменьшение размера иконки меню */
+        .navbar-toggler-icon {
+            width: 1.2em;
+            height: 1.2em;
+        }
+        /* Стиль для заголовка в шапке */
+        .navbar-brand-custom {
+            color: var(--accent-color) !important;
+            font-weight: 600;
+        }
+        /* Стиль для всплывающего меню (Offcanvas) */
+        .offcanvas-custom {
+            background-color: var(--primary-color);
+        }
+        .offcanvas-header {
+            border-bottom: 1px solid var(--secondary-color);
+        }
+
+        /* Отступ для основного контента */
+        .main-content {
+            padding: 20px 10px 10px 10px;
+            flex-grow: 1; 
+        }
+        /* Стиль для подвала (Footer) */
+        .footer-custom {
+            background-color: var(--primary-color);
+            box-shadow: 0 -2px 4px rgba(0, 0, 0, 0.1);
+            /* Убрано width: 100%; т.к. fixed-bottom обеспечивает полную ширину viewport */
+            padding-top: 5px !important;
+            padding-bottom: 5px !important;
+            min-height: 40px; /* Минимальная высота для короткого подвала */
+        }
+        .footer-custom p {
+            color: var(--accent-color) !important;
+            font-weight: 500;
+        }
     </style>
 </head>
 <body>
-    <h1 style="text-align: center;">Генератор частот</h1> 
+    <!-- Шапка (Header/Navbar) с кнопкой всплывающего меню -->
+    <nav class="navbar navbar-dark navbar-custom fixed-top">
+        <div class="container-fluid">
+            <!-- Заголовок приложения -->
+            <span class="navbar-brand navbar-brand-custom me-auto ms-3 h1">Генератор частот</span>
+            
+            <!-- Кнопка всплывающего меню (Offcanvas Trigger) справа -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasNavbar" aria-controls="offcanvasNavbar" aria-label="Открыть меню">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <!-- Всплывающее меню (Offcanvas) -->
+            <div class="offcanvas offcanvas-end offcanvas-custom" tabindex="-1" id="offcanvasNavbar" aria-labelledby="offcanvasNavbarLabel">
+                <div class="offcanvas-header">
+                    <h5 class="offcanvas-title navbar-brand-custom" id="offcanvasNavbarLabel">Навигация</h5>
+                    <!-- Кнопка закрытия для темного фона -->
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" aria-label="Закрыть"></button>
+                </div>
+                <div class="offcanvas-body">
+                    <!-- Ссылки пользователя в виде кнопок для удобства -->
+                    <div class="d-grid gap-2">
+                        <a href="./kolokol0018.html" class="btn btn-outline-light">Генератор колокольного звона</a>
+                        <a href="./calc_music.html" class="btn btn-outline-light">Анализ музыкального строя с оптимизацией</a>
+                        <a href="./processorG.html" class="btn btn-outline-light">Аудиоплеер фазовращатель</a>
+                        <a href="./Raman-ir-uv.html" class="btn btn-outline-light">Конвертер спектров в звук</a>
+                        <hr class="text-white-50">
+                        <a href="./LICENSE" class="btn btn-outline-light">Лицензионное соглашение</a>
+                        <a href="./README.md" class="btn btn-outline-light">О программе</a>
+                        <a href="https://meweryk.github.io/Wave-of-land/index.html" class="btn btn-outline-light">Ещё проекты</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+
+    <div class="main-content">
+    
     <div class="control">
         <div style="display: flex; gap: 8px; margin-bottom: 10px;">
             <button id="toggleBtn" class="main-btn">Старт</button>
@@ -667,7 +770,7 @@
         </div>
     </div>
     
-    <div class="control">
+    <div class="control-block">
         <button id="saveListBtn" title="Сохранить список">💾 настройки</button>
         <button id="exportBtn">Экспорт</button>
         <button id="importBtn">Импорт</button>
@@ -678,7 +781,7 @@
     	Сохранить в WAV файл
     </button>
     
-    <div class="control">
+    <div class="control-block">
         <div class="quick-preset-container">
             <input type="text" id="quickPresetInput" placeholder="Введите частоты в формате: частота,громкость; частота,громкость; ...">
             <button id="quickSaveBtn" title="Сохранить пресет">💾</button>
@@ -769,19 +872,6 @@
             <p>Основано на источнике <a href="https://www.planetware.de/octave/">Planetware</a>, где можно скачать эти тона.
            </p>
         </div>        
-    </div>
-
-    <div class="text-center mb-2">
-    <p><a href="https://meweryk.github.io/midi/kolokol0018.html">Генератор колокольного звона</a><br>
-    <a href="https://meweryk.github.io/midi/calc_music.html">Анализ музыкального строя с оптимизацией</a><br>
-    <a href="https://meweryk.github.io/midi/processorG.html">Аудиоплеер фазовращатель</a><br>
-    <a href="https://meweryk.github.io/midi/Raman-ir-uv.html">Конвертер спектров в звук</a><br>               
-    <a href="https://meweryk.github.io/Wave-of-land/index.html">Ещё проекты</a>
-    </p>
-    </div>
-    
-    <div class="text-center mb-1">
-            <p>Автор</p>
     </div>
     
     <button id="scrollToTopBtn" title="Наверх">↑</button>
@@ -912,6 +1002,12 @@
             </div>
         </div>
     </div>
+    </div>
+
+    <!-- Подвал (Footer) - Теперь с fixed-bottom для полной ширины -->
+    <footer class="footer-custom py-2 text-center fixed-bottom">
+        <p class="m-0 small">Автор</p>
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   
@@ -2361,7 +2457,7 @@
     </script>
     <script>
         if('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('/midi/sw.js', { scope: '/midi/' })
+            navigator.serviceWorker.register('./sw.js', { scope: '/midi/' })
             .then(reg => console.log('SW registered'))
             .catch(err => console.error('SW error:', err));
         }
