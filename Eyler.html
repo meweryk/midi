@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор Частотных Рядов</title>
+    
+</head>
+<body>
+
+<div id="eyler">
+    <style>
+    	*{
+    	box-sizing: border-box;
+    	margin: 0;
+    	padding: 0;
+    	}
+    	
+    	body {
+    	font-family: 'Segoe UI', Arial, sans-serif;
+    	background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+    	padding: 15px;
+    	min-height: 100vh;
+    	line-height: 1.4;
+    	}
+    	
+        /* Стили для контейнера и его содержимого */
+        #eyler {
+            font-family: Arial, sans-serif;
+            margin: 10px;
+            padding: 15px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            max-width: 400px;
+            background-color: #fff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #eyler h2 { margin-top: 0; font-size: 1.2em; }
+        #eyler label { display: block; margin-bottom: 5px; font-size: 0.9em; }
+        #eyler input[type="number"] {
+            width: calc(100% - 10px);
+            padding: 5px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+        }
+        #eyler .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        #eyler .info-button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 14px;
+            line-height: 25px;
+            text-align: center;
+        }
+        #eyler .mode-selection {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+        #eyler .mode-button {
+            flex-grow: 1;
+            background-color: #4CAF50;
+            color: white;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            transition: all 0.2s; 
+        }
+        /* Свечение и выделение для активной кнопки */
+        #eyler .mode-button.active {
+            background-color: #007bff;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.8); 
+        }
+        #eyler .mode-button:not(.active):hover {
+            background-color: #45a049;
+        }
+        #eyler .toggle-fields {
+            padding: 8px;
+            border: 1px dashed #ddd;
+            margin-bottom: 10px;
+            background-color: #f9f9f9;
+        }
+        #eyler button:not(.mode-button):not(.info-button) {
+            background-color: #ff9800;
+            color: white;
+            padding: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        #eyler .results {
+            margin-top: 10px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #e9ecef;
+            word-break: break-word;
+            font-size: 0.85em;
+        }
+        /* Прокрутка модального окна */
+        #eyler .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 350px;
+            border-radius: 8px;
+            position: relative;
+            max-height: 80vh; 
+            overflow-y: auto; 
+        }
+        #eyler .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            padding-top: 60px;
+        }
+        #eyler .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        /* Стили для выбора иррационального типа */
+        #eyler .irrational-type {
+            margin-top: 10px;
+        }
+        #eyler .irrational-type label {
+            display: inline-block;
+            margin-right: 10px;
+            margin-bottom: 5px;
+        }
+        
+        footer { 
+        text-align: center; 
+        margin-top: 25px; 
+        padding: 15px 0; 
+        border-top: 1px solid rgba(255, 255, 255, 0.1); 
+        }
+        
+        footer p { 
+        margin: 4px 0; 
+        font-size: 0.8rem;
+        color: #a0a0c0;
+        }
+        
+        footer a {
+        color: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+        text-decoration: none;
+        transition: color 0.3s ease;
+        }
+        
+        footer a:hover {
+        color: #00bcd4;
+        text-decoration: underline;
+        }
+        
+        .author { 
+        margin-top: 12px; 
+        color: #8888aa;
+        font-size: 0.75rem;
+        }
+        
+    </style>
+
+    <div class="header">
+        <h2>Генератор рядов F(i)</h2>
+        <button class="info-button" onclick="showInfoModal()">i</button>
+    </div>
+
+    <div class="mode-selection">
+        <button id="modeRational" class="mode-button active" onclick="setMode('rational')">Рациональная</button>
+        <button id="modeIrrational" class="mode-button" onclick="setMode('irrational')">Иррациональная</button>
+    </div>
+
+    <label for="initialFrequency">Начальное число (F0):</label>
+    <input type="number" id="initialFrequency" value="440" min="1" step="0.0001">
+
+    <label for="sequenceLength">Длина последовательности (кол-во чисел):</label>
+    <input type="number" id="sequenceLength" value="5" min="2" step="1">
+
+    <div id="rationalFields" class="toggle-fields">
+        <p>Условие: "a - b = c" (Кол-во петель)</p>
+        <label for="loopCount">Количество петель (c):</label>
+        <input type="number" id="loopCount" value="2" min="1" step="1">
+    </div>
+
+    <div id="irrationalFields" class="toggle-fields" style="display: none;">
+        <p>Тип иррациональной последовательности:</p>
+        <div class="irrational-type">
+            <label>
+                <input type="radio" name="irrationalType" value="e" checked> e
+            </label>
+            <label>
+                <input type="radio" name="irrationalType" value="e23"> e^(2/3)
+            </label>
+            <label>
+                <input type="radio" name="irrationalType" value="e12"> e^(1/2)
+            </label>
+            <label>
+                <input type="radio" name="irrationalType" value="e13"> e^(1/3)
+            </label>
+        </div>
+    </div>
+
+    <button onclick="generateFrequencies()">Сгенерировать Ряд</button>
+
+    <div class="results">
+        <p id="multipliers">Множители:</p>
+        <p id="frequencyRow">Числовой ряд (F0; F1; F2;...):</p>
+    </div>
+
+    <div id="infoModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" onclick="closeInfoModal()">&times;</span>
+            <h3>Описание последовательностей</h3>
+            
+            <hr>
+            
+            <h4>Гармоническая (Рациональная)</h4>
+            <p>Использует "рациональные множители" a/b, где "a - b = c" (количество петель).</p>
+            <p>"Формула:" Следующая частота <strong style="color: blue;">F(i) = F(0) × M(i)</strong></p>
+            <ul>
+                <li>"Связь с музыкой:" Чистые рациональные отношения (например, 3/2, 5/4) — основа "Пифагорейского строя" и "Чистой интонации".</li>
+                <li>"Связь с Лиссажу:" Узоры колебаний (Фигуры Лиссажу) имеют "a - b" петель.</li>
+            </ul>
+
+            <hr>
+
+            <h4>Иррациональная Эйлера</h4>
+            <p>Эта последовательность основана на "числе Эйлера" ("e"), которое описывает непрерывный экспоненциальный рост.</p>
+            
+            <h5>Суть числа "e" (Эйлера)</h5>
+            <p>
+            "e" — это "иррациональная константа" (как Пи), значение которой примерно "2.718". Она описывает, во сколько раз увеличится что-либо за единицу времени при максимальной непрерывной скорости роста.
+            </p>
+            
+            <h5>Логика ряда</h5>
+            <p>"Формула:" Частота "F(i) = F(0) × e<sup>i</sup>"</p>
+            <p>Каждая следующая частота в ряду "увеличивается в e (≈ 2.718) раз" по сравнению с начальной частотой, что создаёт "быстро растущий" иррациональный ряд, не предназначенный для традиционной гармонии.</p>
+            
+            <h5>Другие варианты</h5>
+            <p>Также доступны последовательности с различными степенями числа Эйлера: e^(2/3), e^(1/2), e^(1/3), которые создают более плавные прогрессии частот.</p>
+        </div>
+    </div>
+    
+    <footer>
+    <p><a href="https://meweryk.github.io/midi/index.html">Генератор частот</a></p>
+    <p><a href="https://meweryk.github.io/midi/calc_music.html">Анализ музыкального строя</a></p>
+    <p class="author">Автор</p>
+    </footer>
+</div>
+
+<script>
+    let currentMode = 'rational';
+    const EULER = 2.71828183; // Число Эйлера до 8 знака
+
+    // --- Управление режимами и отображением полей ---
+    function setMode(mode) {
+        currentMode = mode;
+        const rationalFields = document.getElementById('rationalFields');
+        const irrationalFields = document.getElementById('irrationalFields');
+        const modeRational = document.getElementById('modeRational');
+        const modeIrrational = document.getElementById('modeIrrational');
+
+        if (mode === 'rational') {
+            rationalFields.style.display = 'block';
+            irrationalFields.style.display = 'none';
+            modeRational.classList.add('active');
+            modeIrrational.classList.remove('active');
+        } else {
+            rationalFields.style.display = 'none';
+            irrationalFields.style.display = 'block';
+            modeRational.classList.remove('active');
+            modeIrrational.classList.add('active');
+        }
+        // Очистка результатов при смене режима
+        document.getElementById('multipliers').textContent = 'Множители:';
+        document.getElementById('frequencyRow').textContent = 'Частотный ряд (F0; F1; F2;...):';
+    }
+
+    // --- Функции для модального окна ---
+    function showInfoModal() {
+        document.getElementById('infoModal').style.display = 'block';
+    }
+
+    function closeInfoModal() {
+        document.getElementById('infoModal').style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        const modal = document.getElementById('infoModal');
+        if (event.target == modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    // --- Вспомогательная математика ---
+    function gcd(a, b) {
+        while (b) {
+            [a, b] = [b, a % b];
+        }
+        return a;
+    }
+
+    function roundToFour(num) {
+        return Math.round(num * 10000) / 10000;
+    }
+
+    // --- Функция для форматирования дроби ---
+    function formatFraction(numerator, denominator) {
+        if (denominator === 1) {
+            return numerator.toString();
+        }
+        return `${numerator}/${denominator}`;
+    }
+
+    // --- Функция для упрощения дроби ---
+    function simplifyFraction(numerator, denominator) {
+        const divisor = gcd(numerator, denominator);
+        return {
+            numerator: numerator / divisor,
+            denominator: denominator / divisor
+        };
+    }
+
+    // --- Основная функция генерации ---
+    function generateFrequencies() {
+        const F0 = parseFloat(document.getElementById('initialFrequency').value);
+        const N = parseInt(document.getElementById('sequenceLength').value);
+        
+        if (isNaN(F0) || isNaN(N) || F0 <= 0 || N < 1) {
+            alert("Пожалуйста, введите корректные положительные числа для частоты и длины.");
+            return;
+        }
+
+        if (currentMode === 'rational') {
+            generateRationalSequence(F0, N);
+        } else {
+            generateIrrationalSequence(F0, N);
+        }
+    }
+
+    // --- ГЕНЕРАЦИЯ РАЦИОНАЛЬНОЙ ПОСЛЕДОВАТЕЛЬНОСТИ ---
+    function generateRationalSequence(F0, N) {
+        const c = parseInt(document.getElementById('loopCount').value);
+
+        if (isNaN(c) || c < 1) {
+            alert("Пожалуйста, введите корректное количество петель (c ≥ 1).");
+            return;
+        }
+
+        const multipliers = [];
+        let count = 0;
+        let b = 1;
+        let max_b_limit = 100; // Ограничение для знаменателя
+        
+        // 1. Сбор несократимых множителей (N-1 шт)
+        while (count < N - 1 && b <= max_b_limit) {
+            const a = c + b;
+            if (a > b && gcd(a, b) === 1) {
+                multipliers.push({ a: a, b: b, value: a / b, fraction: `${a}/${b}` });
+                count++;
+            }
+            b++;
+        }
+        
+        if (multipliers.length < N - 1) {
+             document.getElementById('multipliers').innerHTML = `Множители: <span style="color: red;">Не найдено достаточно несократимых множителей (надо ${N-1}, найдено ${multipliers.length}). Увеличьте лимит поиска или уменьшите длину.</span>`;
+             document.getElementById('frequencyRow').textContent = `Числовой ряд (F0; F1; F2;...): ${roundToFour(F0)}`;
+             return;
+        }
+
+        // 2. Сортируем множители по возрастанию
+        multipliers.sort((m1, m2) => m1.value - m2.value);
+
+        // 3. Расчет частот
+        const frequencies = [roundToFour(F0)];
+        for (let i = 0; i < multipliers.length; i++) {
+            const M_i = multipliers[i].value;
+            const frequency = F0 * M_i; 
+            frequencies.push(roundToFour(frequency));
+        }
+
+        // 4. Форматирование вывода
+        const multiplierStrings = multipliers.map(m => m.fraction);
+        const finalMultipliers = ['1/1'].concat(multiplierStrings).join('; ');
+        
+        document.getElementById('multipliers').innerHTML = `Множители: ${finalMultipliers}`;
+        document.getElementById('frequencyRow').textContent = `Частотный ряд (F0; F1; F2;...): ${frequencies.join('; ')}`;
+    }
+
+    // --- Генерация Иррациональной последовательности ---
+    function generateIrrationalSequence(F0, N) {
+        // Получаем выбранный тип иррациональной последовательности
+        const selectedType = document.querySelector('input[name="irrationalType"]:checked').value;
+        
+        let baseNumerator, baseDenominator, multiplierLabel;
+        
+        // Определяем базовую дробь в зависимости от выбранного типа
+        switch(selectedType) {
+            case 'e23':
+                baseNumerator = 2;
+                baseDenominator = 3;
+                multiplierLabel = 'e^(2/3)';
+                break;
+            case 'e12':
+                baseNumerator = 1;
+                baseDenominator = 2;
+                multiplierLabel = 'e^(1/2)';
+                break;
+            case 'e13':
+                baseNumerator = 1;
+                baseDenominator = 3;
+                multiplierLabel = 'e^(1/3)';
+                break;
+            case 'e':
+            default:
+                baseNumerator = 1;
+                baseDenominator = 1;
+                multiplierLabel = 'e';
+        }
+
+        const frequencies = [];
+        const multipliers = [];
+
+        for (let i = 0; i < N; i++) {
+            // Вычисляем множитель: e^(baseNumerator/baseDenominator * i)
+            const multiplier = Math.pow(EULER, (baseNumerator * i) / baseDenominator);
+            
+            // Формируем отображение множителя в виде дроби
+            let numerator = baseNumerator * i;
+            let denominator = baseDenominator;
+            
+            let exponentStr;
+            if (numerator === 0) {
+                exponentStr = '0';
+            } else {
+                // Упрощаем дробь
+                const simplified = simplifyFraction(numerator, denominator);
+                exponentStr = formatFraction(simplified.numerator, simplified.denominator);
+            }
+            
+            // Формируем строку множителя
+            let multiplierStr;
+            if (exponentStr === '0') {
+                multiplierStr = 'e<sup>0</sup>';
+            } else if (exponentStr === '1' && baseNumerator === 1 && baseDenominator === 1) {
+                multiplierStr = `e<sup>${i}</sup>`;
+            } else {
+                multiplierStr = `e<sup>${exponentStr}</sup>`;
+            }
+            
+            multipliers.push(multiplierStr);
+            
+            // Частота: F(i) = F(0) * e^(baseNumerator/baseDenominator * i)
+            const frequency = F0 * multiplier;
+            frequencies.push(roundToFour(frequency));
+        }
+
+        document.getElementById('multipliers').innerHTML = `Множители (${multiplierLabel}): ${multipliers.join('; ')}`;
+        document.getElementById('frequencyRow').textContent = `Числовой ряд (F0; F1; F2;...): ${frequencies.join('; ')}`;
+    }
+
+    // Установить начальный режим при загрузке страницы
+    window.onload = () => setMode('rational');
+</script>
+ 
+</body>
+</html>
