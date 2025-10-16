@@ -440,36 +440,45 @@
                     
                     <h3>Типы строев:</h3>
                     <ul>
-                        <li><strong>Равномерный темперированный строй (12 нот)</strong>: все полутоны равны. Коэффициент для каждого полутона 2^(1/12). Частоты приближены к натуральным, но слегка расстроены для универсальности (возможность модуляции в любую тональность).</li>
-                        <li><strong>Натуральный строй</strong>: 7 основных нот гаммы и полутона, всего 12 нот. Частоты идеально согласованы с природными резонансами, но строй привязан к одной тональности. Коэффициенты: 1/1, 25/24, 9/8, 6/5, 5/4, 4/3, 45/32, 3/2, 8/5, 5/3, 9/5, 15/8.</li>
-                        <li><strong>Равномерный темперированный строй (14 нот)</strong>: октава состоит из 14 нот (7 основных с полутонами). Коэффициент между соседними нотами 2^(1/14).</li>
-                        <li><strong>Равнопериодичный строй (12 и 14 нот)</strong>: октава разбита на равные линейные интервалы (арифметическая прогрессия).</li>
+                    <li><strong>Равномерный темперированный строй (12 нот)</strong>: все полутоны равны. Коэффициент для каждого полутона 2^(1/12). Частоты приближены к натуральным, но слегка расстроены для универсальности (возможность модуляции в любую тональность).</li>
+                    <li><strong>Натуральный строй</strong>: 7 основных нот гаммы и полутона, всего 12 нот. Частоты идеально согласованы с природными резонансами, но строй привязан к одной тональности. Коэффициенты: 1/1, 25/24, 9/8, 6/5, 5/4, 4/3, 45/32, 3/2, 8/5, 5/3, 9/5, 15/8.</li>
+                    <li><strong>Равномерный темперированный строй (14 нот)</strong>: октава состоит из 14 нот (7 основных с полутонами). Коэффициент между соседними нотами 2^(1/14).</li>
+                    <li><strong>Равнопериодичный строй (12 и 14 нот)</strong>: октава разбита на равные линейные интервалы (арифметическая прогрессия).</li>
+                    <!-- ДОБАВЛЕНО: Два новых строя Эйлера -->
+                    <li><strong>14-нотный темперированный строй Эйлера</strong>: октавный множитель "e" (число Эйлера ≈ 2.71828). Октава состоит из 14 нот (7 основных с полутонами). Коэффициент между соседними нотами e^(1/14).</li>
+                    <li><strong>12-нотный темперированный строй Эйлера</strong>: октавный множитель "e" (число Эйлера ≈ 2.71828). Октава состоит из 12 нот (7 основных с полутонами). Коэффициент между соседними нотами e^(1/12).</li>
                     </ul>
                     
                     <h3>Примеры частот для разных строев (базовая частота 360 Гц):</h3>
                     
                     <div class="example-freqs">
-                        <p>1. <strong>12-ступ. темперированный</strong> (геом. прогрессия):<br>
-                        360.000, 381.406, 404.086, 428.115, 453.571, 480.542, 509.117, 539.391, 571.464, 605.445, 641.447, 679.590</p>
-                        
-                        <p>2. <strong>Натуральный</strong> (12 нот):<br>
-                        360.000, 375.000, 405.000, 432.000, 450.000, 480.000, 506.250, 540.000, 576.000, 600.000, 648.000, 675.000</p>
-                        
-                        <p>3. <strong>14-ступ. темперированный</strong> (геом. прогрессия):<br>
-                        360.000, 378.347, 397.536, 417.622, 438.661, 460.712, 483.836, 508.098, 533.565, 560.308, 588.401, 617.922, 648.952, 681.575</p>
-                        
-                        <p>4. <strong>Равнопериодичный 12-нотный</strong> (линейный):<br>
-                        360.000, 390.000, 420.000, 450.000, 480.000, 510.000, 540.000, 570.000, 600.000, 630.000, 660.000, 690.000</p>
-                        
-                        <p>5. <strong>Равнопериодичный 14-нотный</strong> (линейный):<br>
-                        360.000, 385.714, 411.429, 437.143, 462.857, 488.571, 514.286, 540.000, 565.714, 591.429, 617.143, 642.857, 668.571, 694.286</p>
-                        
+                    <p>1. <strong>12-ступ. темперированный</strong> (геом. прогрессия):<br>
+                    360.000, 381.406, 404.086, 428.115, 453.571, 480.542, 509.117, 539.391, 571.464, 605.445, 641.447, 679.590</p>
+                    
+                    <p>2. <strong>Натуральный</strong> (12 нот):<br>
+                    360.000, 375.000, 405.000, 432.000, 450.000, 480.000, 506.250, 540.000, 576.000, 600.000, 648.000, 675.000</p>
+                    
+                    <p>3. <strong>14-ступ. темперированный</strong> (геом. прогрессия):<br>
+                    360.000, 378.347, 397.536, 417.622, 438.661, 460.712, 483.836, 508.098, 533.565, 560.308, 588.401, 617.922, 648.952, 681.575</p>
+                    
+                    <p>4. <strong>Равнопериодичный 12-нотный</strong> (линейный):<br>
+                    360.000, 390.000, 420.000, 450.000, 480.000, 510.000, 540.000, 570.000, 600.000, 630.000, 660.000, 690.000</p>
+                    
+                    <p>5. <strong>Равнопериодичный 14-нотный</strong> (линейный):<br>
+                    360.000, 385.714, 411.429, 437.143, 462.857, 488.571, 514.286, 540.000, 565.714, 591.429, 617.143, 642.857, 668.571, 694.286</p>
+                    
+                    <!-- ИСПРАВЛЕННЫЕ: Правильные примеры для строев Эйлера -->
+                    <p>6. <strong>14-нотный темперированный Эйлера</strong> (геом. прогрессия с основанием e):<br>
+                    360.000, 386.654, 414.755, 444.676, 476.326, 509.835, 545.338, 593.540, 636.171, 681.852, 730.686, 783.184, 839.520, 911.121</p>
+                    
+                    <p>7. <strong>12-нотный темперированный Эйлера</strong> (геом. прогрессия с основанием e):<br>
+                    360.000, 391.454, 425.290, 462.249, 502.420, 546.082, 593.540, 645.135, 701.184, 762.120, 828.351, 900.338</p>
                     </div>
                     
                     <h3>Алгоритм анализа:</h3>
                     <ol>
                         <li>Для каждой частоты определяется октава относительно базовой ноты "До"</li>
-                        <li>В каждой октаве для всех 5 вариантов нотных строёв рассчитываются все ноты</li>
+                        <li>В каждой октаве для всех вариантов нотных строёв рассчитываются все ноты</li>
                         <li>Находится относительное минимальное отклонение (f_входная - f_ноты)/f_ноты для каждого строя</li>
                         <li>Выбирается строй с наименьшим средним отклонением</li>
                         <li>Оптимизируется базовая частота "До" для минимизации отклонений</li>
@@ -478,14 +487,6 @@
                     
                     <h3>Научное обоснование:</h3>
                     <p>Многие процессы в природе масштабированы фрактально по определённым последовательностям (Фибоначчи, золотое сечение). Видимый человеком спектр света находится в пределах одной октавы. Цель программы - найти закономерную последовательность, наиболее соответствующую природным циклам, по экспериментально полученным частотам.</p>
-
-                    <p><strong>Частоты "Гц" обращения планет вокруг Солнца, включая частоту обращения Солнца, увеличены октавно в 2^35 раз</strong> (линейный):<br>
-                        4.39; 6.65; 13.001; 37.004; 91.822; 578.868; 1088.9435; 1769.836; 4519.115; 15669.116 </p>
-                    <p><strong>Среднее расстояния "млн. км." планет от Солнца, учитывая элиптичность орбит</strong> (линейный):<br>
-                        57.9; 108.2; 149.6; 227.9; 778.6; 1433.5; 2872.5; 4495.1; 5870 </p>
-                    <p><strong>Масса " *10^24 кг" планет Солнечной системы</strong> (линейный):<br>
-                        0.33; 4.87;  5.972; 0.6418; 1900; 568; 86.8; 102; 0.01303 </p>   
-                    
                     <p>Залипательный равнопериодичный 14-нотный ряд:<br>
                     360.000, 385.714, 411.429, 437.143, 462.857, 488.571, 514.286, 540.000, 565.714, 591.429, 617.143, 642.857, 668.571, 694.286, 720, 771.429, 822.857, 874.286, 925.714, 977.143, 1028.571, 1080, 1131.429, 1182.857, 1234.286, 1285.714, 1337.143, 1388.571<br>
                     </p>
@@ -587,1022 +588,1041 @@
         	<p style="text-align: center;">© Автор</p>
         </div>
     </div>
-
+    
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const baseFreqInput = document.getElementById('base-freq');
-            const freqInput = document.getElementById('freq-input');
-            const analyzeBtn = document.getElementById('analyze-btn');
-            const optimizeBtn = document.getElementById('optimize-btn');
-            const resultsTable = document.querySelector('#results-table tbody');
-            const optimalTuningEl = document.getElementById('optimal-tuning');
-            const avgDeviationEl = document.getElementById('avg-deviation');
-            const avgPercentDeviationEl = document.getElementById('avg-percent-deviation');
-            const noteButtonsContainer = document.getElementById('note-buttons-container');
-            const activeCountEl = document.getElementById('active-count');
-            const optimizationContainer = document.getElementById('optimization-container');
-            const infoButton = document.getElementById('info-button');
-            const infoModal = document.getElementById('info-modal');
-            const closeModal = document.getElementById('close-modal');
-            const playBtn = document.getElementById('play-btn');
-            const grandCycleDisplay = document.getElementById('grand-cycle-display');
-            const rotationSlider = document.getElementById('rotation-slider');
-            const rotationTimeDisplay = document.getElementById('rotation-time-display');
-            
-            // Обозначения нот для 14-нотного строя
-            const noteNames14 = ['До', 'До#', 'Ре', 'Ре#', 'Ми', 'Ми#', 'Фа', 'Фа#', 'Соль', 'Соль#', 'Ля', 'Ля#', 'Си', 'Си#'];
-            
-            // Обозначения нот для 12-нотного строя
-            const noteNames12 = ['До', 'До#', 'Ре', 'Ре#', 'Ми', 'Фа', 'Фа#', 'Соль', 'Соль#', 'Ля', 'Ля#', 'Си'];
-            
-            // Глобальные переменные
-            let isPlaying = false;
-            let oscillators = [];
-            let animationId;
-            let visualPoints = [];
-            let maxRotationTime = 0.25; // Начальное значение времени оборота
-            let octaveCircles = []; // Массив для октавных кругов
-            let rRaw_center_global = 0;
-            let rRaw_min_global = 0;
-            
-            // Для управления звуком
-            let audioContext;
-            try {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            } catch (e) {
-                console.error("Web Audio API не поддерживается в этом браузере");
-                document.getElementById('note-buttons-container').innerHTML = 
-                    '<div class="info">Web Audio API не поддерживается в вашем браузере. Воспроизведение звуков недоступно.</div>';
-            }
-            
-            // Глобальные переменные для управления звуком
-            const activeOscillators = new Map();
-            const maxActiveSounds = 3;
-            
-            // Глобальные переменные для визуализации
-            let baseFreqGlobal;
-            let globalMinFreq, globalMaxFreq;
-            let globalTMin, globalTMax;
-            
-            // Обработчики модального окна
-            infoButton.addEventListener('click', function() {
-                infoModal.style.display = 'block';
-            });
-            
-            closeModal.addEventListener('click', function() {
-                infoModal.style.display = 'none';
-            });
-            
-            window.addEventListener('click', function(event) {
-                if (event.target === infoModal) {
-                    infoModal.style.display = 'none';
-                }
-            });
-            
-            // Обработка анализа
-            analyzeBtn.addEventListener('click', function() {
-                const baseFreq = parseFloat(baseFreqInput.value);
-                const freqList = freqInput.value.split(/[,;]+/)
-                    .map(f => parseFloat(f.trim()))
-                    .filter(f => !isNaN(f));
-                console.log(freqList)
-                if (isNaN(baseFreq)) {
-                    alert('Введите корректную базовую частоту');
-                    return;
-                }                               
-                
-                if (freqList.length === 0) {
-                    alert('Введите корректные частоты');
-                    return;
-                }
-                
-                // Определяем оптимальный строй
-                const result = findOptimalTuning(baseFreq, freqList);
-                
-                // Отображаем результаты
-                displayResults(result, baseFreq, freqList);
-                
-                // Скрываем результаты оптимизации
-                optimizationContainer.innerHTML = '';
-            });
-            
-            // Обработка оптимизации базовой частоты
-            optimizeBtn.addEventListener('click', function() {
-                const baseFreq = parseFloat(baseFreqInput.value);
-                const freqList = freqInput.value.split(/[,;]+/)
-                    .map(f => parseFloat(f.trim()))
-                    .filter(f => !isNaN(f));
-                
-                if (isNaN(baseFreq)) {
-                    alert('Введите корректную базовую частоту');
-                    return;
-                }
-                
-                if (freqList.length === 0) {
-                    alert('Введите корректные частоты');
-                    return;
-                }
-                
-                // Определяем оптимальный строй для текущей базовой частоты
-                const result = findOptimalTuning(baseFreq, freqList);
-                
-                // Оптимизируем базовую частоту для этого строя
-                const optimizationResult = optimizeBaseFrequency(result.tuning.id, baseFreq, freqList);
-                
-                // Отображаем результаты оптимизации
-                displayOptimizationResult(optimizationResult, result.tuning.name);
-                
-                // Обновляем поле базовой частоты
-                baseFreqInput.value = optimizationResult.optimizedBaseFreq.toFixed(6);
-                
-                // Перезапускаем анализ с новой базовой частотой
-                const newResult = findOptimalTuning(optimizationResult.optimizedBaseFreq, freqList);
-                displayResults(newResult, optimizationResult.optimizedBaseFreq, freqList);
-            });
-            
-            // Функция поиска оптимального строя (по процентным отклонениям)
-            function findOptimalTuning(baseFreq, freqList) {
-                const tunings = [
-                    { id: 'tempered12', name: '12-нотный темперированный', noteCount: 12 },
-                    { id: 'natural', name: '12-нотный натуральный', noteCount: 12 },
-                    { id: 'tempered14', name: '14-нотный темперированный', noteCount: 14 },
-                    { id: 'linear12', name: '12-нотный линейный', noteCount: 12 },
-                    { id: 'linear14', name: '14-нотный линейный', noteCount: 14 }
-                ];
-                
-                // Результаты для каждого строя
-                const tuningResults = tunings.map(tuning => {
-                    return {
-                        name: tuning.name,
-                        id: tuning.id,
-                        totalPercentDeviation: 0,
-                        totalDeviation: 0,
-                        matches: []
-                    };
-                });
-                
-                // Обрабатываем каждую частоту
-                freqList.forEach((freq) => {
-                    // Определяем октаву
-                    const octave = Math.floor(Math.log2(freq / baseFreq));
-                    
-                    // Базовый тон для октавы
-                    const octaveBase = baseFreq * Math.pow(2, octave);
-                    
-                    // Для каждого строя находим ближайшую ноту
-                    tunings.forEach((tuning, tuningIdx) => {
-                        const notes = calculateNotes(tuning.id, octaveBase, tuning.noteCount);
-                        let minDiff = Infinity;
-                        let minPercentDiff = Infinity;
-                        let closestNote = 0;
-                        let noteIndex = 0;
-                        
-                        // Находим ближайшую ноту
-                        notes.forEach((note, noteIdx) => {
-                            const diff = Math.abs(note - freq);
-                            const percentDiff = (diff / note) * 100;
-                            
-                            if (percentDiff < minPercentDiff) {
-                                minPercentDiff = percentDiff;
-                                minDiff = diff;
-                                closestNote = note;
-                                noteIndex = noteIdx;
-                            }
-                        });
-                        
-                        // Сохраняем результат
-                        tuningResults[tuningIdx].totalPercentDeviation += minPercentDiff;
-                        tuningResults[tuningIdx].totalDeviation += minDiff;
-                        
-                        tuningResults[tuningIdx].matches.push({
-                            freq,
-                            octave,
-                            noteFreq: closestNote,
-                            deviation: minDiff,
-                            percentDeviation: minPercentDiff,
-                            noteIndex
-                        });
-                    });
-                });
-                
-                // Находим строй с минимальным средним процентным отклонением
-                let optimalTuning = tuningResults[0];
-                let minAvgPercentDeviation = Infinity;
-                
-                tuningResults.forEach(tuning => {
-                    const avgPercentDeviation = tuning.totalPercentDeviation / freqList.length;
-                    if (avgPercentDeviation < minAvgPercentDeviation) {
-                        minAvgPercentDeviation = avgPercentDeviation;
-                        optimalTuning = tuning;
-                    }
-                });
-                
-                return {
-                    tuning: optimalTuning,
-                    avgDeviation: optimalTuning.totalDeviation / freqList.length,
-                    avgPercentDeviation: optimalTuning.totalPercentDeviation / freqList.length,
-                };
-            }
-            
-            // Функция расчета нот для строя
-            function calculateNotes(tuningId, baseFreq, noteCount) {
-                switch (tuningId) {
-                    case 'tempered12':
-                        return Array.from({ length: 12 }, (_, i) => 
-                            baseFreq * Math.pow(2, i/12));
-                    case 'natural':
-                        const ratios = [1, 25/24, 9/8, 6/5, 5/4, 4/3, 45/32, 3/2, 8/5, 5/3, 9/5, 15/8];
-                        return ratios.map(r => baseFreq * r);
-                    case 'tempered14':
-                        return Array.from({ length: 14 }, (_, i) => 
-                            baseFreq * Math.pow(2, i/14));
-                    case 'linear12':
-                        const step12 = baseFreq / 12;
-                        return Array.from({ length: 12 }, (_, i) => 
-                            baseFreq + i * step12);
-                    case 'linear14':
-                        const step14 = baseFreq / 14;
-                        return Array.from({ length: 14 }, (_, i) => 
-                            baseFreq + i * step14);
-                    default:
-                        return [];
-                }
-            }
-            
-            // Функция оптимизации базовой частоты
-            function optimizeBaseFrequency(tuningId, initialBaseFreq, freqList) {
-                const range = 0.1; // ±10% диапазон
-                const step = 0.001; // 0.1% шаг
-                const steps = Math.ceil((range * 2 * initialBaseFreq) / (initialBaseFreq * step));
-                
-                let bestBaseFreq = initialBaseFreq;
-                let minAvgPercentDeviation = Infinity;
-                let minDeviations = [];
-                
-                // Перебираем значения в диапазоне
-                for (let i = 0; i <= steps; i++) {
-                    const testBaseFreq = initialBaseFreq * (1 - range + (i * step * 2));
-                    
-                    // Рассчитываем отклонения для этого строя и базовой частоты
-                    const result = findOptimalTuning(testBaseFreq, freqList);
-                    
-                    if (result.avgPercentDeviation < minAvgPercentDeviation) {
-                        minAvgPercentDeviation = result.avgPercentDeviation;
-                        bestBaseFreq = testBaseFreq;
-                        minDeviations = result.tuning.matches;
-                    }
-                }
-                
-                return {
-                    optimizedBaseFreq: bestBaseFreq,
-                    minAvgPercentDeviation,
-                    minDeviations,
-                    initialBaseFreq,
-                    initialDeviation: findOptimalTuning(initialBaseFreq, freqList).avgPercentDeviation
-                };
-            }
-            
-            // NEW: Функция инициализации визуализации после анализа
-            function initVisualization(tuning, baseFreq, freqList, octaves) {
-            	const canvas = document.getElementById('visualization');
-            	const ctx = canvas.getContext('2d');
-            	const centerX = canvas.width / 2;
-            	const centerY = canvas.height / 2;
-            	const maxRadius = Math.min(centerX, centerY) * 0.9;
-            	const minRadius = 5;
-            	
-            	// Находим min и max частоты
-            	globalMinFreq = Math.min(...freqList);
-            	globalMaxFreq = Math.max(...freqList);
-            	
-            	// Определяем базовую частоту для визуализации
-            	let bm = baseFreq;
-            	while (bm < globalMinFreq) {
-            		bm = bm * 2;
-            	}
-            	
-            	let bf = bm;
-            	while (bf > globalMinFreq) {
-            		bf = bf / 2;
-            	}
-            	
-            	baseFreqGlobal = bf;
-            	console.log("Базовая частота:", baseFreqGlobal);
-            	
-            	// Определяем центральную частоту
-            	let centerFreq;
-            	if (globalMaxFreq <= 20000) {
-            	    centerFreq = 20000;
-            	} else {
-            	    // Ближайшая степень 10, большая globalMaxFreq
-            	    centerFreq = Math.pow(10, Math.ceil(Math.log10(globalMaxFreq)));
-            	}
-            	
-            	// Рассчитываем периоды
-            	globalTMin = 1 / globalMaxFreq;
-            	globalTMax = 1 / globalMinFreq;
-            	
-            	// Рассчитываем T_center и T_min
-            	const T_center = 1 / centerFreq;
-            	const T_min = 1 / globalMinFreq;
-            	
-            	// Вычисляем rRaw_center и rRaw_min по закону Кеплера
-            	rRaw_center_global = Math.pow(T_center, 2/3);
-            	rRaw_min_global = Math.pow(T_min, 2/3);
-            	
-            	// Очищаем массив октавных кругов
-            	octaveCircles = [];
-            	const minOctave = Math.floor(Math.log2(globalMinFreq / baseFreqGlobal));
-            	const maxOctave = Math.ceil(Math.log2(globalMaxFreq / baseFreqGlobal));
-            	
-            	// Рассчитываем круги для каждой октавы
-            	for (let octave = minOctave; octave <= maxOctave; octave++) {
-            	    const freqAtOctave = baseFreqGlobal * Math.pow(2, octave);
-            	    const T_atOctave = 1 / freqAtOctave;
-            	    const rRaw = Math.pow(T_atOctave, 2/3);
-            	    
-            	    // Нормализация радиуса
-            	    let normalizedR = (rRaw - rRaw_center_global) / (rRaw_min_global - rRaw_center_global);
-            	    normalizedR = Math.max(0, Math.min(1, normalizedR));
-            	    const radius = minRadius + normalizedR * (maxRadius - minRadius);
-            	    
-            	    octaveCircles.push({ octave, radius, freq: freqAtOctave });
-            	}
-            	
-            	// Создаем точки для каждой частоты с учетом закона Кеплера
-            	visualPoints = freqList.map(freq => {
-            	    const T = 1 / freq;
-            	    const rRaw = Math.pow(T, 2/3);
-            	    
-            	    // Нормализация радиуса
-            	    let normalizedR = (rRaw - rRaw_center_global) / (rRaw_min_global - rRaw_center_global);
-            	    normalizedR = Math.max(0, Math.min(1, normalizedR));
-            	    const radius = minRadius + normalizedR * (maxRadius - minRadius);
-            	    
-            	    // Период для анимации с учетом K_mash
-            	    const T_vis = T * (maxRotationTime / globalTMin);
-            	    
-            	    return {
-            	        inputFreq: freq,
-            	        radius: radius,
-            	        period: T_vis,
-            	        //angle: Math.random() * Math.PI * 2,
-            	        angle: 0,
-            	        //hue: (freq / centerFreq) * 360,
-            	        K_mash: maxRotationTime / globalTMin
-            	    };
-            	});
-            
-            	// Рассчитываем полный цикл
-            	updateGrandCycleDisplay();
-            }
-            
-            // NEW: Анимация точек
-            function animate() {
-            	const canvas = document.getElementById('visualization');
-            	const ctx = canvas.getContext('2d');
-            	const centerX = canvas.width / 2;
-            	const centerY = canvas.height / 2;
-            	const maxRadius = Math.min(centerX, centerY) * 0.9;
-            	const minRadius = 1;
-            
-            	ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
-            	// Отрисовка октавных кругов
-            	octaveCircles.forEach(circle => {
-            		ctx.beginPath();
-            		ctx.arc(centerX, centerY, circle.radius, 0, 2 * Math.PI);
-            		
-            		// Стиль для круга
-            		if (circle.octave === 0) {
-            			ctx.strokeStyle = '#8f8157';
-            			ctx.lineWidth = 2;
-            		} else {
-            			ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-            			ctx.lineWidth = 1;
-            		}
-            		
-            		ctx.stroke();
-            		
-            		// Подпись октавы
-            		ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
-            		ctx.font = '10px Arial';
-            		ctx.fillText(`${circle.octave}`, centerX + circle.radius + 2, centerY);
-            	});
-            
-            	// Отрисовка точек
-            	visualPoints.forEach(point => {
-            		// Обновляем угол в соответствии с периодом
-            		point.angle += (2 * Math.PI) / (point.period * 60); // 60 FPS
-            		
-            		const x = centerX + point.radius * Math.cos(point.angle);
-            		const y = centerY + point.radius * Math.sin(point.angle);            		            		
-            		
-            		const minVisibleFreq = 4e14;  // 400 ТГц (нижняя граница видимого спектра)
-            		const maxVisibleFreq = 7.9e14; // 790 ТГц (верхняя граница)
-            		
-            		// Октавное увеличение частоты
-            		let visibleFreq = point.inputFreq;
-            		while (visibleFreq < minVisibleFreq) visibleFreq *= 2;
-            		while (visibleFreq > maxVisibleFreq) visibleFreq /= 2;
-            		
-            		// Конвертация в длину волны (в нанометрах)
-            		const wavelength = 3e17 / visibleFreq; // 3e8 м/с * 1e9 нм / частота
-            		console.log(visibleFreq, wavelength)
-            		// Получаем RGB-компоненты
-            		const [r, g, b] = wavelengthToRGB(wavelength);
-            		
-            		// Рисуем серую точку окантовку (радиус 5)
-            		ctx.beginPath();
-            		ctx.arc(x, y, 5, 0, 2 * Math.PI);
-            		ctx.fillStyle = 'grey';
-            		ctx.fill();
-            		
-            		// Устанавливаем цвет с прозрачностью
-            		ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${isPlaying ? 0.8 : 0.6})`;
-            		console.log(ctx.fillStyle)
-            		            		            		
-            		// Рисуем точку
-            		ctx.beginPath();
-            		ctx.arc(x, y, 4, 0, 2 * Math.PI);
-            		ctx.fill();
-            		    
-            		// Рисуем белую точку внутри (радиус 1)
-            		ctx.beginPath();
-            		ctx.arc(x, y, 1, 0, 2 * Math.PI);
-            		ctx.fillStyle = 'lightgrey';
-            		ctx.fill();
-            		
-            		// Подписи частот
-            		if (point.angle % (2 * Math.PI) < 0.1) {
-            			ctx.fillStyle = '#fff';
-            			ctx.font = '10px Arial';
-            			ctx.fillText(point.inputFreq.toFixed(2) + 'Hz', x + 10, y + 5);
-            		}
-            	});
-            	
-            	animationId = requestAnimationFrame(animate);
-            }
-            
-            // Функция для преобразования длины волны в RGB
-            function wavelengthToRGB(wavelength) {
-            let r, g, b, factor;
-            
-            // Корректируем длину волны в видимом диапазоне (380-750 нм)
-            wavelength = Math.max(380, Math.min(750, wavelength));
-            
-            if (wavelength >= 380 && wavelength < 440) {
-            r = -(wavelength - 440) / (440 - 380);
-            g = 0;
-            b = 1;
-            } else if (wavelength < 490) {
-            r = 0;
-            g = (wavelength - 440) / (490 - 440);
-            b = 1;
-            } else if (wavelength < 510) {
-            r = 0;
-            g = 1;
-            b = -(wavelength - 510) / (510 - 490);
-            } else if (wavelength < 580) {
-            r = (wavelength - 510) / (580 - 510);
-            g = 1;
-            b = 0;
-            } else if (wavelength < 645) {
-            r = 1;
-            g = -(wavelength - 645) / (645 - 580);
-            b = 0;
-            } else {
-            r = 1;
-            g = 0;
-            b = 0;
-            }
-            
-            // Ослабление цвета у границ видимого спектра
-            if (wavelength >= 380 && wavelength < 420) {
-            factor = 0.3 + 0.7 * (wavelength - 380) / (420 - 380);
-            } else if (wavelength < 701) {
-            factor = 1;
-            } else {
-            factor = 0.3 + 0.7 * (750 - wavelength) / (750 - 700);
-            }
-            
-            // Гамма-коррекция (0.8 для более естественных цветов)
-            const gamma = 0.8;
-            r = Math.round(255 * (r * factor) ** gamma);
-            g = Math.round(255 * (g * factor) ** gamma);
-            b = Math.round(255 * (b * factor) ** gamma);
-            
-            return [r, g, b];
-            }
-            
-            function togglePlayback() {
-            	if (isPlaying) {
-            		stopAudio();
-            		if (animationId) {
-            			cancelAnimationFrame(animationId);
-            			animationId = null;
-            		}
-            	} else {
-            		startAudio();
-            		if (animationId) cancelAnimationFrame(animationId);
-            		animate();
-            	}
-            	isPlaying = !isPlaying;
-            	playBtn.textContent = isPlaying ? '■ Стоп' : '▶ Ра';
-            }
-            
-            // Функция интеллектуального расчета громкости
-            function calculateDynamicVolume(numPoints) {
-            	const MIN_MASTER = 0.1;   // Минимальная общая громкость
-            	const MAX_MASTER = 0.8;   // Максимальная общая громкость
-            	const BASE = 1.5;         // Коэффициент уменьшения
-            
-            	// Логарифмическое уменьшение громкости
-            	const master = Math.max(MIN_MASTER, MAX_MASTER / Math.log(numPoints + BASE));
-            
-            	// Компенсация для каждого канала
-            	const perChannel = 0.5 * Math.min(1, 2 / numPoints);
-            
-            	return {
-            		master,
-            		perChannel
-            	};
-            }
-            
-            function startAudio() {
-            	if (!audioContext) return;
-            
-            	stopAudio();
-            	activeCountEl.textContent = visualPoints.length;
-            
-            	// Цепочка эффектов компрессора
-            	const compressor = audioContext.createDynamicsCompressor();
-            	compressor.threshold.value = -20;
-            	compressor.knee.value = 10;
-            	compressor.ratio.value = 12;
-            	compressor.attack.value = 0.01;
-            	compressor.release.value = 0.25;
-            	compressor.connect(audioContext.destination);
-            
-            	const volumeControl = calculateDynamicVolume(visualPoints.length);
-            	const masterGain = audioContext.createGain();
-            	masterGain.gain.value = volumeControl.master;
-            	masterGain.connect(compressor);
-            
-            	// Создаем ChannelMerger для стерео выхода
-            	const merger = audioContext.createChannelMerger(2);
-            	merger.connect(compressor);
-            	//merger.connect(audioContext.destination);
-            
-            	// Создаем общий гейн для управления громкостью
-            	//const masterGain = audioContext.createGain();
-            	//masterGain.connect(audioContext.destination);
-            
-            	visualPoints.forEach(point => {
-            
-            		// Создаем два осциллятора для левого и правого каналов
-            		const oscLeft = audioContext.createOscillator();
-            		const oscRight = audioContext.createOscillator();
-            
-            		// Устанавливаем одинаковый тип для обоих каналов
-            		oscLeft.type = 'sine';
-            		oscRight.type = 'sine';
-            
-            		// Устанавливаем частоту
-            		oscLeft.frequency.value = point.inputFreq;
-            		oscRight.frequency.value = point.inputFreq;
-            
-            		// Создаем гейны для каждого канала
-            		const gainLeft = audioContext.createGain();
-            		const gainRight = audioContext.createGain();
-            
-            		// Создаем LFO для модуляции амплитуды
-            		const lfo = audioContext.createOscillator();
-            		const lfoGain = audioContext.createGain();
-            		const constantOffset = audioContext.createConstantSource();
-            
-            		// Настройка LFO
-            		lfo.frequency.value = 1 / point.period;
-            		lfo.type = 'sine';
-            		lfo.phase = point.angle - Math.PI/2;
-            
-            		// Настройка усиления LFO
-            		lfoGain.gain.value = 0.5;
-            
-            		// Настройка постоянного смещения
-            		constantOffset.offset.value = 0.5;
-            
-            		// Подключение LFO и смещения к гейнам
-            		lfo.connect(lfoGain);
-            		lfoGain.connect(gainLeft.gain);
-            		lfoGain.connect(gainRight.gain);
-            		constantOffset.connect(gainLeft.gain);
-            		constantOffset.connect(gainRight.gain);
-            
-            		// Подключение осцилляторов к гейнам
-            		oscLeft.connect(gainLeft);
-            		oscRight.connect(gainRight);
-            
-            		// Подключение гейнов к merger (левый - канал 0, правый - канал 1)
-            		gainLeft.connect(merger, 0, 0);
-            		gainRight.connect(merger, 0, 1);
-            
-            		// Устанавливаем начальное значение гейна
-            		const initialValue = 0.5 - 0.5 * Math.cos(point.angle);
-            		gainLeft.gain.setValueAtTime(initialValue, audioContext.currentTime);
-            		gainRight.gain.setValueAtTime(initialValue, audioContext.currentTime);
-            
-            		// Фазовый сдвиг 90° для правого канала
-            		// Запускаем правый канал с задержкой в 1/4 периода
-            		const startTime = audioContext.currentTime;
-            		const period = 1 / point.inputFreq;
-            		oscLeft.start(startTime);
-            		oscRight.start(startTime + 0.25 * period);
-            
-            		// Запускаем остальные компоненты
-            		constantOffset.start(startTime);
-            		lfo.start(startTime);
-            
-            		console.log(`Freq: ${point.inputFreq}Hz, 
-            			Period: ${period.toFixed(6)}s, 
-            			Shift: ${(0.25*period).toFixed(6)}s,
-            			Angle: ${point.angle}`);
-            
-            		// Сохраняем узлы для управления
-            		oscillators.push({ 
-            			oscLeft, 
-            			oscRight, 
-            			gainLeft, 
-            			gainRight,
-            			lfo, 
-            			lfoGain, 
-            			constantOffset,
-            			merger,
-            			masterGain
-            		});
-            	});
-            }
-            
-            function stopAudio() {
-            oscillators.forEach(osc => {
-            // Плавное затухание через masterGain
-            if (osc.masterGain) {
-                osc.masterGain.gain.exponentialRampToValueAtTime(
-                    0.001, 
-                    audioContext.currentTime + 0.5
-                );
-            }
-            
-            setTimeout(() => {
-                if (osc.oscLeft) osc.oscLeft.stop();
-                if (osc.oscRight) osc.oscRight.stop();
-                if (osc.lfo) osc.lfo.stop();
-                if (osc.constantOffset) osc.constantOffset.stop();
-                // Отключаем все узлы
-                if (osc.gainLeft) osc.gainLeft.disconnect();
-                if (osc.gainRight) osc.gainRight.disconnect();
-                if (osc.merger) osc.merger.disconnect();
-                if (osc.masterGain) osc.masterGain.disconnect();
-            }, 500);
-            });
-            
-            oscillators = [];
-            activeCountEl.textContent = '0';
-            }
-            
-            function updateGrandCycleDisplay() {
-            	// Если нет точек, выходим
-            	if (visualPoints.length === 0) {
-            		grandCycleDisplay.innerHTML = `Полный цикл: -`;
-            		return;
-            	}
-            
-            	// Функция для решения системы уравнений фаз
-            	const findCommonCycle = () => {
-            		// Рассчитываем угловые скорости (рад/сек)
-            		const angularVelocities = visualPoints.map(p => 2 * Math.PI / p.period);
-            
-            		// Рассчитываем разности начальных фаз
-            		const phaseDiffs = visualPoints.map((p, i) => {
-            			const diffs = [];
-            			for (let j = i + 1; j < visualPoints.length; j++) {
-            				diffs.push({
-            					velocityDiff: angularVelocities[j] - angularVelocities[i],
-            					phaseDiff: p.angle - visualPoints[j].angle
-            				});
-            			}
-            			return diffs;
-            		}).flat();
-            
-            		// Находим минимальное T, когда все фазы совпадают
-            		let T = 0;
-            		const maxIterations = 100000;
-            		const epsilon = 1e-6;
-            		let iteration = 0;
-            
-            		while (iteration++ < maxIterations) {
-            			T += 0.1; // Шаг по времени
-            
-            			// Проверяем условие совпадения фаз для всех точек
-            			const allPhasesMatch = angularVelocities.every((ω, i) => {
-            				const currentAngle = (ω * T + visualPoints[i].angle) % (2 * Math.PI);
-            				return Math.abs(currentAngle - visualPoints[0].angle) < epsilon;
-            			});
-            
-            			if (allPhasesMatch) {
-            				return T;
-            			}
-            		}
-            
-            		// Если решение не найдено, возвращаем NaN
-            		return NaN;
-            	};
-            
-            	// Вычисляем время общего цикла
-            	const commonCycleTime = findCommonCycle();
-            
-            	// Если решение не найдено
-            	if (isNaN(commonCycleTime)) {
-            		//grandCycleDisplay.innerHTML = `Полный цикл: не найден (слишком большой)`;
-            		return;
-            	}
-            
-            	// Конвертируем время в удобные единицы
-            	const timeUnits = [
-            		{ value: 365.25 * 24 * 3600, unit: 'лет' },
-            		{ value: 24 * 3600, unit: 'дней' },
-            		{ value: 3600, unit: 'часов' },
-            		{ value: 60, unit: 'минут' },
-            		{ value: 1, unit: 'секунд' }
-            	];
-            
-            	// Находим наилучшую единицу измерения
-            	let bestUnit = timeUnits[timeUnits.length - 1];
-            	for (const unit of timeUnits) {
-            		if (commonCycleTime / unit.value >= 1) {
-            			bestUnit = unit;
-            			break;
-            		}
-            	}
-            
-            	// Форматируем результат
-            	const valueInUnit = commonCycleTime / bestUnit.value;
-            	grandCycleDisplay.innerHTML = `
-            		Полный цикл: ${valueInUnit.toFixed(2)} ${bestUnit.unit}<br>
-            		Частота цикла: ${(1 / commonCycleTime).toExponential(2)} Гц
-            	`;
-            }
-            
-            // Функция начала воспроизведения звука
-            function startTone(frequency, buttonId) {
-                if (!audioContext) return;
-                
-                // Проверяем количество активных звуков
-                if (activeOscillators.size >= maxActiveSounds) {
-                    return;
-                }
-                
-                // Если для этой кнопки уже есть активный звук, ничего не делаем
-                if (activeOscillators.has(buttonId)) {
-                    return;
-                }
-                
-                // Помечаем кнопку как активную
-                const button = document.getElementById(buttonId);
-                if (button) button.classList.add('playing');
-                
-                // Создаем осциллятор и ноду громкости
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.type = 'sine';
-                oscillator.frequency.value = frequency;
-                
-                // Устанавливаем громкость
-                gainNode.gain.value = 0.3;
-                
-                // Запускаем осциллятор
-                oscillator.start();
-                
-                // Сохраняем осциллятор
-                activeOscillators.set(buttonId, {oscillator, gainNode});
-                activeCountEl.textContent = activeOscillators.size;
-            }
-            
-            // Функция остановки воспроизведения звука
-            function stopTone(buttonId) {
-                if (!audioContext || !activeOscillators.has(buttonId)) return;
-                
-                const { oscillator } = activeOscillators.get(buttonId);
-                
-                // Останавливаем осциллятор
-                try {
-                    oscillator.stop();
-                } catch (e) {
-                    console.log("Осциллятор уже остановлен");
-                }
-                
-                // Удаляем из Map
-                activeOscillators.delete(buttonId);
-                activeCountEl.textContent = activeOscillators.size;
-                
-                // Снимаем пометку active с кнопки
-                const button = document.getElementById(buttonId);
-                if (button) button.classList.remove('playing');
-            }
-            
-            // Отображение результатов
-            function displayResults(result, baseFreq, freqList) {
-                const { tuning, avgDeviation, avgPercentDeviation } = result;
-                
-                // Обновляем информацию о строе
-                optimalTuningEl.textContent = tuning.name;
-                avgPercentDeviationEl.textContent = avgPercentDeviation.toFixed(2) + '%';
-                avgDeviationEl.textContent = avgDeviation.toFixed(4) + ' Гц';
-                
-                // Очищаем таблицу
-                resultsTable.innerHTML = '';
-                
-                // Находим уникальные октавы
-                const octaves = new Set();
-                
-                // Заполняем таблицу результатами
-                tuning.matches.forEach(match => {
-                    const row = document.createElement('tr');
-                    const noteName = getNoteName(tuning.id, match.noteIndex);
-                    const deviationSign = match.freq > match.noteFreq ? '+' : '-';
-                    const deviationClass = match.freq > match.noteFreq ? 'positive' : 'negative';
-                    
-                    row.innerHTML = `
-                        <td>${match.freq.toFixed(4)}</td>
-                        <td>${match.octave}</td>
-                        <td class="note-name">${noteName}</td>
-                        <td class="deviation ${deviationClass}">${deviationSign}${match.percentDeviation.toFixed(2)}%</td>
-                        <td class="deviation ${deviationClass}">${deviationSign}${match.deviation.toFixed(4)}</td>
-                    `;
-                    resultsTable.appendChild(row);
-                    
-                    // Добавляем октаву в набор
-                    octaves.add(match.octave);
-                });
-                
-                // Создаём кнопки для нот оптимального строя
-                createNoteButtons(tuning, baseFreq, Array.from(octaves), tuning.matches);
-                
-                initVisualization(tuning, baseFreq, freqList, Array.from(octaves));
-            }
-            
-            // Отображение результатов оптимизации
-            function displayOptimizationResult(result, tuningName) {
-                optimizationContainer.innerHTML = `
-                    <div class="optimization-result">
-                        <div class="optimization-title">Результаты оптимизации базовой частоты:</div>
-                        <div>Оптимальная базовая частота: <span class="optimization-value">${result.optimizedBaseFreq.toFixed(6)} Гц</span></div>
-                        <div class="optimization-detail">
-                            (Исходная: ${result.initialBaseFreq.toFixed(6)} Гц)
-                        </div>
-                        <div>Среднее отклонение: <span class="optimization-value">${result.minAvgPercentDeviation.toFixed(2)}%</span></div>
-                        <div class="optimization-detail">
-                            (Исходное: ${result.initialDeviation.toFixed(2)}%)
-                        </div>
-                        <div>Улучшение: <span class="optimization-value">${(result.initialDeviation - result.minAvgPercentDeviation).toFixed(2)}%</span></div>
-                    </div>
-                `;
-            }
-            
-            // Функция получения названия ноты
-            function getNoteName(tuningId, noteIndex) {
-                if (tuningId === 'tempered14' || tuningId === 'linear14') {
-                    return noteNames14[noteIndex] || `Нота ${noteIndex}`;
-                }
-                
-                // Для 12-нотных строев
-                return noteNames12[noteIndex] || `Нота ${noteIndex}`;
-            }
-            
-            // Создание кнопок нот (с исправленной проверкой)
-            function createNoteButtons(tuning, baseFreq, octaves, matches) {
-            	// Удаляем старые кнопки, оставляя заголовок
-            	const existingGroups = noteButtonsContainer.querySelectorAll('.octave-group:not(:first-child)');
-            	existingGroups.forEach(group => group.remove());
-            	
-            	// Создаем карту для отслеживания совпадений
-            	const matchMap = new Map();
-            	matches.forEach(match => {
-            		const key = `${match.octave}-${match.noteIndex}`;
-            		matchMap.set(key, true);
-            	});
-            	
-            	// Сортируем октавы
-            	const sortedOctaves = [...octaves].sort((a, b) => a - b);
-            	
-            	// Создаём кнопки для каждой октавы
-            	sortedOctaves.forEach(octave => {
-            		const octaveGroup = document.createElement('div');
-            		octaveGroup.className = 'octave-group';
-            		
-            		const octaveTitle = document.createElement('div');
-            		octaveTitle.className = 'octave-title';
-            		octaveTitle.textContent = `Октава ${octave}`;
-            		octaveGroup.appendChild(octaveTitle);
-            		
-            		const noteButtons = document.createElement('div');
-            		noteButtons.className = 'note-buttons';
-            		
-            		// Рассчитываем ноты для этой октавы
-            		const octaveBase = baseFreq * Math.pow(2, octave);
-            		const notes = calculateNotes(tuning.id, octaveBase, tuning.noteCount);
-            		
-            		// Создаём кнопки для каждой ноты
-            		notes.forEach((noteFreq, noteIndex) => {
-            			const noteName = getNoteName(tuning.id, noteIndex);
-            			const buttonId = `note-${octave}-${noteIndex}`;
-            			const button = document.createElement('button');
-            			button.className = 'note-button';
-            			button.id = buttonId;
-            			
-            			// Создаем контейнер для содержимого кнопки
-            			const buttonContent = document.createElement('div');
-            			buttonContent.innerHTML = `
-            				<div>${noteName}</div>
-            				<div class="note-freq">${noteFreq.toFixed(2)} Гц</div>
-            			`;
-            			button.appendChild(buttonContent);
-            			
-            			// Проверяем, соответствует ли эта нота одной из введённых частот
-            			const key = `${octave}-${noteIndex}`;
-            			const isMatched = matchMap.has(key);
-            			
-            			if (isMatched) {
-            				button.classList.add('matched');
-            			}
-            			
-            			// Добавляем обработчики для мыши
-            			button.addEventListener('mousedown', () => {
-            				startTone(noteFreq, buttonId);
-            			});
-            			
-            			button.addEventListener('mouseup', () => {
-            				stopTone(buttonId);
-            			});
-            			
-            			button.addEventListener('mouseleave', () => {
-            				stopTone(buttonId);
-            			});
-            			
-            			// Добавляем обработчики для сенсорных устройств
-            			button.addEventListener('touchstart', (e) => {
-            				e.preventDefault();
-            				startTone(noteFreq, buttonId);
-            			});
-            			
-            			button.addEventListener('touchend', (e) => {
-            				e.preventDefault();
-            				stopTone(buttonId);
-            			});
-            			
-            			button.addEventListener('touchcancel', (e) => {
-            				e.preventDefault();
-            				stopTone(buttonId);
-            			});
-            			
-            			noteButtons.appendChild(button);
-            		});
-            		
-            		octaveGroup.appendChild(noteButtons);
-            		noteButtonsContainer.appendChild(octaveGroup);
-            	});
-            }
-            
-            // Обработчик слайдера скорости
-            rotationSlider.addEventListener('input', function() {
-                maxRotationTime = parseFloat(this.value);
-                rotationTimeDisplay.textContent = maxRotationTime.toFixed(2);
-                
-                if (visualPoints.length > 0) {
-                    // Пересчет периодов для всех точек
-                    const newK_mash = maxRotationTime / globalTMin;
-                    
-                    visualPoints.forEach(point => {
-                        const T = 1 / point.inputFreq;
-                        point.period = T * newK_mash;
-                    });
-                    
-                    // Обновляем отображение полного цикла
-                    updateGrandCycleDisplay();
-                }
-            });
-            
-            playBtn.addEventListener('click', togglePlayback);
-            
-            // Автоматический анализ при загрузке
-            setTimeout(() => {
-                analyzeBtn.click();
-            }, 300);
-        }); 
+    document.addEventListener('DOMContentLoaded', function() {
+    const baseFreqInput = document.getElementById('base-freq');
+    const freqInput = document.getElementById('freq-input');
+    const analyzeBtn = document.getElementById('analyze-btn');
+    const optimizeBtn = document.getElementById('optimize-btn');
+    const resultsTable = document.querySelector('#results-table tbody');
+    const optimalTuningEl = document.getElementById('optimal-tuning');
+    const avgDeviationEl = document.getElementById('avg-deviation');
+    const avgPercentDeviationEl = document.getElementById('avg-percent-deviation');
+    const noteButtonsContainer = document.getElementById('note-buttons-container');
+    const activeCountEl = document.getElementById('active-count');
+    const optimizationContainer = document.getElementById('optimization-container');
+    const infoButton = document.getElementById('info-button');
+    const infoModal = document.getElementById('info-modal');
+    const closeModal = document.getElementById('close-modal');
+    const playBtn = document.getElementById('play-btn');
+    const grandCycleDisplay = document.getElementById('grand-cycle-display');
+    const rotationSlider = document.getElementById('rotation-slider');
+    const rotationTimeDisplay = document.getElementById('rotation-time-display');
+    
+    // Обозначения нот для 14-нотного строя
+    const noteNames14 = ['До', 'До#', 'Ре', 'Ре#', 'Ми', 'Ми#', 'Фа', 'Фа#', 'Соль', 'Соль#', 'Ля', 'Ля#', 'Си', 'Си#'];
+    
+    // Обозначения нот для 12-нотного строя
+    const noteNames12 = ['До', 'До#', 'Ре', 'Ре#', 'Ми', 'Фа', 'Фа#', 'Соль', 'Соль#', 'Ля', 'Ля#', 'Си'];
+    
+    // Глобальные переменные
+    let isPlaying = false;
+    let oscillators = [];
+    let animationId;
+    let visualPoints = [];
+    let maxRotationTime = 0.25;
+    let octaveCircles = [];
+    let rRaw_center_global = 0;
+    let rRaw_min_global = 0;
+    
+    // Для управления звуком
+    let audioContext;
+    try {
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    } catch (e) {
+    console.error("Web Audio API не поддерживается в этом браузере");
+    document.getElementById('note-buttons-container').innerHTML = 
+    '<div class="info">Web Audio API не поддерживается в вашем браузере. Воспроизведение звуков недоступно.</div>';
+    }
+    
+    // Глобальные переменные для управления звуком
+    const activeOscillators = new Map();
+    const maxActiveSounds = 3;
+    
+    // Глобальные переменные для визуализации
+    let baseFreqGlobal;
+    let globalMinFreq, globalMaxFreq;
+    let globalTMin, globalTMax;
+    
+    // Обработчики модального окна
+    infoButton.addEventListener('click', function() {
+    infoModal.style.display = 'block';
+    });
+    
+    closeModal.addEventListener('click', function() {
+    infoModal.style.display = 'none';
+    });
+    
+    window.addEventListener('click', function(event) {
+    if (event.target === infoModal) {
+    infoModal.style.display = 'none';
+    }
+    });
+    
+    // Обработка анализа
+    analyzeBtn.addEventListener('click', function() {
+    const baseFreq = parseFloat(baseFreqInput.value);
+    const freqList = freqInput.value.split(/[,;]+/)
+    .map(f => parseFloat(f.trim()))
+    .filter(f => !isNaN(f));
+    
+    if (isNaN(baseFreq)) {
+    alert('Введите корректную базовую частоту');
+    return;
+    }
+    
+    if (freqList.length === 0) {
+    alert('Введите корректные частоты');
+    return;
+    }
+    
+    // Определяем оптимальный строй
+    const result = findOptimalTuning(baseFreq, freqList);
+    
+    // Отображаем результаты
+    displayResults(result, baseFreq, freqList);
+    
+    // Скрываем результаты оптимизации
+    optimizationContainer.innerHTML = '';
+    });
+    
+    // Обработка оптимизации базовой частоты
+    optimizeBtn.addEventListener('click', function() {
+    const baseFreq = parseFloat(baseFreqInput.value);
+    const freqList = freqInput.value.split(/[,;]+/)
+    .map(f => parseFloat(f.trim()))
+    .filter(f => !isNaN(f));
+    
+    if (isNaN(baseFreq)) {
+    alert('Введите корректную базовую частоту');
+    return;
+    }
+    
+    if (freqList.length === 0) {
+    alert('Введите корректные частоты');
+    return;
+    }
+    
+    // Определяем оптимальный строй для текущей базовой частоты
+    const result = findOptimalTuning(baseFreq, freqList);
+    
+    // Оптимизируем базовую частоту для этого строя
+    const optimizationResult = optimizeBaseFrequency(result.tuning.id, baseFreq, freqList);
+    
+    // Отображаем результаты оптимизации
+    displayOptimizationResult(optimizationResult, result.tuning.name);
+    
+    // Обновляем поле базовой частоты
+    baseFreqInput.value = optimizationResult.optimizedBaseFreq.toFixed(6);
+    
+    // Перезапускаем анализ с новой базовой частотой
+    const newResult = findOptimalTuning(optimizationResult.optimizedBaseFreq, freqList);
+    displayResults(newResult, optimizationResult.optimizedBaseFreq, freqList);
+    });
+    
+    // Функция поиска оптимального строя (по процентным отклонениям)
+    // Функция поиска оптимального строя (по процентным отклонениям)
+    function findOptimalTuning(baseFreq, freqList) {
+    const tunings = [
+    { id: 'tempered12', name: '12-нотный темперированный', noteCount: 12, octaveMultiplier: 2 },
+    { id: 'natural', name: '12-нотный натуральный', noteCount: 12, octaveMultiplier: 2 },
+    { id: 'tempered14', name: '14-нотный темперированный', noteCount: 14, octaveMultiplier: 2 },
+    { id: 'linear12', name: '12-нотный линейный', noteCount: 12, octaveMultiplier: 2 },
+    { id: 'linear14', name: '14-нотный линейный', noteCount: 14, octaveMultiplier: 2 },
+    // ДОБАВЛЕНО: Два новых строя Эйлера с правильным октавным множителем
+    { id: 'euler14', name: '14-нотный темперированный Эйлера', noteCount: 14, octaveMultiplier: Math.E },
+    { id: 'euler12', name: '12-нотный темперированный Эйлера', noteCount: 12, octaveMultiplier: Math.E }
+    ];
+    
+    // Результаты для каждого строя
+    const tuningResults = tunings.map(tuning => {
+    return {
+    name: tuning.name,
+    id: tuning.id,
+    totalPercentDeviation: 0,
+    totalDeviation: 0,
+    matches: []
+    };
+    });
+    
+    // Обрабатываем каждую частоту
+    freqList.forEach((freq) => {
+    // Для каждого строя находим ближайшую ноту
+    tunings.forEach((tuning, tuningIdx) => {
+    // Определяем октаву в зависимости от строя
+    let octave, octaveBase;
+    
+    if (tuning.octaveMultiplier === 2) {
+    // Для строев с октавным множителем 2
+    octave = Math.floor(Math.log2(freq / baseFreq));
+    octaveBase = baseFreq * Math.pow(2, octave);
+    } else {
+    // Для строев Эйлера с октавным множителем e
+    octave = Math.floor(Math.log(freq / baseFreq));
+    octaveBase = baseFreq * Math.pow(Math.E, octave);
+    }
+    
+    const notes = calculateNotes(tuning.id, octaveBase, tuning.noteCount);
+    let minDiff = Infinity;
+    let minPercentDiff = Infinity;
+    let closestNote = 0;
+    let noteIndex = 0;
+    
+    // Находим ближайшую ноту
+    notes.forEach((note, noteIdx) => {
+    const diff = Math.abs(note - freq);
+    const percentDiff = (diff / note) * 100;
+    
+    if (percentDiff < minPercentDiff) {
+    minPercentDiff = percentDiff;
+    minDiff = diff;
+    closestNote = note;
+    noteIndex = noteIdx;
+    }
+    });
+    
+    // Сохраняем результат
+    tuningResults[tuningIdx].totalPercentDeviation += minPercentDiff;
+    tuningResults[tuningIdx].totalDeviation += minDiff;
+    
+    tuningResults[tuningIdx].matches.push({
+    freq,
+    octave,
+    noteFreq: closestNote,
+    deviation: minDiff,
+    percentDeviation: minPercentDiff,
+    noteIndex
+    });
+    });
+    });
+    
+    // Находим строй с минимальным средним процентным отклонением
+    let optimalTuning = tuningResults[0];
+    let minAvgPercentDeviation = Infinity;
+    
+    tuningResults.forEach(tuning => {
+    const avgPercentDeviation = tuning.totalPercentDeviation / freqList.length;
+    if (avgPercentDeviation < minAvgPercentDeviation) {
+    minAvgPercentDeviation = avgPercentDeviation;
+    optimalTuning = tuning;
+    }
+    });
+    
+    return {
+    tuning: optimalTuning,
+    avgDeviation: optimalTuning.totalDeviation / freqList.length,
+    avgPercentDeviation: optimalTuning.totalPercentDeviation / freqList.length,
+    };
+    }
+    
+    // Функция расчета нот для строя
+    function calculateNotes(tuningId, baseFreq, noteCount) {
+    switch (tuningId) {
+    case 'tempered12':
+    return Array.from({ length: 12 }, (_, i) => 
+    baseFreq * Math.pow(2, i/12));
+    case 'natural':
+    const ratios = [1, 25/24, 9/8, 6/5, 5/4, 4/3, 45/32, 3/2, 8/5, 5/3, 9/5, 15/8];
+    return ratios.map(r => baseFreq * r);
+    case 'tempered14':
+    return Array.from({ length: 14 }, (_, i) => 
+    baseFreq * Math.pow(2, i/14));
+    case 'linear12':
+    const step12 = baseFreq / 12;
+    return Array.from({ length: 12 }, (_, i) => 
+    baseFreq + i * step12);
+    case 'linear14':
+    const step14 = baseFreq / 14;
+    return Array.from({ length: 14 }, (_, i) => 
+    baseFreq + i * step14);
+    // ДОБАВЛЕНО: Два новых строя Эйлера
+    case 'euler14':
+    // Октавный множитель e, коэффициент между соседними нотами e^(1/14)
+    return Array.from({ length: 14 }, (_, i) => 
+    baseFreq * Math.exp(i/14));
+    case 'euler12':
+    // Октавный множитель e, коэффициент между соседними нотами e^(1/12)
+    return Array.from({ length: 12 }, (_, i) => 
+    baseFreq * Math.exp(i/12));
+    default:
+    return [];
+    }
+    }
+    
+    // Функция оптимизации базовой частоты
+    function optimizeBaseFrequency(tuningId, initialBaseFreq, freqList) {
+    const range = 0.1; // ±10% диапазон
+    const step = 0.001; // 0.1% шаг
+    const steps = Math.ceil((range * 2 * initialBaseFreq) / (initialBaseFreq * step));
+    
+    let bestBaseFreq = initialBaseFreq;
+    let minAvgPercentDeviation = Infinity;
+    let minDeviations = [];
+    
+    // Перебираем значения в диапазоне
+    for (let i = 0; i <= steps; i++) {
+    const testBaseFreq = initialBaseFreq * (1 - range + (i * step * 2));
+    
+    // Рассчитываем отклонения для этого строя и базовой частоты
+    const result = findOptimalTuning(testBaseFreq, freqList);
+    
+    if (result.avgPercentDeviation < minAvgPercentDeviation) {
+    minAvgPercentDeviation = result.avgPercentDeviation;
+    bestBaseFreq = testBaseFreq;
+    minDeviations = result.tuning.matches;
+    }
+    }
+    
+    return {
+    optimizedBaseFreq: bestBaseFreq,
+    minAvgPercentDeviation,
+    minDeviations,
+    initialBaseFreq,
+    initialDeviation: findOptimalTuning(initialBaseFreq, freqList).avgPercentDeviation
+    };
+    }
+    
+   // Функция инициализации визуализации после анализа
+   function initVisualization(tuning, baseFreq, freqList, octaves) {
+   const canvas = document.getElementById('visualization');
+   const ctx = canvas.getContext('2d');
+   const centerX = canvas.width / 2;
+   const centerY = canvas.height / 2;
+   const maxRadius = Math.min(centerX, centerY) * 0.9;
+   const minRadius = 5;
+   
+   // Находим min и max частоты
+   globalMinFreq = Math.min(...freqList);
+   globalMaxFreq = Math.max(...freqList);
+   
+   // Определяем базовую частоту для визуализации
+   // Для строев Эйлера используем октавный множитель e, для остальных - 2
+   const octaveMultiplier = (tuning.id === 'euler12' || tuning.id === 'euler14') ? Math.E : 2;
+   
+   let bm = baseFreq;
+   while (bm < globalMinFreq) {
+   bm = bm * octaveMultiplier;
+   }
+   
+   let bf = bm;
+   while (bf > globalMinFreq) {
+   bf = bf / octaveMultiplier;
+   }
+   
+   baseFreqGlobal = bf;
+   console.log("Базовая частота:", baseFreqGlobal);
+   
+   // Определяем центральную частоту
+   let centerFreq;
+   if (globalMaxFreq <= 20000) {
+   centerFreq = 20000;
+   } else {
+   // Ближайшая степень 10, большая globalMaxFreq
+   centerFreq = Math.pow(10, Math.ceil(Math.log10(globalMaxFreq)));
+   }
+   
+   // Рассчитываем периоды
+   globalTMin = 1 / globalMaxFreq;
+   globalTMax = 1 / globalMinFreq;
+   
+   // Рассчитываем T_center и T_min
+   const T_center = 1 / centerFreq;
+   const T_min = 1 / globalMinFreq;
+   
+   // Вычисляем rRaw_center и rRaw_min по закону Кеплера
+   rRaw_center_global = Math.pow(T_center, 2/3);
+   rRaw_min_global = Math.pow(T_min, 2/3);
+   
+   // Очищаем массив октавных кругов
+   octaveCircles = [];
+   const minOctave = Math.floor(Math.log(globalMinFreq / baseFreqGlobal) / Math.log(octaveMultiplier));
+   const maxOctave = Math.ceil(Math.log(globalMaxFreq / baseFreqGlobal) / Math.log(octaveMultiplier));
+   
+   // Рассчитываем круги для каждой октавы
+   for (let octave = minOctave; octave <= maxOctave; octave++) {
+   const freqAtOctave = baseFreqGlobal * Math.pow(octaveMultiplier, octave);
+   const T_atOctave = 1 / freqAtOctave;
+   const rRaw = Math.pow(T_atOctave, 2/3);
+   
+   // Нормализация радиуса
+   let normalizedR = (rRaw - rRaw_center_global) / (rRaw_min_global - rRaw_center_global);
+   normalizedR = Math.max(0, Math.min(1, normalizedR));
+   const radius = minRadius + normalizedR * (maxRadius - minRadius);
+   
+   octaveCircles.push({ octave, radius, freq: freqAtOctave });
+   }
+   
+   // Создаем точки для каждой частоты с учетом закона Кеплера
+   visualPoints = freqList.map(freq => {
+   const T = 1 / freq;
+   const rRaw = Math.pow(T, 2/3);
+   
+   // Нормализация радиуса
+   let normalizedR = (rRaw - rRaw_center_global) / (rRaw_min_global - rRaw_center_global);
+   normalizedR = Math.max(0, Math.min(1, normalizedR));
+   const radius = minRadius + normalizedR * (maxRadius - minRadius);
+   
+   // Период для анимации с учетом K_mash
+   const T_vis = T * (maxRotationTime / globalTMin);
+   
+   return {
+   inputFreq: freq,
+   radius: radius,
+   period: T_vis,
+   angle: 0,
+   K_mash: maxRotationTime / globalTMin
+   };
+   });
+   
+   // Рассчитываем полный цикл
+   updateGrandCycleDisplay();
+   }
+    
+    // Анимация точек
+    function animate() {
+    const canvas = document.getElementById('visualization');
+    const ctx = canvas.getContext('2d');
+    const centerX = canvas.width / 2;
+    const centerY = canvas.height / 2;
+    const maxRadius = Math.min(centerX, centerY) * 0.9;
+    const minRadius = 1;
+    
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Отрисовка октавных кругов
+    octaveCircles.forEach(circle => {
+    ctx.beginPath();
+    ctx.arc(centerX, centerY, circle.radius, 0, 2 * Math.PI);
+    
+    // Стиль для круга
+    if (circle.octave === 0) {
+    ctx.strokeStyle = '#8f8157';
+    ctx.lineWidth = 2;
+    } else {
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 1;
+    }
+    
+    ctx.stroke();
+    
+    // Подпись октавы
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    ctx.font = '10px Arial';
+    ctx.fillText(`${circle.octave}`, centerX + circle.radius + 2, centerY);
+    });
+    
+    // Отрисовка точек
+    visualPoints.forEach(point => {
+    // Обновляем угол в соответствии с периодом
+    point.angle += (2 * Math.PI) / (point.period * 60); // 60 FPS
+    
+    const x = centerX + point.radius * Math.cos(point.angle);
+    const y = centerY + point.radius * Math.sin(point.angle);
+    
+    const minVisibleFreq = 4e14;  // 400 ТГц (нижняя граница видимого спектра)
+    const maxVisibleFreq = 7.9e14; // 790 ТГц (верхняя граница)
+    
+    // Октавное увеличение частоты
+    let visibleFreq = point.inputFreq;
+    while (visibleFreq < minVisibleFreq) visibleFreq *= 2;
+    while (visibleFreq > maxVisibleFreq) visibleFreq /= 2;
+    
+    // Конвертация в длину волны (в нанометрах)
+    const wavelength = 3e17 / visibleFreq; // 3e8 м/с * 1e9 нм / частота
+    
+    // Получаем RGB-компоненты
+    const [r, g, b] = wavelengthToRGB(wavelength);
+    
+    // Рисуем серую точку окантовку (радиус 5)
+    ctx.beginPath();
+    ctx.arc(x, y, 5, 0, 2 * Math.PI);
+    ctx.fillStyle = 'grey';
+    ctx.fill();
+    
+    // Устанавливаем цвет с прозрачностью
+    ctx.fillStyle = `rgba(${r}, ${g}, ${b}, ${isPlaying ? 0.8 : 0.6})`;
+    
+    // Рисуем точку
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+    
+    // Рисуем белую точку внутри (радиус 1)
+    ctx.beginPath();
+    ctx.arc(x, y, 1, 0, 2 * Math.PI);
+    ctx.fillStyle = 'lightgrey';
+    ctx.fill();
+    
+    // Подписи частот
+    if (point.angle % (2 * Math.PI) < 0.1) {
+    ctx.fillStyle = '#fff';
+    ctx.font = '10px Arial';
+    ctx.fillText(point.inputFreq.toFixed(2) + 'Hz', x + 10, y + 5);
+    }
+    });
+    
+    animationId = requestAnimationFrame(animate);
+    }
+    
+    // Функция для преобразования длины волны в RGB
+    function wavelengthToRGB(wavelength) {
+    let r, g, b, factor;
+    
+    // Корректируем длину волны в видимом диапазоне (380-750 нм)
+    wavelength = Math.max(380, Math.min(750, wavelength));
+    
+    if (wavelength >= 380 && wavelength < 440) {
+    r = -(wavelength - 440) / (440 - 380);
+    g = 0;
+    b = 1;
+    } else if (wavelength < 490) {
+    r = 0;
+    g = (wavelength - 440) / (490 - 440);
+    b = 1;
+    } else if (wavelength < 510) {
+    r = 0;
+    g = 1;
+    b = -(wavelength - 510) / (510 - 490);
+    } else if (wavelength < 580) {
+    r = (wavelength - 510) / (580 - 510);
+    g = 1;
+    b = 0;
+    } else if (wavelength < 645) {
+    r = 1;
+    g = -(wavelength - 645) / (645 - 580);
+    b = 0;
+    } else {
+    r = 1;
+    g = 0;
+    b = 0;
+    }
+    
+    // Ослабление цвета у границ видимого спектра
+    if (wavelength >= 380 && wavelength < 420) {
+    factor = 0.3 + 0.7 * (wavelength - 380) / (420 - 380);
+    } else if (wavelength < 701) {
+    factor = 1;
+    } else {
+    factor = 0.3 + 0.7 * (750 - wavelength) / (750 - 700);
+    }
+    
+    // Гамма-коррекция (0.8 для более естественных цветов)
+    const gamma = 0.8;
+    r = Math.round(255 * (r * factor) ** gamma);
+    g = Math.round(255 * (g * factor) ** gamma);
+    b = Math.round(255 * (b * factor) ** gamma);
+    
+    return [r, g, b];
+    }
+    
+    function togglePlayback() {
+    if (isPlaying) {
+    stopAudio();
+    if (animationId) {
+    cancelAnimationFrame(animationId);
+    animationId = null;
+    }
+    } else {
+    startAudio();
+    if (animationId) cancelAnimationFrame(animationId);
+    animate();
+    }
+    isPlaying = !isPlaying;
+    playBtn.textContent = isPlaying ? '■ Стоп' : '▶ Ра';
+    }
+    
+    // Функция интеллектуального расчета громкости
+    function calculateDynamicVolume(numPoints) {
+    const MIN_MASTER = 0.1;   // Минимальная общая громкость
+    const MAX_MASTER = 0.8;   // Максимальная общая громкость
+    const BASE = 1.5;         // Коэффициент уменьшения
+    
+    // Логарифмическое уменьшение громкости
+    const master = Math.max(MIN_MASTER, MAX_MASTER / Math.log(numPoints + BASE));
+    
+    // Компенсация для каждого канала
+    const perChannel = 0.5 * Math.min(1, 2 / numPoints);
+    
+    return {
+    master,
+    perChannel
+    };
+    }
+    
+    function startAudio() {
+    if (!audioContext) return;
+    
+    stopAudio();
+    activeCountEl.textContent = visualPoints.length;
+    
+    // Цепочка эффектов компрессора
+    const compressor = audioContext.createDynamicsCompressor();
+    compressor.threshold.value = -20;
+    compressor.knee.value = 10;
+    compressor.ratio.value = 12;
+    compressor.attack.value = 0.01;
+    compressor.release.value = 0.25;
+    compressor.connect(audioContext.destination);
+    
+    const volumeControl = calculateDynamicVolume(visualPoints.length);
+    const masterGain = audioContext.createGain();
+    masterGain.gain.value = volumeControl.master;
+    masterGain.connect(compressor);
+    
+    // Создаем ChannelMerger для стерео выхода
+    const merger = audioContext.createChannelMerger(2);
+    merger.connect(compressor);
+    
+    visualPoints.forEach(point => {
+    
+    // Создаем два осциллятора для левого и правого каналов
+    const oscLeft = audioContext.createOscillator();
+    const oscRight = audioContext.createOscillator();
+    
+    // Устанавливаем одинаковый тип для обоих каналов
+    oscLeft.type = 'sine';
+    oscRight.type = 'sine';
+    
+    // Устанавливаем частоту
+    oscLeft.frequency.value = point.inputFreq;
+    oscRight.frequency.value = point.inputFreq;
+    
+    // Создаем гейны для каждого канала
+    const gainLeft = audioContext.createGain();
+    const gainRight = audioContext.createGain();
+    
+    // Создаем LFO для модуляции амплитуды
+    const lfo = audioContext.createOscillator();
+    const lfoGain = audioContext.createGain();
+    const constantOffset = audioContext.createConstantSource();
+    
+    // Настройка LFO
+    lfo.frequency.value = 1 / point.period;
+    lfo.type = 'sine';
+    lfo.phase = point.angle - Math.PI/2;
+    
+    // Настройка усиления LFO
+    lfoGain.gain.value = 0.5;
+    
+    // Настройка постоянного смещения
+    constantOffset.offset.value = 0.5;
+    
+    // Подключение LFO и смещения к гейнам
+    lfo.connect(lfoGain);
+    lfoGain.connect(gainLeft.gain);
+    lfoGain.connect(gainRight.gain);
+    constantOffset.connect(gainLeft.gain);
+    constantOffset.connect(gainRight.gain);
+    
+    // Подключение осцилляторов к гейнам
+    oscLeft.connect(gainLeft);
+    oscRight.connect(gainRight);
+    
+    // Подключение гейнов к merger (левый - канал 0, правый - канал 1)
+    gainLeft.connect(merger, 0, 0);
+    gainRight.connect(merger, 0, 1);
+    
+    // Устанавливаем начальное значение гейна
+    const initialValue = 0.5 - 0.5 * Math.cos(point.angle);
+    gainLeft.gain.setValueAtTime(initialValue, audioContext.currentTime);
+    gainRight.gain.setValueAtTime(initialValue, audioContext.currentTime);
+    
+    // Фазовый сдвиг 90° для правого канала
+    // Запускаем правый канал с задержкой в 1/4 периода
+    const startTime = audioContext.currentTime;
+    const period = 1 / point.inputFreq;
+    oscLeft.start(startTime);
+    oscRight.start(startTime + 0.25 * period);
+    
+    // Запускаем остальные компоненты
+    constantOffset.start(startTime);
+    lfo.start(startTime);
+    
+    console.log(`Freq: ${point.inputFreq}Hz, 
+    Period: ${period.toFixed(6)}s, 
+    Shift: ${(0.25*period).toFixed(6)}s,
+    Angle: ${point.angle}`);
+    
+    // Сохраняем узлы для управления
+    oscillators.push({ 
+    oscLeft, 
+    oscRight, 
+    gainLeft, 
+    gainRight,
+    lfo, 
+    lfoGain, 
+    constantOffset,
+    merger,
+    masterGain
+    });
+    });
+    }
+    
+    function stopAudio() {
+    oscillators.forEach(osc => {
+    // Плавное затухание через masterGain
+    if (osc.masterGain) {
+    osc.masterGain.gain.exponentialRampToValueAtTime(
+    0.001, 
+    audioContext.currentTime + 0.5
+    );
+    }
+    
+    setTimeout(() => {
+    if (osc.oscLeft) osc.oscLeft.stop();
+    if (osc.oscRight) osc.oscRight.stop();
+    if (osc.lfo) osc.lfo.stop();
+    if (osc.constantOffset) osc.constantOffset.stop();
+    // Отключаем все узлы
+    if (osc.gainLeft) osc.gainLeft.disconnect();
+    if (osc.gainRight) osc.gainRight.disconnect();
+    if (osc.merger) osc.merger.disconnect();
+    if (osc.masterGain) osc.masterGain.disconnect();
+    }, 500);
+    });
+    
+    oscillators = [];
+    activeCountEl.textContent = '0';
+    }
+    
+    function updateGrandCycleDisplay() {
+    // Если нет точек, выходим
+    if (visualPoints.length === 0) {
+    grandCycleDisplay.innerHTML = `Полный цикл: -`;
+    return;
+    }
+    
+    // Функция для решения системы уравнений фаз
+    const findCommonCycle = () => {
+    // Рассчитываем угловые скорости (рад/сек)
+    const angularVelocities = visualPoints.map(p => 2 * Math.PI / p.period);
+    
+    // Рассчитываем разности начальных фаз
+    const phaseDiffs = visualPoints.map((p, i) => {
+    const diffs = [];
+    for (let j = i + 1; j < visualPoints.length; j++) {
+    diffs.push({
+    velocityDiff: angularVelocities[j] - angularVelocities[i],
+    phaseDiff: p.angle - visualPoints[j].angle
+    });
+    }
+    return diffs;
+    }).flat();
+    
+    // Находим минимальное T, когда все фазы совпадают
+    let T = 0;
+    const maxIterations = 100000;
+    const epsilon = 1e-6;
+    let iteration = 0;
+    
+    while (iteration++ < maxIterations) {
+    T += 0.1; // Шаг по времени
+    
+    // Проверяем условие совпадения фаз для всех точек
+    const allPhasesMatch = angularVelocities.every((ω, i) => {
+    const currentAngle = (ω * T + visualPoints[i].angle) % (2 * Math.PI);
+    return Math.abs(currentAngle - visualPoints[0].angle) < epsilon;
+    });
+    
+    if (allPhasesMatch) {
+    return T;
+    }
+    }
+    
+    // Если решение не найдено, возвращаем NaN
+    return NaN;
+    };
+    
+    // Вычисляем время общего цикла
+    const commonCycleTime = findCommonCycle();
+    
+    // Если решение не найдено
+    if (isNaN(commonCycleTime)) {
+    //grandCycleDisplay.innerHTML = `Полный цикл: не найден (слишком большой)`;
+    return;
+    }
+    
+    // Конвертируем время в удобные единицы
+    const timeUnits = [
+    { value: 365.25 * 24 * 3600, unit: 'лет' },
+    { value: 24 * 3600, unit: 'дней' },
+    { value: 3600, unit: 'часов' },
+    { value: 60, unit: 'минут' },
+    { value: 1, unit: 'секунд' }
+    ];
+    
+    // Находим наилучшую единицу измерения
+    let bestUnit = timeUnits[timeUnits.length - 1];
+    for (const unit of timeUnits) {
+    if (commonCycleTime / unit.value >= 1) {
+    bestUnit = unit;
+    break;
+    }
+    }
+    
+    // Форматируем результат
+    const valueInUnit = commonCycleTime / bestUnit.value;
+    grandCycleDisplay.innerHTML = `
+    Полный цикл: ${valueInUnit.toFixed(2)} ${bestUnit.unit}<br>
+    Частота цикла: ${(1 / commonCycleTime).toExponential(2)} Гц
+    `;
+    }
+    
+    // Функция начала воспроизведения звука
+    function startTone(frequency, buttonId) {
+    if (!audioContext) return;
+    
+    // Проверяем количество активных звуков
+    if (activeOscillators.size >= maxActiveSounds) {
+    return;
+    }
+    
+    // Если для этой кнопки уже есть активный звук, ничего не делаем
+    if (activeOscillators.has(buttonId)) {
+    return;
+    }
+    
+    // Помечаем кнопку как активную
+    const button = document.getElementById(buttonId);
+    if (button) button.classList.add('playing');
+    
+    // Создаем осциллятор и ноду громкости
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.type = 'sine';
+    oscillator.frequency.value = frequency;
+    
+    // Устанавливаем громкость
+    gainNode.gain.value = 0.3;
+    
+    // Запускаем осциллятор
+    oscillator.start();
+    
+    // Сохраняем осциллятор
+    activeOscillators.set(buttonId, {oscillator, gainNode});
+    activeCountEl.textContent = activeOscillators.size;
+    }
+    
+    // Функция остановки воспроизведения звука
+    function stopTone(buttonId) {
+    if (!audioContext || !activeOscillators.has(buttonId)) return;
+    
+    const { oscillator } = activeOscillators.get(buttonId);
+    
+    // Останавливаем осциллятор
+    try {
+    oscillator.stop();
+    } catch (e) {
+    console.log("Осциллятор уже остановлен");
+    }
+    
+    // Удаляем из Map
+    activeOscillators.delete(buttonId);
+    activeCountEl.textContent = activeOscillators.size;
+    
+    // Снимаем пометку active с кнопки
+    const button = document.getElementById(buttonId);
+    if (button) button.classList.remove('playing');
+    }
+    
+    // Отображение результатов
+    function displayResults(result, baseFreq, freqList) {
+    const { tuning, avgDeviation, avgPercentDeviation } = result;
+    
+    // Обновляем информацию о строе
+    optimalTuningEl.textContent = tuning.name;
+    avgPercentDeviationEl.textContent = avgPercentDeviation.toFixed(2) + '%';
+    avgDeviationEl.textContent = avgDeviation.toFixed(4) + ' Гц';
+    
+    // Очищаем таблицу
+    resultsTable.innerHTML = '';
+    
+    // Находим уникальные октавы
+    const octaves = new Set();
+    
+    // Заполняем таблицу результатами
+    tuning.matches.forEach(match => {
+    const row = document.createElement('tr');
+    const noteName = getNoteName(tuning.id, match.noteIndex);
+    const deviationSign = match.freq > match.noteFreq ? '+' : '-';
+    const deviationClass = match.freq > match.noteFreq ? 'positive' : 'negative';
+    
+    row.innerHTML = `
+    <td>${match.freq.toFixed(4)}</td>
+    <td>${match.octave}</td>
+    <td class="note-name">${noteName}</td>
+    <td class="deviation ${deviationClass}">${deviationSign}${match.percentDeviation.toFixed(2)}%</td>
+    <td class="deviation ${deviationClass}">${deviationSign}${match.deviation.toFixed(4)}</td>
+    `;
+    resultsTable.appendChild(row);
+    
+    // Добавляем октаву в набор
+    octaves.add(match.octave);
+    });
+    
+    // Создаём кнопки для нот оптимального строя
+    createNoteButtons(tuning, baseFreq, Array.from(octaves), tuning.matches);
+    
+    initVisualization(tuning, baseFreq, freqList, Array.from(octaves));
+    }
+    
+    // Отображение результатов оптимизации
+    function displayOptimizationResult(result, tuningName) {
+    optimizationContainer.innerHTML = `
+    <div class="optimization-result">
+    <div class="optimization-title">Результаты оптимизации базовой частоты:</div>
+    <div>Оптимальная базовая частота: <span class="optimization-value">${result.optimizedBaseFreq.toFixed(6)} Гц</span></div>
+    <div class="optimization-detail">
+    (Исходная: ${result.initialBaseFreq.toFixed(6)} Гц)
+    </div>
+    <div>Среднее отклонение: <span class="optimization-value">${result.minAvgPercentDeviation.toFixed(2)}%</span></div>
+    <div class="optimization-detail">
+    (Исходное: ${result.initialDeviation.toFixed(2)}%)
+    </div>
+    <div>Улучшение: <span class="optimization-value">${(result.initialDeviation - result.minAvgPercentDeviation).toFixed(2)}%</span></div>
+    </div>
+    `;
+    }
+    
+    // Функция получения названия ноты
+    function getNoteName(tuningId, noteIndex) {
+    if (tuningId === 'tempered14' || tuningId === 'linear14' || tuningId === 'euler14') {
+    return noteNames14[noteIndex] || `Нота ${noteIndex}`;
+    }
+    
+    // Для 12-нотных строев
+    return noteNames12[noteIndex] || `Нота ${noteIndex}`;
+    }
+    
+   // Функция создания кнопок нот
+   function createNoteButtons(tuning, baseFreq, octaves, matches) {
+   // Удаляем старые кнопки, оставляя заголовок
+   const existingGroups = noteButtonsContainer.querySelectorAll('.octave-group:not(:first-child)');
+   existingGroups.forEach(group => group.remove());
+   
+   // Создаем карту для отслеживания совпадений
+   const matchMap = new Map();
+   matches.forEach(match => {
+   const key = `${match.octave}-${match.noteIndex}`;
+   matchMap.set(key, true);
+   });
+   
+   // Сортируем октавы
+   const sortedOctaves = [...octaves].sort((a, b) => a - b);
+   
+   // Определяем октавный множитель в зависимости от строя
+   const octaveMultiplier = (tuning.id === 'euler12' || tuning.id === 'euler14') ? Math.E : 2;
+   
+   // Создаём кнопки для каждой октавы
+   sortedOctaves.forEach(octave => {
+   const octaveGroup = document.createElement('div');
+   octaveGroup.className = 'octave-group';
+   
+   const octaveTitle = document.createElement('div');
+   octaveTitle.className = 'octave-title';
+   octaveTitle.textContent = `Октава ${octave}`;
+   octaveGroup.appendChild(octaveTitle);
+   
+   const noteButtons = document.createElement('div');
+   noteButtons.className = 'note-buttons';
+   
+   // Рассчитываем ноты для этой октавы с правильным множителем
+   const octaveBase = baseFreq * Math.pow(octaveMultiplier, octave);
+   const notes = calculateNotes(tuning.id, octaveBase, tuning.noteCount);
+   
+   // Создаём кнопки для каждой ноты
+   notes.forEach((noteFreq, noteIndex) => {
+   const noteName = getNoteName(tuning.id, noteIndex);
+   const buttonId = `note-${octave}-${noteIndex}`;
+   const button = document.createElement('button');
+   button.className = 'note-button';
+   button.id = buttonId;
+   
+   // Создаем контейнер для содержимого кнопки
+   const buttonContent = document.createElement('div');
+   buttonContent.innerHTML = `
+   <div>${noteName}</div>
+   <div class="note-freq">${noteFreq.toFixed(2)} Гц</div>
+   `;
+   button.appendChild(buttonContent);
+   
+   // Проверяем, соответствует ли эта нота одной из введённых частот
+   const key = `${octave}-${noteIndex}`;
+   const isMatched = matchMap.has(key);
+   
+   if (isMatched) {
+   button.classList.add('matched');
+   }
+   
+   // Добавляем обработчики для мыши
+   button.addEventListener('mousedown', () => {
+   startTone(noteFreq, buttonId);
+   });
+   
+   button.addEventListener('mouseup', () => {
+   stopTone(buttonId);
+   });
+   
+   button.addEventListener('mouseleave', () => {
+   stopTone(buttonId);
+   });
+   
+   // Добавляем обработчики для сенсорных устройств
+   button.addEventListener('touchstart', (e) => {
+   e.preventDefault();
+   startTone(noteFreq, buttonId);
+   });
+   
+   button.addEventListener('touchend', (e) => {
+   e.preventDefault();
+   stopTone(buttonId);
+   });
+   
+   button.addEventListener('touchcancel', (e) => {
+   e.preventDefault();
+   stopTone(buttonId);
+   });
+   
+   noteButtons.appendChild(button);
+   });
+   
+   octaveGroup.appendChild(noteButtons);
+   noteButtonsContainer.appendChild(octaveGroup);
+   });
+   }
+    
+    // Обработчик слайдера скорости
+    rotationSlider.addEventListener('input', function() {
+    maxRotationTime = parseFloat(this.value);
+    rotationTimeDisplay.textContent = maxRotationTime.toFixed(2);
+    
+    if (visualPoints.length > 0) {
+    // Пересчет периодов для всех точек
+    const newK_mash = maxRotationTime / globalTMin;
+    
+    visualPoints.forEach(point => {
+    const T = 1 / point.inputFreq;
+    point.period = T * newK_mash;
+    });
+    
+    // Обновляем отображение полного цикла
+    updateGrandCycleDisplay();
+    }
+    });
+    
+    playBtn.addEventListener('click', togglePlayback);
+    
+    // Автоматический анализ при загрузке
+    setTimeout(() => {
+    analyzeBtn.click();
+    }, 300);
+    });
     </script>
+
 </body>
 </html>
