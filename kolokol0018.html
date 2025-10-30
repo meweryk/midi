@@ -299,6 +299,18 @@
     .blink-warning {
     animation: blink 0.8s infinite;
     }
+    
+    .progress-modal .progress {
+    height: 20px;
+    }
+    .progress-modal .progress-bar {
+    transition: width 0.3s ease;
+    }
+    .progress-info {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 10px;
+    }
   </style>
 </head>
 <body>
@@ -385,7 +397,7 @@
     </div>
     
     <div class="card p-3 mt-3">
-      <h6 class="text-center">🔴 Осциллограф (фигуры Лиссажу)</h6>
+      <h6 class="text-center">🔴 Осциллограф (фигуры Лиссажу</h6>
       <svg id="oscilloscope" width="100%" height="200" style="background: #000; border-radius: 4px;"></svg>
       <div class="text-center mt-2">
         <small class="text-muted">Левый канал (X) vs Правый канал (Y)</small>
@@ -396,7 +408,8 @@
     <p class="info-text">Частоты звуков церковных колоколов могут варьироваться в широких пределах, но обычно они лежат в диапазоне от 60 Гц до 2000 Гц.<br> 
     Звучание колокола зависит от его размера, формы, толщины стенок, материала и, конечно же, от того, как его ударяют.</p>
     <p class="info-text">Частота основного тона может быть от 60 Гц до 200 Гц. Например, колокол "Сысой" (2000 пудов) имеет частоту 131 Гц, а колокол "Лебедь" (500 пудов) - 196 Гц.</p>
-    <p class="info-text"><b>Совет:</b> Подбирайте установки инструмента и самостоятельно задавайте значения в поле ввода, чтоб добиться идеального звука. Сумма коэффициентов амплитуд обертонов не должна превышать 2.7.<br>
+    <p class="info-text"><b>Совет:</b> Подбирайте установки инструмента и самостоятельно задавайте значения в поле ввода, чтоб добиться идеального звука. Сумма коэффициентов амплитуд (громкости) обертонов задаются относительными чистами и в сумме программно приводятся к 100% , учитывая долю интенсивности каждого обертона<br>
+    Файл сохраняется в формате .wav и сохранение занимает длительное время,зависящее от длительности звучания.<br>
     <b>Пример обертонов для колокола:</b></p>
     <ul>
     <li><a href="#" class="preset-link">Колокол с низкой тональностью</a>: 1.0:1.0, 1.5:0.7, 2.4:0.4, 2.9:0.2, 3.8:0.1</li>
@@ -692,1114 +705,1300 @@
       </div>
     </div>
   </div>
+  
+  <!-- Модальное окно прогресса сохранения -->
+  <div class="modal fade progress-modal" id="progressModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-sm">
+  <div class="modal-content">
+  <div class="modal-header">
+  <h5 class="modal-title">Сохранение аудиофайла</h5>
+  </div>
+  <div class="modal-body text-center">
+  <div class="spinner-border text-primary mb-3" role="status">
+  <span class="visually-hidden">Загрузка...</span>
+  </div>
+  <div class="progress mb-2">
+  <div id="saveProgressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+  role="progressbar" style="width: 0%"></div>
+  </div>
+  <div id="progressInfo" class="progress-info">
+  Подготовка к генерации...
+  </div>
+  </div>
+  </div>
+  </div>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   	
   <script>
-    // Константы ограничений
-    const MAX_FREQUENCIES = 100;
-    const MAX_PARTIALS = 15;
-    const MAX_REPEATS = 20;
-    const MAX_DURATION = 600;
-    const VOLUME_MULTIPLIER = 0.9; // Постоянный множитель громкости
-
-    const instrumentPresets = {
-      bell: '1:0.4, 2:1.0, 2.4:0.6, 3:0.3, 4:0.2, 6:0.1, 8:0.05',
-      bowl: '0.6:0.4, 1:1.1, 2.03:0.3, 2.87:0.25, 5.37:0.1, 8.57:0.08, 11.95:0.05, 21.24:0.02',
-      smallbell: '1:1.0, 2:0.6, 3:0.3, 4:0.1',
-    };
-
-    const presetValues = {
-      "Колокол с низкой тональностью": "1.0:1.0, 1.5:0.7, 2.4:0.4, 2.9:0.2, 3.8:0.1",
-      "Церковный колокол": "1.0:0.9, 1.33:1.0, 1.8:0.6, 2.1:0.3, 2.8:0.15",
-      "фландрийский": "1.00:1.0, 1.20:0.8, 1.51:0.5, 2.05:0.3, 2.55:0.2, 3.05:0.1",
-      "азиатский, тонкий бронзовый": "1.00:1.0, 1.25:0.9, 1.68:0.6, 2.30:0.3, 3.00:0.1",
-      "вариация 1": "1:1, 2.1:0.7, 3.2:0.5, 4.5:0.3, 5.8:0.1, 7:0.03, 11:0.02",
-      "вариация 2": "1:5, 2:20, 2.4:5, 3:10, 4:40, 4.8:5, 6:5, 8:10",
-      "смещённый Фибоначи 0.618:1:1.618...": "1:1, 1.618:0.5, 2.618:0.333, 4.236:0.25, 6.854:0.2, 11.089:0.167, 17.942:0.143, 29.03:0.125, 46.971:0.111, 75.999:0.1",
-      "прямой Фибоначи": "1.618:1, 2.618:0.5, 4.236:0.333, 6.854:0.25, 11.089:0.2, 17.942:0.167, 29.03:0.143, 46.971:0.125, 75.999:0.111",
-      "золотое сечение 2:3:5:8...": "1:1, 2:0.631, 3:0.43, 5:0.333, 8:0.270, 13:0.2276, 21:0.1965",
-      "обратный Фибоначи": "1.000:1.000, 1.618:0.618, 2.618:0.382, 4.236:0.236, 6.854:0.146, 11.090:0.090, 17.944:0.056, 29.034:0.034, 46.993:0.021, 76.036:0.013",
-      "Малая медная чаша": "1:1.0, 1.02:0.9, 1.5:0.6, 2.1:0.4, 2.7:0.2, 3.3:0.1",
-      "Большая бронзовая чаша": "1.0:1.0, 1.48:0.7, 2.05:0.5, 2.6:0.3, 3.2:0.15",
-      "высокая вибрация, лёгкая": "1.00:1.0, 1.03:0.85, 1.55:0.6, 2.20:0.4, 2.85:0.2, 3.5:0.05",
-      "старая чаша с двойной частотой": "1.00:1.0, 1.01:0.95, 1.50:0.5, 2.02:0.3, 2.98:0.1",
-      "вариация": "0.6:0.4, 1:1.1, 2.03:0.3, 2.87:0.25, 5.37:0.1, 8.57:0.08, 11.95:0.05, 21.24:0.02, 34:0.017"
-    };
-
-    // Элементы DOM
-    const instrumentSelect = document.getElementById('instrument');
-    const freqInput = document.getElementById('freq');
-    const partialsInput = document.getElementById('partials');
-    const toggleBtn = document.getElementById('toggle');
-    const saveBtn = document.getElementById('save');
-    const playSetBtn = document.getElementById('playSet');
-    const setFreqsInput = document.getElementById('setFrequencies');
-    const loopCheckbox = document.getElementById('loopSet');
-    const hitDelayInput = document.getElementById('hitDelay');
-    const cycleDelayInput = document.getElementById('cycleDelay');
-    const volumeBar = document.getElementById('volumeBar');
-
-    // Переменные для аудио и осциллографа
-    let audioCtx;
-    let analyserLeft, analyserRight;
-    let dataArrayLeft, dataArrayRight;
-    let bufferLength;
-    let oscilloscopeSvg;
-    let oscilloscopePath;
-    let isPlaying = false;
-    let isPlayingSet = false;
-
-    // Инициализация осциллографа
-    function initOscilloscope() {
-        oscilloscopeSvg = document.getElementById('oscilloscope');
-        if (!oscilloscopeSvg) return;
-        
-        oscilloscopeSvg.innerHTML = '';
-        
-        const width = oscilloscopeSvg.clientWidth || 800;
-        const height = 200;
-        
-        // Создаем сетку
-        const grid = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        grid.setAttribute('class', 'oscilloscope-grid');
-        
-        let gridPath = '';
-        
-        // УВЕЛИЧИВАЕМ сетку для большего масштаба
-        const cellSize = Math.min(width, height) / 4;
-        
-        for (let i = 1; i <= 3; i++) {
-            const posX = (width / 2) + (i - 2) * cellSize;
-            const posY = (height / 2) + (i - 2) * cellSize;
-            
-            // Вертикальные линии
-            gridPath += `M ${posX} 0 V ${height} `;
-            // Горизонтальные линии
-            gridPath += `M 0 ${posY} H ${width} `;
-        }
-        
-        grid.setAttribute('d', gridPath);
-        
-        // Центральные оси
-        const axisX = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        axisX.setAttribute('class', 'oscilloscope-axis');
-        axisX.setAttribute('d', `M ${width/2} 0 V ${height}`);
-        
-        const axisY = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        axisY.setAttribute('class', 'oscilloscope-axis');
-        axisY.setAttribute('d', `M 0 ${height/2} H ${width}`);
-        
-        oscilloscopeSvg.appendChild(grid);
-        oscilloscopeSvg.appendChild(axisX);
-        oscilloscopeSvg.appendChild(axisY);
-        
-        // Создаем путь для фигуры Лиссажу
-        oscilloscopePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-        oscilloscopePath.setAttribute('class', 'oscilloscope-path');
-        oscilloscopeSvg.appendChild(oscilloscopePath);
-    }
-
-    // Функция обновления осциллографа
-    function updateOscilloscope() {
-        if (!analyserLeft || !analyserRight) return;
-        
-        requestAnimationFrame(updateOscilloscope);
-        
-        analyserLeft.getByteTimeDomainData(dataArrayLeft);
-        analyserRight.getByteTimeDomainData(dataArrayRight);
-        
-        const width = oscilloscopeSvg.clientWidth || 800;
-        const height = 200;
-        const centerX = width / 2;
-        const centerY = height / 2;
-        
-        // УМЕНЬШАЕМ масштаб до 60% (было 90%)
-        const scale = Math.min(width, height) * 0.45; // Уменьшено с 0.45 до 0.3
-        
-        let pathData = '';
-        const step = Math.max(1, Math.floor(bufferLength / 400));
-        
-        for (let i = 0; i < bufferLength; i += step) {
-            const x = (dataArrayLeft[i] / 128.0 - 1.0);
-            const y = (dataArrayRight[i] / 128.0 - 1.0);
-            
-            const screenX = centerX + x * scale;
-            const screenY = centerY + y * scale;
-            
-            if (i === 0) {
-                pathData += `M ${screenX} ${screenY} `;
-            } else {
-                pathData += `L ${screenX} ${screenY} `;
-            }
-        }
-        
-        oscilloscopePath.setAttribute('d', pathData);
-        
-        // Обновление индикатора громкости
-        updateVolumeIndicator();
-    }
-
-    // Обновление индикатора громкости - С ЗАЩИТОЙ ОТ КЛИППИНГА
-    function updateVolumeIndicator() {
-    if (!analyserLeft || !volumeBar) return;
-    
-    const timeData = new Uint8Array(bufferLength);
-    analyserLeft.getByteTimeDomainData(timeData);
-    
-    let peak = 0;
-    let sumSquares = 0;
-    
-    for (let i = 0; i < bufferLength; i++) {
-    const amplitude = (timeData[i] - 128) / 128;
-    const absAmplitude = Math.abs(amplitude);
-    
-    if (absAmplitude > peak) peak = absAmplitude;
-    sumSquares += amplitude * amplitude;
-    }
-    
-    const rms = Math.sqrt(sumSquares / bufferLength);
-    
-    // ОСНОВНОЙ АЛГОРИТМ: показываем риск клиппинга
-    let volumePercent;
-    let isClipping = false;
-    
-    if (peak > 0.99) {
-    // КЛИППИНГ - сигнал обрезается
-    volumePercent = 100;
-    isClipping = true;
-    } else if (peak > 0.9) {
-    // ОПАСНАЯ ЗОНА - вот-вот будет клиппинг
-    volumePercent = 90 + (peak - 0.9) * 100; // 90-100%
-    } else if (peak > 0.7) {
-    // ВЫСОКАЯ громкость
-    volumePercent = 70 + (peak - 0.7) * 100; // 70-90%
-    } else if (peak > 0.3) {
-    // СРЕДНЯЯ громкость  
-    volumePercent = 30 + (peak - 0.3) * 100; // 30-70%
-    } else {
-    // НИЗКАЯ громкость
-    volumePercent = peak * 100; // 0-30%
-    }
-    
-    volumePercent = Math.min(100, volumePercent);
-    
-    // ОБНОВЛЕНИЕ ИНДИКАТОРА
-    volumeBar.style.width = `${volumePercent}%`;
-    
-    if (isClipping) {
-    volumeBar.className = 'progress-bar bg-danger';
-    volumeBar.style.background = 'linear-gradient(90deg, #ff0000, #cc0000)';
-    volumeBar.innerHTML = '🔴';
-    
-    // Мигание при клиппинге
-    volumeBar.style.animation = volumeBar.style.animation ? '' : 'blink 0.5s infinite';
-    } else if (volumePercent > 90) {
-    volumeBar.className = 'progress-bar bg-warning';
-    volumeBar.style.background = 'linear-gradient(90deg, #ff8800, #ff6600)';
-    volumeBar.innerHTML = '🟡';
-    volumeBar.style.animation = '';
-    } else if (volumePercent > 70) {
-    volumeBar.className = 'progress-bar bg-success';
-    volumeBar.style.background = 'linear-gradient(90deg, #44ff44, #00cc00)';
-    volumeBar.innerHTML = '🟢';
-    volumeBar.style.animation = '';
-    } else if (volumePercent > 30) {
-    volumeBar.className = 'progress-bar bg-info';
-    volumeBar.style.background = 'linear-gradient(90deg, #4488ff, #0066cc)';
-    volumeBar.innerHTML = '🔵';
-    volumeBar.style.animation = '';
-    } else {
-    volumeBar.className = 'progress-bar bg-secondary';
-    volumeBar.style.background = 'linear-gradient(90deg, #888888, #666666)';
-    volumeBar.innerHTML = '⚫ ';
-    volumeBar.style.animation = '';
-    }
-    
-    // Предупреждение в консоль при клиппинге
-    if (isClipping) {
-    console.error(`🚨 КЛИППИНГ! Peak: ${peak.toFixed(3)}`);
-    } else if (peak > 0.95) {
-    console.warn(`⚠️ ОПАСНОСТЬ КЛИППИНГА! Peak: ${peak.toFixed(3)}`);
-    }
-    }
-
-    // Очистка осциллографа
-    function stopOscilloscope() {
-        if (oscilloscopePath) {
-            oscilloscopePath.setAttribute('d', '');
-        }
-        if (volumeBar) {
-            volumeBar.style.width = '0%';
-            volumeBar.className = 'progress-bar bg-success';
-        }
-    }
-
-    // Улучшенная функция нормализации амплитуд
-    function normalizePartials(partials) {
-        if (!partials || partials.length === 0) return [];
-        
-        // Используем квадраты амплитуд для энергетической нормализации
-        const totalEnergy = partials.reduce((sum, p) => sum + Math.pow(p.amp, 2), 0);
-        const rms = Math.sqrt(totalEnergy);
-        
-        if (rms === 0) return partials;
-        
-        const normalized = partials.map(p => ({
-            ratio: p.ratio,
-            amp: Math.round((p.amp / rms) * 10000) / 10000
-        }));
-        
-        // Проверка суммы амплитуд
-        const sumAmplitudes = normalized.reduce((sum, p) => sum + p.amp, 0);
-        console.log(`Нормализация: RMS=${rms.toFixed(4)}, Сумма амплитуд=${sumAmplitudes.toFixed(4)}`);
-        
-        return normalized;
-    }
-
-    function parsePartials(inputText) {
-        return inputText.split(',').map(p => {
-            const [r, a] = p.trim().split(':').map(Number);
-            return (!isNaN(r) && !isNaN(a)) ? { ratio: r, amp: a } : null;
-        }).filter(Boolean);
-    }
-
-    function createImpulseResponse(ctx, duration = 3, decay = 2) {
-        const len = ctx.sampleRate * duration;
-        const buffer = ctx.createBuffer(2, len, ctx.sampleRate);
-        for (let ch = 0; ch < 2; ch++) {
-            const data = buffer.getChannelData(ch);
-            for (let i = 0; i < len; i++) {
-                data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
-            }
-        }
-        return buffer;
-    }
-
-    // Широкополосное стерео со сдвигом фазы 90° - ИСПРАВЛЕННОЕ
-    function createStereo90Bell(f0, partial, index, total, startTime, attack, sustain, release, convolver, nodeList) {
-        const oscLeft = audioCtx.createOscillator();
-        const gainLeft = audioCtx.createGain();
-        const oscRight = audioCtx.createOscillator();
-        const gainRight = audioCtx.createGain();
-        
-        oscLeft.type = 'sine';
-        oscRight.type = 'sine';
-        
-        const baseFreq = f0 * partial.ratio + (Math.random() * 2 - 1);
-        oscLeft.frequency.value = baseFreq;
-        oscRight.frequency.value = baseFreq;
-        
-        const vibrato = audioCtx.createOscillator();
-        const vibratoGain = audioCtx.createGain();
-        vibrato.frequency.value = 5 + Math.random() * 2;
-        vibratoGain.gain.value = 1 + Math.random();
-        
-        vibrato.connect(vibratoGain);
-        vibratoGain.connect(oscLeft.frequency);
-        vibratoGain.connect(oscRight.frequency);
-        
-        const endTime = startTime + attack + sustain + release;
-        const fadeOutTime = 0.2; // Дополнительное время для плавного затухания
-        
-        // Левый канал - ИСПРАВЛЕННОЕ ЗАТУХАНИЕ
-        gainLeft.gain.setValueAtTime(0, startTime);
-        gainLeft.gain.linearRampToValueAtTime(partial.amp * VOLUME_MULTIPLIER, startTime + attack);
-        if (sustain > 0) {
-            gainLeft.gain.setValueAtTime(partial.amp * VOLUME_MULTIPLIER, startTime + attack + sustain);
-        }
-        // ЭКСПОНЕНЦИАЛЬНОЕ затухание вместо линейного
-        gainLeft.gain.exponentialRampToValueAtTime(0.001, endTime + fadeOutTime);
-        
-        // Правый канал - ИСПРАВЛЕННОЕ ЗАТУХАНИЕ
-        gainRight.gain.setValueAtTime(0, startTime);
-        gainRight.gain.linearRampToValueAtTime(partial.amp * VOLUME_MULTIPLIER, startTime + attack);
-        if (sustain > 0) {
-            gainRight.gain.setValueAtTime(partial.amp * VOLUME_MULTIPLIER, startTime + attack + sustain);
-        }
-        gainRight.gain.exponentialRampToValueAtTime(0.001, endTime + fadeOutTime);
-        
-        const phaseShiftTime = 1 / (4 * baseFreq);
-        
-        oscLeft.connect(gainLeft);
-        oscRight.connect(gainRight);
-        
-        const merger = audioCtx.createChannelMerger(2);
-        gainLeft.connect(merger, 0, 0);
-        gainRight.connect(merger, 0, 1);
-        merger.connect(convolver);
-        
-        oscLeft.start(startTime);
-        oscRight.start(startTime + phaseShiftTime);
-        vibrato.start(startTime);
-        
-        // Увеличиваем время остановки для плавного затухания
-        oscLeft.stop(endTime + fadeOutTime + 0.1);
-        oscRight.stop(endTime + fadeOutTime + 0.1 + phaseShiftTime);
-        vibrato.stop(endTime + fadeOutTime + 0.1);
-        
-        nodeList.push(oscLeft, oscRight, gainLeft, gainRight, vibrato, vibratoGain, merger);
-    }
-
-    // Обычное стерео - ИСПРАВЛЕННОЕ
-    function createStereoBell(f0, partial, index, total, startTime, attack, sustain, release, convolver, nodeList) {
-        const panPosition = (index / total) * 2 - 1;
-        
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        const panner = audioCtx.createStereoPanner();
-        
-        osc.type = 'sine';
-        osc.frequency.value = f0 * partial.ratio + (Math.random() * 2 - 1);
-        panner.pan.value = panPosition;
-        
-        const vibrato = audioCtx.createOscillator();
-        const vibratoGain = audioCtx.createGain();
-        vibrato.frequency.value = 5 + Math.random() * 2;
-        vibratoGain.gain.value = 1 + Math.random();
-        
-        vibrato.connect(vibratoGain).connect(osc.frequency);
-        
-        const endTime = startTime + attack + sustain + release;
-        const fadeOutTime = 0.2;
-        
-        // ИСПРАВЛЕННОЕ ЗАТУХАНИЕ
-        gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime(partial.amp * VOLUME_MULTIPLIER, startTime + attack);
-        if (sustain > 0) {
-            gain.gain.setValueAtTime(partial.amp * VOLUME_MULTIPLIER, startTime + attack + sustain);
-        }
-        gain.gain.exponentialRampToValueAtTime(0.001, endTime + fadeOutTime);
-        
-        osc.connect(gain).connect(panner).connect(convolver);
-        osc.start(startTime);
-        osc.stop(endTime + fadeOutTime + 0.1);
-        vibrato.start(startTime);
-        vibrato.stop(endTime + fadeOutTime + 0.1);
-        
-        nodeList.push(osc, gain, panner, vibrato, vibratoGain);
-    }
-
-    // Основная функция генерации звука с обработкой ошибок
-    function startBell(f0, partials) {
-        return new Promise((resolve, reject) => {
-            try {
-                const attackTime = parseFloat(document.getElementById('attack').value) || 0.01;
-                const sustainTime = parseFloat(document.getElementById('long').value) || 0;
-                const releaseTime = parseFloat(document.getElementById('release').value) || 3.5;
-                const audioMode = document.getElementById('audioMode').value;
-
-                if (!audioCtx) {
-                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                    initOscilloscope();
-                }
-
-                const normalizedPartials = normalizePartials(partials);
-                
-                const convolver = audioCtx.createConvolver();
-                convolver.buffer = createImpulseResponse(audioCtx);
-
-                // Создаем два анализатора для стерео каналов
-                analyserLeft = audioCtx.createAnalyser();
-                analyserRight = audioCtx.createAnalyser();
-                
-                analyserLeft.fftSize = 2048;
-                analyserRight.fftSize = 2048;
-                
-                bufferLength = analyserLeft.frequencyBinCount;
-                dataArrayLeft = new Uint8Array(bufferLength);
-                dataArrayRight = new Uint8Array(bufferLength);
-
-                const masterGain = audioCtx.createGain();
-                masterGain.gain.value = 1.0;
-                
-                const splitter = audioCtx.createChannelSplitter(2);
-                convolver.connect(splitter);
-                splitter.connect(analyserLeft, 0);
-                splitter.connect(analyserRight, 1);
-                splitter.connect(masterGain);
-                masterGain.connect(audioCtx.destination);
-
-                const now = audioCtx.currentTime;
-                const currentNodes = [];
-
-                const limitedPartials = normalizedPartials.slice(0, MAX_PARTIALS);
-                
-                limitedPartials.forEach((p, index) => {
-                    if (audioMode === 'stereo90') {
-                        createStereo90Bell(f0, p, index, limitedPartials.length, now, 
-                                        attackTime, sustainTime, releaseTime, convolver, currentNodes);
-                    } else {
-                        createStereoBell(f0, p, index, limitedPartials.length, now,
-                                        attackTime, sustainTime, releaseTime, convolver, currentNodes);
-                    }
-                });
-
-                updateOscilloscope();
-                
-                setTimeout(() => {
-                    try {
-                        currentNodes.forEach(node => {
-                            try {
-                                if (node.stop) node.stop();
-                                node.disconnect();
-                            } catch(e) {
-                                console.warn('Ошибка при остановке узла:', e);
-                            }
-                        });
-                        stopOscilloscope();
-                        resolve();
-                    } catch (error) {
-                        reject(error);
-                    }
-                }, (attackTime + sustainTime + releaseTime + 0.4) * 1000); // Увеличено время для плавного затухания
-                
-            } catch (error) {
-                reject(error);
-            }
-        });
-    }
-
-    // ИСПРАВЛЕННАЯ функция для offline-рендеринга с широкополосным стерео 90°
-    function createStereo90BellOffline(ctx, f0, partial, index, total, startTime, attack, sustain, release, convolver) {
-        const oscLeft = ctx.createOscillator();
-        const gainLeft = ctx.createGain();
-        const oscRight = ctx.createOscillator();
-        const gainRight = ctx.createGain();
-        
-        oscLeft.type = 'sine';
-        oscRight.type = 'sine';
-        
-        const baseFreq = f0 * partial.ratio + (Math.random() * 2 - 1);
-        oscLeft.frequency.value = baseFreq;
-        oscRight.frequency.value = baseFreq;
-        
-        const vibrato = ctx.createOscillator();
-        const vibratoGain = ctx.createGain();
-        vibrato.frequency.value = 5 + Math.random() * 2;
-        vibratoGain.gain.value = 1 + Math.random();
-        
-        vibrato.connect(vibratoGain);
-        vibratoGain.connect(oscLeft.frequency);
-        vibratoGain.connect(oscRight.frequency);
-        
-        const endTime = startTime + attack + sustain + release;
-        const fadeOutTime = 0.2;
-        
-        // С МНОЖИТЕЛЕМ ГРОМКОСТИ
-        gainLeft.gain.setValueAtTime(0, startTime);
-        gainLeft.gain.linearRampToValueAtTime(partial.amp * VOLUME_MULTIPLIER, startTime + attack);
-        if (sustain > 0) {
-            gainLeft.gain.setValueAtTime(partial.amp * VOLUME_MULTIPLIER, startTime + attack + sustain);
-        }
-        gainLeft.gain.exponentialRampToValueAtTime(0.001, endTime + fadeOutTime);
-        
-        gainRight.gain.setValueAtTime(0, startTime);
-        gainRight.gain.linearRampToValueAtTime(partial.amp * VOLUME_MULTIPLIER, startTime + attack);
-        if (sustain > 0) {
-            gainRight.gain.setValueAtTime(partial.amp * VOLUME_MULTIPLIER, startTime + attack + sustain);
-        }
-        gainRight.gain.exponentialRampToValueAtTime(0.001, endTime + fadeOutTime);
-        
-        const phaseShiftTime = 1 / (4 * baseFreq);
-        
-        oscLeft.connect(gainLeft);
-        oscRight.connect(gainRight);
-        
-        const merger = ctx.createChannelMerger(2);
-        gainLeft.connect(merger, 0, 0);
-        gainRight.connect(merger, 0, 1);
-        merger.connect(convolver);
-        
-        oscLeft.start(startTime);
-        oscRight.start(startTime + phaseShiftTime);
-        vibrato.start(startTime);
-        
-        oscLeft.stop(endTime + fadeOutTime + 0.1);
-        oscRight.stop(endTime + fadeOutTime + 0.1 + phaseShiftTime);
-        vibrato.stop(endTime + fadeOutTime + 0.1);
-    }
-
-    // ИСПРАВЛЕННАЯ функция для обычного стерео
-    function createStereoBellOffline(ctx, f0, partial, index, total, startTime, attack, sustain, release, convolver) {
-        const panPosition = (index / total) * 2 - 1;
-        
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        const panner = ctx.createStereoPanner();
-        
-        osc.type = 'sine';
-        osc.frequency.value = f0 * partial.ratio + (Math.random() * 2 - 1);
-        panner.pan.value = panPosition;
-        
-        const vibrato = ctx.createOscillator();
-        const vibratoGain = ctx.createGain();
-        vibrato.frequency.value = 5 + Math.random() * 2;
-        vibratoGain.gain.value = 1 + Math.random();
-        
-        vibrato.connect(vibratoGain).connect(osc.frequency);
-        
-        const endTime = startTime + attack + sustain + release;
-        const fadeOutTime = 0.2;
-        
-        // С МНОЖИТЕЛЕМ ГРОМКОСТИ
-        gain.gain.setValueAtTime(0, startTime);
-        gain.gain.linearRampToValueAtTime(partial.amp * VOLUME_MULTIPLIER, startTime + attack);
-        if (sustain > 0) {
-            gain.gain.setValueAtTime(partial.amp * VOLUME_MULTIPLIER, startTime + attack + sustain);
-        }
-        gain.gain.exponentialRampToValueAtTime(0.001, endTime + fadeOutTime);
-        
-        osc.connect(gain).connect(panner).connect(convolver);
-        osc.start(startTime);
-        osc.stop(endTime + fadeOutTime + 0.1);
-        vibrato.start(startTime);
-        vibrato.stop(endTime + fadeOutTime + 0.1);
-    }
-
-    // ИСПРАВЛЕННАЯ основная функция генерации для offline
-    function generateBellForOffline(ctx, startTime, f0, partials, convolverBuffer) {
-        const audioMode = document.getElementById('audioMode').value;
-        const attackTime = parseFloat(document.getElementById('attack').value) || 0.01;
-        const sustainTime = parseFloat(document.getElementById('long').value) || 0;
-        const releaseTime = parseFloat(document.getElementById('release').value) || 5.5;
-        
-        const normalizedPartials = normalizePartials(partials);
-        
-        // СОЗДАЕМ ОТДЕЛЬНЫЙ CONVOLVER ДЛЯ КАЖДОЙ ЧАСТОТЫ
-        const convolver = ctx.createConvolver();
-        convolver.buffer = convolverBuffer;
-        
-        const masterGain = ctx.createGain();
-        masterGain.gain.value = 1.0; // Множитель уже применен в отдельных gain
-        
-        convolver.connect(masterGain);
-        masterGain.connect(ctx.destination);
-        
-        const limitedPartials = normalizedPartials.slice(0, MAX_PARTIALS);
-        
-        limitedPartials.forEach((p, index) => {
-            if (audioMode === 'stereo90') {
-                createStereo90BellOffline(ctx, f0, p, index, limitedPartials.length, startTime, 
-                                        attackTime, sustainTime, releaseTime, convolver);
-            } else {
-                createStereoBellOffline(ctx, f0, p, index, limitedPartials.length, startTime,
-                                      attackTime, sustainTime, releaseTime, convolver);
-            }
-        });
-    }
-
-    // Функции для WAV экспорта
-    function bufferToWav(buffer) {
-        const numChannels = buffer.numberOfChannels;
-        const sampleRate = buffer.sampleRate;
-        const format = 3;
-        const bitDepth = 32;
-        const bytesPerSample = bitDepth / 8;
-        const blockAlign = numChannels * bytesPerSample;
-        
-        const dataLength = buffer.length * numChannels * bytesPerSample;
-        const bufferSize = 44 + dataLength;
-        const arrayBuffer = new ArrayBuffer(bufferSize);
-        const view = new DataView(arrayBuffer);
-        
-        writeString(view, 0, 'RIFF');
-        view.setUint32(4, 36 + dataLength, true);
-        writeString(view, 8, 'WAVE');
-        writeString(view, 12, 'fmt ');
-        view.setUint32(16, 16, true);
-        view.setUint16(20, format, true);
-        view.setUint16(22, numChannels, true);
-        view.setUint32(24, sampleRate, true);
-        view.setUint32(28, sampleRate * blockAlign, true);
-        view.setUint16(32, blockAlign, true);
-        view.setUint16(34, bitDepth, true);
-        writeString(view, 36, 'data');
-        view.setUint32(40, dataLength, true);
-        
-        let offset = 44;
-        for (let i = 0; i < buffer.length; i++) {
-            for (let ch = 0; ch < numChannels; ch++) {
-                const sample = buffer.getChannelData(ch)[i];
-                view.setFloat32(offset, sample, true);
-                offset += 4;
-            }
-        }
-        
-        return new Blob([view], { type: 'audio/wav' });
-    }
-    
-    function writeString(view, offset, string) {
-        for (let i = 0; i < string.length; i++) {
-            view.setUint8(offset + i, string.charCodeAt(i));
-        }
-    }
-    
-    function downloadWav(blob, filename) {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = filename;
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 100);
-    }
-
-    // Обработчики кнопок с улучшенной обработкой ошибок
-    toggleBtn.onclick = () => {
-        const f0 = parseFloat(freqInput.value);
-        const partials = parsePartials(partialsInput.value);
-        if (isPlaying || isNaN(f0) || !partials.length) return;
-        
-        isPlaying = true;
-        toggleBtn.textContent = '⏳ Звук...';
-        toggleBtn.classList.remove('btn-success');
-        toggleBtn.classList.add('btn-secondary');
-        
-        startBell(f0, partials).then(() => {
-            isPlaying = false;
-            toggleBtn.textContent = '▶️ Старт';
-            toggleBtn.classList.remove('btn-secondary');
-            toggleBtn.classList.add('btn-success');
-        }).catch(error => {
-            console.error('Ошибка воспроизведения:', error);
-            isPlaying = false;
-            toggleBtn.textContent = '▶️ Старт';
-            toggleBtn.classList.remove('btn-secondary');
-            toggleBtn.classList.add('btn-success');
-            alert('Ошибка при воспроизведении звука: ' + error.message);
-        });
-    };
-
-    playSetBtn.onclick = async () => {
-        if (isPlayingSet) {
-            isPlayingSet = false;
-            playSetBtn.textContent = '🔔 Проиграть набор';
-            playSetBtn.classList.remove('btn-danger');
-            playSetBtn.classList.add('btn-primary');
-            return;
-        }
-        
-        if (!oscilloscopeSvg || oscilloscopeSvg.children.length === 0) {
-            initOscilloscope();
-        }
-        
-        isPlayingSet = true;
-        playSetBtn.textContent = '⏹ Остановить';
-        playSetBtn.classList.remove('btn-primary');
-        playSetBtn.classList.add('btn-danger');
-        
-        let freqs = setFreqsInput.value
-            .split(/[,;]+/)
-            .map(v => parseFloat(v.trim()))
-            .filter(v => !isNaN(v))
-            .filter(v => v >= 80 && v <= 10000);
-        
-        if (freqs.length === 0) {
-            isPlayingSet = false;
-            playSetBtn.textContent = '🔔 Проиграть набор';
-            playSetBtn.classList.remove('btn-danger');
-            playSetBtn.classList.add('btn-primary');
-            return;
-        }
-        
-        const partials = parsePartials(partialsInput.value);
-        if (partials.length === 0) {
-            isPlayingSet = false;
-            playSetBtn.textContent = '🔔 Проиграть набор';
-            playSetBtn.classList.remove('btn-danger');
-            playSetBtn.classList.add('btn-primary');
-            return;
-        }
-        
-        const hitDelay = parseInt(hitDelayInput.value) || 0;
-        const cycleDelay = parseInt(cycleDelayInput.value) || 0;
-
-        try {
-            do {
-                for (const freq of freqs) {
-                    if (!isPlayingSet) break;
-                    await startBell(freq, partials);
-                    if (!isPlayingSet) break;
-                    await new Promise(resolve => setTimeout(resolve, hitDelay));
-                }
-                if (!isPlayingSet) break;
-                if (!loopCheckbox.checked) break;
-                await new Promise(resolve => setTimeout(resolve, cycleDelay));
-            } while (isPlayingSet && loopCheckbox.checked);
-        } catch (error) {
-            console.error('Ошибка воспроизведения набора:', error);
-            alert('Ошибка при воспроизведении набора: ' + error.message);
-        } finally {
-            isPlayingSet = false;
-            playSetBtn.textContent = '🔔 Проиграть набор';
-            playSetBtn.classList.remove('btn-danger');
-            playSetBtn.classList.add('btn-primary');
-        }
-    };
-
-    // ИСПРАВЛЕННАЯ функция сохранения WAV с правильным рендерингом набора частот
-    saveBtn.onclick = async () => {
-        let freqs = setFreqsInput.value.split(/[,;]+/)
-            .map(v => parseFloat(v.trim()))
-            .filter(v => !isNaN(v));
-        
-        if (freqs.length === 0) {
-            alert("Набор частот пуст. Добавьте частоты.");
-            return;
-        }
-        
-        if (freqs.length > MAX_FREQUENCIES) {
-            alert(`Превышено максимальное количество частот: ${MAX_FREQUENCIES}`);
-            return;
-        }
-        
-        const repeats = prompt("Введите количество повторов набора частот:", "1");
-        if (!repeats || isNaN(repeats) || parseInt(repeats) <= 0) {
-            return;
-        }
-        const repeatCount = parseInt(repeats);
-        
-        if (repeatCount > MAX_REPEATS) {
-            alert(`Превышено максимальное количество повторов: ${MAX_REPEATS}`);
-            return;
-        }
-        
-        let filenamePrefix = "";
-        switch (instrumentSelect.value) {
-            case "bell": filenamePrefix = "Колокол"; break;
-            case "bowl": filenamePrefix = "Чаша"; break;
-            case "smallbell": filenamePrefix = "Колокольчики"; break;
-        }
-        
-        const additionalName = prompt("Введите дополнительное название для файла:", "");
-        const filename = (filenamePrefix ? filenamePrefix + "-" : "") + 
-            (additionalName || "звук") + ".wav";
-        
-        const partials = parsePartials(partialsInput.value);
-        if (partials.length === 0) {
-            alert("Ошибка: не заданы обертона.");
-            return;
-        }
-        
-        const hitDelay = parseInt(hitDelayInput.value) || 0;
-        const cycleDelay = parseInt(cycleDelayInput.value) || 0;
-        
-        const attackTime = parseFloat(document.getElementById('attack').value) || 0.01;
-        const sustainTime = parseFloat(document.getElementById('long').value) || 0;
-        const releaseTime = parseFloat(document.getElementById('release').value) || 5.5;
-        const bellDuration = attackTime + sustainTime + releaseTime + 0.4;
-        
-        const hitDelayInSeconds = hitDelay / 1000;
-        const cycleDelayInSeconds = cycleDelay / 1000;
-        
-        const cycleDuration = freqs.length * bellDuration + 
-            (freqs.length - 1) * hitDelayInSeconds + 
-            cycleDelayInSeconds;
-        const totalDuration = cycleDuration * repeatCount;
-        
-        if (totalDuration > MAX_DURATION) {
-            alert(`Превышена максимальная длительность (${MAX_DURATION} сек). Уменьшите количество частот или повторов.`);
-            return;
-        } else {
-            alert(`Длительность ${totalDuration} сек. Генерация файла займёт некоторое время.`);
-        }
-        
-        const sampleRate = 44100;
-        const offlineCtx = new OfflineAudioContext(2, totalDuration * sampleRate, sampleRate);
-        
-        const convolverBuffer = createImpulseResponse(offlineCtx);
-        
-        // ИСПРАВЛЕННАЯ ЛОГИКА - каждая частота в своем временном интервале
-        for (let repeat = 0; repeat < repeatCount; repeat++) {
-            let cycleStartTime = repeat * cycleDuration;
-            
-            for (let i = 0; i < freqs.length; i++) {
-                const bellStartTime = cycleStartTime + i * (bellDuration + hitDelayInSeconds);
-                generateBellForOffline(offlineCtx, bellStartTime, freqs[i], partials, convolverBuffer);
-            }
-        }
-        
-        try {
-            const renderedBuffer = await offlineCtx.startRendering();
-            const wavBlob = bufferToWav(renderedBuffer);
-            downloadWav(wavBlob, filename);
-            alert(`Файл "${filename}" успешно создан!`);
-        } catch (e) {
-            console.error("Ошибка генерации:", e);
-            alert("Ошибка при создании файла: " + e.message);
-        }
-    };
-
-    // Инициализация
-    document.addEventListener('DOMContentLoaded', function() {
-        initOscilloscope();
-        renderSavedSets();
-        
-        // Инициализация инструмента
-        instrumentSelect.addEventListener('change', () => {
-            if (instrumentSelect.value !== 'custom') {
-                document.getElementById('partials').value = instrumentPresets[instrumentSelect.value];
-            }
-        });
-    });
-
-    // Код для сохранения наборов частот
-    const SAVED_SETS_KEY = 'savedFrequencySets';
-    
-    function getSavedSets() {
-        const data = localStorage.getItem(SAVED_SETS_KEY);
-        if (!data) return {};
-        try {
-            return JSON.parse(data);
-        } catch (e) {
-            console.error("Ошибка при чтении наборов:", e);
-            return {};
-        }
-    }
-    
-    function saveFrequencySet(name, frequencies) {
-        const savedSets = getSavedSets();
-        savedSets[name] = frequencies;
-        localStorage.setItem(SAVED_SETS_KEY, JSON.stringify(savedSets));
-        renderSavedSets();
-    }
-    
-    function deleteFrequencySet(name) {
-        const savedSets = getSavedSets();
-        delete savedSets[name];
-        localStorage.setItem(SAVED_SETS_KEY, JSON.stringify(savedSets));
-        renderSavedSets();
-    }
-    
-    function clearAllSets() {
-        localStorage.removeItem(SAVED_SETS_KEY);
-        renderSavedSets();
-    }
-    
-    function renderSavedSets() {
-        const savedSets = getSavedSets();
-        const container = document.getElementById('savedSetsList');
-        container.innerHTML = '';
-        
-        const keys = Object.keys(savedSets);
-        if (keys.length === 0) {
-            container.innerHTML = '<div class="text-center py-3">Нет сохранённых наборов</div>';
-            return;
-        }
-        
-        const sortedNames = keys.sort();
-        sortedNames.forEach(name => {
-            const frequencies = savedSets[name];
-            const setElement = document.createElement('div');
-            setElement.className = 'saved-set-item';
-            
-            const nameElement = document.createElement('div');
-            nameElement.className = 'set-name';
-            nameElement.textContent = name;
-            nameElement.title = frequencies.join(', ');
-            
-            nameElement.addEventListener('click', () => {
-                setFreqsInput.value = frequencies.join(', ');
-                setFreqsInput.classList.add('highlight');
-                setTimeout(() => {
-                    setFreqsInput.classList.remove('highlight');
-                }, 1000);
-            });
-            
-            const deleteElement = document.createElement('span');
-            deleteElement.className = 'delete-set';
-            deleteElement.innerHTML = '❌';
-            deleteElement.title = 'Удалить набор';
-            
-            deleteElement.addEventListener('click', (e) => {
-                e.stopPropagation();
-                if (confirm(`Удалить набор "${name}"?`)) {
-                    deleteFrequencySet(name);
-                }
-            });
-            
-            setElement.appendChild(nameElement);
-            setElement.appendChild(deleteElement);
-            container.appendChild(setElement);
-        });
-    }
-
-    // Обработчики для модального окна и CSV
-    document.getElementById('saveSetBtn').addEventListener('click', () => {
-        const freqs = setFreqsInput.value
-            .split(/[,;]+/) 
-            .map(v => parseFloat(v.trim()))
-            .filter(v => !isNaN(v))
-            .filter(v => v >= 80 && v <= 10000);
-        
-        if (freqs.length === 0) {
-            alert('Добавьте частоты для сохранения набора');
-            return;
-        }
-        
-        document.getElementById('setFrequenciesPreview').textContent = freqs.join(', ');
-        document.getElementById('setNameInput').value = '';
-        
-        const modal = new bootstrap.Modal(document.getElementById('saveSetModal'));
-        modal.show();
-    });
-    
-    document.getElementById('confirmSaveSet').addEventListener('click', () => {
-        const name = document.getElementById('setNameInput').value.trim();
-        const freqsText = document.getElementById('setFrequenciesPreview').textContent;
-        
-        if (!name) {
-            alert('Введите название для набора');
-            return;
-        }
-        
-        const freqs = freqsText.split(',')
-            .map(v => parseFloat(v.trim()))
-            .filter(v => !isNaN(v));
-        
-        saveFrequencySet(name, freqs);
-        
-        const modal = bootstrap.Modal.getInstance(document.getElementById('saveSetModal'));
-        modal.hide();
-        
-        alert(`Набор "${name}" успешно сохранён!`);
-    });
-    
-    document.getElementById('clearSets').addEventListener('click', () => {
-        if (confirm('Вы уверены, что хотите удалить все сохранённые наборы?')) {
-            clearAllSets();
-        }
-    });
-    
-    // CSV функции
-    function exportToCSV() {
-        const savedSets = getSavedSets();
-        if (Object.keys(savedSets).length === 0) {
-            alert("Нет наборов для экспорта");
-            return;
-        }
-        
-        let csvContent = "Название,Частоты\n";
-        for (const [name, frequencies] of Object.entries(savedSets)) {
-            const escapedName = name.includes(',') ? `"${name}"` : name;
-            csvContent += `${escapedName},${frequencies.join(',')}\n`;
-        }
-        
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'frequency_sets.csv';
-        document.body.appendChild(a);
-        a.click();
-        setTimeout(() => {
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }, 100);
-    }
-    
-    function importFromCSV(file) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const content = e.target.result;
-                const lines = content.split('\n').slice(1);
-                const savedSets = getSavedSets();
-                let importedCount = 0;
-                
-                for (const line of lines) {
-                    if (!line.trim()) continue;
-                    
-                    let parts = [];
-                    let inQuotes = false;
-                    let current = '';
-                    
-                    for (let i = 0; i < line.length; i++) {
-                        const char = line[i];
-                        if (char === '"') {
-                            inQuotes = !inQuotes;
-                        } else if (char === ',' && !inQuotes) {
-                            parts.push(current);
-                            current = '';
-                        } else {
-                            current += char;
-                        }
-                    }
-                    parts.push(current);
-                    
-                    if (parts.length < 2) continue;
-                    
-                    const name = parts[0].trim();
-                    const frequencies = parts.slice(1)
-                        .map(v => parseFloat(v.trim()))
-                        .filter(v => !isNaN(v))
-                        .filter(v => v >= 80 && v <= 10000);
-                    
-                    if (name && frequencies.length > 0) {
-                        savedSets[name] = frequencies;
-                        importedCount++;
-                    }
-                }
-                
-                if (importedCount > 0) {
-                    localStorage.setItem(SAVED_SETS_KEY, JSON.stringify(savedSets));
-                    renderSavedSets();
-                    alert(`Успешно импортировано наборов: ${importedCount}`);
-                } else {
-                    alert("Не удалось импортировать ни одного набора");
-                }
-            } catch (error) {
-                console.error("Ошибка при импорте CSV:", error);
-                alert("Ошибка при импорте файла: " + error.message);
-            }
-        };
-        reader.readAsText(file);
-    }
-    
-    document.getElementById('exportCSV').addEventListener('click', exportToCSV);
-    document.getElementById('importCSV').addEventListener('click', () => {
-        document.getElementById('csvFileInput').click();
-    });
-    
-    document.getElementById('csvFileInput').addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            if (confirm("Импортировать наборы из CSV? Существующие наборы с такими же именами будут перезаписаны.")) {
-                importFromCSV(file);
-            }
-        }
-        e.target.value = '';
-    });
-
-    // Обработчики пресетов
-    document.querySelectorAll('.preset-link').forEach(link => {
-        link.addEventListener('click', function(e) {
-            e.preventDefault();
-            const presetName = this.textContent;
-            const presetValue = presetValues[presetName];
-            
-            if (presetValue) {
-                const partialsInput = document.getElementById('partials');
-                partialsInput.value = presetValue;
-                
-                const event = new Event('input', { bubbles: true });
-                partialsInput.dispatchEvent(event);
-                
-                partialsInput.focus();
-                partialsInput.classList.add('highlight');
-                setTimeout(() => partialsInput.classList.remove('highlight'), 1000);
-                
-                document.getElementById('instrument').value = 'custom';
-            }
-        });
-    });
-
-    // Обработчик ресайза окна для перерисовки осциллографа
-    window.addEventListener('resize', initOscilloscope);
+  // Константы ограничений
+  const MAX_FREQUENCIES = 100;
+  const MAX_PARTIALS = 15;
+  const MAX_REPEATS = 20;
+  const MAX_DURATION = 600;
+  const VOLUME_MULTIPLIER = 0.9; // Постоянный множитель громкости
+  
+  const instrumentPresets = {
+  bell: '1:0.4, 2:1.0, 2.4:0.6, 3:0.3, 4:0.2, 6:0.1, 8:0.05',
+  bowl: '0.6:0.4, 1:1.1, 2.03:0.3, 2.87:0.25, 5.37:0.1, 8.57:0.08, 11.95:0.05, 21.24:0.02',
+  smallbell: '1:1.0, 2:0.6, 3:0.3, 4:0.1',
+  };
+  
+  const presetValues = {
+  "Колокол с низкой тональностью": "1.0:1.0, 1.5:0.7, 2.4:0.4, 2.9:0.2, 3.8:0.1",
+  "Церковный колокол": "1.0:0.9, 1.33:1.0, 1.8:0.6, 2.1:0.3, 2.8:0.15",
+  "фландрийский": "1.00:1.0, 1.20:0.8, 1.51:0.5, 2.05:0.3, 2.55:0.2, 3.05:0.1",
+  "азиатский, тонкий бронзовый": "1.00:1.0, 1.25:0.9, 1.68:0.6, 2.30:0.3, 3.00:0.1",
+  "вариация 1": "1:1, 2.1:0.7, 3.2:0.5, 4.5:0.3, 5.8:0.1, 7:0.03, 11:0.02",
+  "вариация 2": "1:5, 2:20, 2.4:5, 3:10, 4:40, 4.8:5, 6:5, 8:10",
+  "смещённый Фибоначи 0.618:1:1.618...": "1:1, 1.618:0.5, 2.618:0.333, 4.236:0.25, 6.854:0.2, 11.089:0.167, 17.942:0.143, 29.03:0.125, 46.971:0.111, 75.999:0.1",
+  "прямой Фибоначи": "1.618:1, 2.618:0.5, 4.236:0.333, 6.854:0.25, 11.089:0.2, 17.942:0.167, 29.03:0.143, 46.971:0.125, 75.999:0.111",
+  "золотое сечение 2:3:5:8...": "1:1, 2:0.631, 3:0.43, 5:0.333, 8:0.270, 13:0.2276, 21:0.1965",
+  "обратный Фибоначи": "1.000:1.000, 1.618:0.618, 2.618:0.382, 4.236:0.236, 6.854:0.146, 11.090:0.090, 17.944:0.056, 29.034:0.034, 46.993:0.021, 76.036:0.013",
+  "Малая медная чаша": "1:1.0, 1.02:0.9, 1.5:0.6, 2.1:0.4, 2.7:0.2, 3.3:0.1",
+  "Большая бронзовая чаша": "1.0:1.0, 1.48:0.7, 2.05:0.5, 2.6:0.3, 3.2:0.15",
+  "высокая вибрация, лёгкая": "1.00:1.0, 1.03:0.85, 1.55:0.6, 2.20:0.4, 2.85:0.2, 3.5:0.05",
+  "старая чаша с двойной частотой": "1.00:1.0, 1.01:0.95, 1.50:0.5, 2.02:0.3, 2.98:0.1",
+  "вариация": "0.6:0.4, 1:1.1, 2.03:0.3, 2.87:0.25, 5.37:0.1, 8.57:0.08, 11.95:0.05, 21.24:0.02, 34:0.017"
+  };
+  
+  // Элементы DOM
+  const instrumentSelect = document.getElementById('instrument');
+  const freqInput = document.getElementById('freq');
+  const partialsInput = document.getElementById('partials');
+  const toggleBtn = document.getElementById('toggle');
+  const saveBtn = document.getElementById('save');
+  const playSetBtn = document.getElementById('playSet');
+  const setFreqsInput = document.getElementById('setFrequencies');
+  const loopCheckbox = document.getElementById('loopSet');
+  const hitDelayInput = document.getElementById('hitDelay');
+  const cycleDelayInput = document.getElementById('cycleDelay');
+  const volumeBar = document.getElementById('volumeBar');
+  
+  // Переменные для аудио и осциллографа
+  let audioCtx;
+  let analyserLeft, analyserRight;
+  let dataArrayLeft, dataArrayRight;
+  let bufferLength;
+  let oscilloscopeSvg;
+  let oscilloscopePath;
+  let isPlaying = false;
+  let isPlayingSet = false;
+  
+  // Добавляем переменные для отслеживания прогресса
+  let progressModal;
+  let saveProgressBar;
+  let progressInfo;
+  
+  // Инициализация осциллографа
+  function initOscilloscope() {
+  oscilloscopeSvg = document.getElementById('oscilloscope');
+  if (!oscilloscopeSvg) return;
+  
+  oscilloscopeSvg.innerHTML = '';
+  
+  const width = oscilloscopeSvg.clientWidth || 800;
+  const height = 200;
+  
+  // Создаем сетку
+  const grid = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  grid.setAttribute('class', 'oscilloscope-grid');
+  
+  let gridPath = '';
+  
+  // УВЕЛИЧИВАЕМ сетку для большего масштаба
+  const cellSize = Math.min(width, height) / 4;
+  
+  for (let i = 1; i <= 3; i++) {
+  const posX = (width / 2) + (i - 2) * cellSize;
+  const posY = (height / 2) + (i - 2) * cellSize;
+  
+  // Вертикальные линии
+  gridPath += `M ${posX} 0 V ${height} `;
+  // Горизонтальные линии
+  gridPath += `M 0 ${posY} H ${width} `;
+  }
+  
+  grid.setAttribute('d', gridPath);
+  
+  // Центральные оси
+  const axisX = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  axisX.setAttribute('class', 'oscilloscope-axis');
+  axisX.setAttribute('d', `M ${width/2} 0 V ${height}`);
+  
+  const axisY = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  axisY.setAttribute('class', 'oscilloscope-axis');
+  axisY.setAttribute('d', `M 0 ${height/2} H ${width}`);
+  
+  oscilloscopeSvg.appendChild(grid);
+  oscilloscopeSvg.appendChild(axisX);
+  oscilloscopeSvg.appendChild(axisY);
+  
+  // Создаем путь для фигуры Лиссажу
+  oscilloscopePath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+  oscilloscopePath.setAttribute('class', 'oscilloscope-path');
+  oscilloscopeSvg.appendChild(oscilloscopePath);
+  }
+  
+  // Функция обновления осциллографа
+  function updateOscilloscope() {
+  if (!analyserLeft || !analyserRight) return;
+  
+  requestAnimationFrame(updateOscilloscope);
+  
+  analyserLeft.getByteTimeDomainData(dataArrayLeft);
+  analyserRight.getByteTimeDomainData(dataArrayRight);
+  
+  const width = oscilloscopeSvg.clientWidth || 800;
+  const height = 200;
+  const centerX = width / 2;
+  const centerY = height / 2;
+  
+  // УМЕНЬШАЕМ масштаб до 60% (было 90%)
+  const scale = Math.min(width, height) * 0.45; // Уменьшено с 0.45 до 0.3
+  
+  let pathData = '';
+  const step = Math.max(1, Math.floor(bufferLength / 400));
+  
+  for (let i = 0; i < bufferLength; i += step) {
+  const x = (dataArrayLeft[i] / 128.0 - 1.0);
+  const y = (dataArrayRight[i] / 128.0 - 1.0);
+  
+  const screenX = centerX + x * scale;
+  const screenY = centerY + y * scale;
+  
+  if (i === 0) {
+  pathData += `M ${screenX} ${screenY} `;
+  } else {
+  pathData += `L ${screenX} ${screenY} `;
+  }
+  }
+  
+  oscilloscopePath.setAttribute('d', pathData);
+  
+  // Обновление индикатора громкости
+  updateVolumeIndicator();
+  }
+  
+  // Обновление индикатора громкости - С ЗАЩИТОЙ ОТ КЛИППИНГА
+  function updateVolumeIndicator() {
+  if (!analyserLeft || !volumeBar) return;
+  
+  const timeData = new Uint8Array(bufferLength);
+  analyserLeft.getByteTimeDomainData(timeData);
+  
+  let peak = 0;
+  let sumSquares = 0;
+  
+  for (let i = 0; i < bufferLength; i++) {
+  const amplitude = (timeData[i] - 128) / 128;
+  const absAmplitude = Math.abs(amplitude);
+  
+  if (absAmplitude > peak) peak = absAmplitude;
+  sumSquares += amplitude * amplitude;
+  }
+  
+  const rms = Math.sqrt(sumSquares / bufferLength);
+  
+  // ОСНОВНОЙ АЛГОРИТМ: показываем риск клиппинга
+  let volumePercent;
+  let isClipping = false;
+  
+  if (peak > 0.99) {
+  // КЛИППИНГ - сигнал обрезается
+  volumePercent = 100;
+  isClipping = true;
+  } else if (peak > 0.9) {
+  // ОПАСНАЯ ЗОНА - вот-вот будет клиппинг
+  volumePercent = 90 + (peak - 0.9) * 100; // 90-100%
+  } else if (peak > 0.7) {
+  // ВЫСОКАЯ громкость
+  volumePercent = 70 + (peak - 0.7) * 100; // 70-90%
+  } else if (peak > 0.3) {
+  // СРЕДНЯЯ громкость  
+  volumePercent = 30 + (peak - 0.3) * 100; // 30-70%
+  } else {
+  // НИЗКАЯ громкость
+  volumePercent = peak * 100; // 0-30%
+  }
+  
+  volumePercent = Math.min(100, volumePercent);
+  
+  // ОБНОВЛЕНИЕ ИНДИКАТОРА
+  volumeBar.style.width = `${volumePercent}%`;
+  
+  if (isClipping) {
+  volumeBar.className = 'progress-bar bg-danger';
+  volumeBar.style.background = 'linear-gradient(90deg, #ff0000, #cc0000)';
+  volumeBar.innerHTML = '🔴';
+  
+  // Мигание при клиппинге
+  volumeBar.style.animation = volumeBar.style.animation ? '' : 'blink 0.5s infinite';
+  } else if (volumePercent > 90) {
+  volumeBar.className = 'progress-bar bg-warning';
+  volumeBar.style.background = 'linear-gradient(90deg, #ff8800, #ff6600)';
+  volumeBar.innerHTML = '🟡';
+  volumeBar.style.animation = '';
+  } else if (volumePercent > 70) {
+  volumeBar.className = 'progress-bar bg-success';
+  volumeBar.style.background = 'linear-gradient(90deg, #44ff44, #00cc00)';
+  volumeBar.innerHTML = '🟢';
+  volumeBar.style.animation = '';
+  } else if (volumePercent > 30) {
+  volumeBar.className = 'progress-bar bg-info';
+  volumeBar.style.background = 'linear-gradient(90deg, #4488ff, #0066cc)';
+  volumeBar.innerHTML = '🔵';
+  volumeBar.style.animation = '';
+  } else {
+  volumeBar.className = 'progress-bar bg-secondary';
+  volumeBar.style.background = 'linear-gradient(90deg, #888888, #666666)';
+  volumeBar.innerHTML = '⚫ ';
+  volumeBar.style.animation = '';
+  }
+  
+  // Предупреждение в консоль при клиппинге
+  if (isClipping) {
+  console.error(`🚨 КЛИППИНГ! Peak: ${peak.toFixed(3)}`);
+  } else if (peak > 0.95) {
+  console.warn(`⚠️ ОПАСНОСТЬ КЛИППИНГА! Peak: ${peak.toFixed(3)}`);
+  }
+  }
+  
+  // Очистка осциллографа
+  function stopOscilloscope() {
+  if (oscilloscopePath) {
+  oscilloscopePath.setAttribute('d', '');
+  }
+  if (volumeBar) {
+  volumeBar.style.width = '0%';
+  volumeBar.className = 'progress-bar bg-success';
+  }
+  }
+  
+  // Улучшенная функция нормализации амплитуд
+  function normalizePartials(partials) {
+  if (!partials || partials.length === 0) return [];
+  
+  // Используем квадраты амплитуд для энергетической нормализации
+  const totalEnergy = partials.reduce((sum, p) => sum + Math.pow(p.amp, 2), 0);
+  const rms = Math.sqrt(totalEnergy);
+  
+  if (rms === 0) return partials;
+  
+  const normalized = partials.map(p => ({
+  ratio: p.ratio,
+  amp: Math.round((p.amp / rms) * 10000) / 10000
+  }));
+  
+  // Проверка суммы амплитуд
+  const sumAmplitudes = normalized.reduce((sum, p) => sum + p.amp, 0);
+  console.log(`Нормализация: RMS=${rms.toFixed(4)}, Сумма амплитуд=${sumAmplitudes.toFixed(4)}`);
+  
+  return normalized;
+  }
+  
+  function parsePartials(inputText) {
+  return inputText.split(',').map(p => {
+  const [r, a] = p.trim().split(':').map(Number);
+  return (!isNaN(r) && !isNaN(a)) ? { ratio: r, amp: a } : null;
+  }).filter(Boolean);
+  }
+  
+  function createImpulseResponse(ctx, duration = 3, decay = 2) {
+  const len = ctx.sampleRate * duration;
+  const buffer = ctx.createBuffer(2, len, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+  const data = buffer.getChannelData(ch);
+  for (let i = 0; i < len; i++) {
+  data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, decay);
+  }
+  }
+  return buffer;
+  }
+  
+  // НОВАЯ ФУНКЦИЯ: расчёт затухания по экспоненциальной формуле
+  function calculateExponentialDecay(partial, T0, currentTime) {
+  const Wn = T0 / partial.ratio;
+  return partial.amp * Math.exp(-currentTime / Wn);
+  }
+  
+  // Широкополосное стерео со сдвигом фазы 90° - ОБНОВЛЕННАЯ С НОВОЙ ФОРМУЛОЙ
+  function createStereo90Bell(f0, partial, index, total, startTime, attack, sustain, release, convolver, nodeList) {
+  const oscLeft = audioCtx.createOscillator();
+  const gainLeft = audioCtx.createGain();
+  const oscRight = audioCtx.createOscillator();
+  const gainRight = audioCtx.createGain();
+  
+  oscLeft.type = 'sine';
+  oscRight.type = 'sine';
+  
+  const baseFreq = f0 * partial.ratio + (Math.random() * 2 - 1);
+  oscLeft.frequency.value = baseFreq;
+  oscRight.frequency.value = baseFreq;
+  
+  const vibrato = audioCtx.createOscillator();
+  const vibratoGain = audioCtx.createGain();
+  vibrato.frequency.value = 5 + Math.random() * 2;
+  vibratoGain.gain.value = 1 + Math.random();
+  
+  vibrato.connect(vibratoGain);
+  vibratoGain.connect(oscLeft.frequency);
+  vibratoGain.connect(oscRight.frequency);
+  
+  const T0 = sustain + release; // Время звучания + затухание
+  const finalFadeTime = 1; // Финальное затухание 0.5 сек
+  const endTime = startTime + attack + T0 + finalFadeTime;
+  
+  // Расчет точек для экспоненциального затухания
+  const points = [];
+  const step = 0.1; // Шаг в секундах для расчёта кривой
+  
+  // Атака
+  points.push({ time: startTime, value: 0 });
+  points.push({ time: startTime + attack, value: partial.amp * VOLUME_MULTIPLIER });
+  
+  // Экспоненциальное затухание от attack до T0
+  for (let t = attack; t <= T0; t += step) {
+  const currentTime = startTime + t;
+  const decayValue = calculateExponentialDecay(partial, T0, t) * VOLUME_MULTIPLIER;
+  points.push({ time: currentTime, value: decayValue });
+  }
+  
+  // Добавляем точку в конце T0
+  const valueAtT0 = calculateExponentialDecay(partial, T0, T0) * VOLUME_MULTIPLIER;
+  points.push({ time: startTime + attack + T0, value: valueAtT0 });
+  
+  // Финальное затухание до 0
+  points.push({ time: endTime, value: 0.001 });
+  
+  // Применяем кривую к gain
+  for (let i = 0; i < points.length; i++) {
+  const point = points[i];
+  if (i === 0) {
+  gainLeft.gain.setValueAtTime(point.value, point.time);
+  gainRight.gain.setValueAtTime(point.value, point.time);
+  } else {
+  const prevPoint = points[i-1];
+  // Для плавных переходов используем exponentialRamp
+  if (point.value < prevPoint.value) {
+  gainLeft.gain.exponentialRampToValueAtTime(point.value, point.time);
+  gainRight.gain.exponentialRampToValueAtTime(point.value, point.time);
+  } else {
+  gainLeft.gain.linearRampToValueAtTime(point.value, point.time);
+  gainRight.gain.linearRampToValueAtTime(point.value, point.time);
+  }
+  }
+  }
+  
+  const phaseShiftTime = 1 / (4 * baseFreq);
+  
+  oscLeft.connect(gainLeft);
+  oscRight.connect(gainRight);
+  
+  const merger = audioCtx.createChannelMerger(2);
+  gainLeft.connect(merger, 0, 0);
+  gainRight.connect(merger, 0, 1);
+  merger.connect(convolver);
+  
+  oscLeft.start(startTime);
+  oscRight.start(startTime + phaseShiftTime);
+  vibrato.start(startTime);
+  
+  oscLeft.stop(endTime + 0.1);
+  oscRight.stop(endTime + 0.1 + phaseShiftTime);
+  vibrato.stop(endTime + 0.1);
+  
+  nodeList.push(oscLeft, oscRight, gainLeft, gainRight, vibrato, vibratoGain, merger);
+  }
+  
+  // Обычное стерео - ОБНОВЛЕННАЯ С НОВОЙ ФОРМУЛОЙ
+  function createStereoBell(f0, partial, index, total, startTime, attack, sustain, release, convolver, nodeList) {
+  const panPosition = (index / total) * 2 - 1;
+  
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  const panner = audioCtx.createStereoPanner();
+  
+  osc.type = 'sine';
+  osc.frequency.value = f0 * partial.ratio + (Math.random() * 2 - 1);
+  panner.pan.value = panPosition;
+  
+  const vibrato = audioCtx.createOscillator();
+  const vibratoGain = audioCtx.createGain();
+  vibrato.frequency.value = 5 + Math.random() * 2;
+  vibratoGain.gain.value = 1 + Math.random();
+  
+  vibrato.connect(vibratoGain).connect(osc.frequency);
+  
+  const T0 = sustain + release;
+  const finalFadeTime = 1;
+  const endTime = startTime + attack + T0 + finalFadeTime;
+  
+  // Расчет точек для экспоненциального затухания
+  const points = [];
+  const step = 0.1;
+  
+  // Атака
+  points.push({ time: startTime, value: 0 });
+  points.push({ time: startTime + attack, value: partial.amp * VOLUME_MULTIPLIER });
+  
+  // Экспоненциальное затухание
+  for (let t = attack; t <= T0; t += step) {
+  const currentTime = startTime + t;
+  const decayValue = calculateExponentialDecay(partial, T0, t) * VOLUME_MULTIPLIER;
+  points.push({ time: currentTime, value: decayValue });
+  }
+  
+  const valueAtT0 = calculateExponentialDecay(partial, T0, T0) * VOLUME_MULTIPLIER;
+  points.push({ time: startTime + attack + T0, value: valueAtT0 });
+  
+  // Финальное затухание
+  points.push({ time: endTime, value: 0.001 });
+  
+  // Применяем кривую к gain
+  for (let i = 0; i < points.length; i++) {
+  const point = points[i];
+  if (i === 0) {
+  gain.gain.setValueAtTime(point.value, point.time);
+  } else {
+  const prevPoint = points[i-1];
+  if (point.value < prevPoint.value) {
+  gain.gain.exponentialRampToValueAtTime(point.value, point.time);
+  } else {
+  gain.gain.linearRampToValueAtTime(point.value, point.time);
+  }
+  }
+  }
+  
+  osc.connect(gain).connect(panner).connect(convolver);
+  osc.start(startTime);
+  osc.stop(endTime + 0.1);
+  vibrato.start(startTime);
+  vibrato.stop(endTime + 0.1);
+  
+  nodeList.push(osc, gain, panner, vibrato, vibratoGain);
+  }
+  
+  // Основная функция генерации звука с обработкой ошибок
+  function startBell(f0, partials) {
+  return new Promise((resolve, reject) => {
+  try {
+  const attackTime = parseFloat(document.getElementById('attack').value) || 0.01;
+  const sustainTime = parseFloat(document.getElementById('long').value) || 0;
+  const releaseTime = parseFloat(document.getElementById('release').value) || 3.5;
+  const audioMode = document.getElementById('audioMode').value;
+  
+  if (!audioCtx) {
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  initOscilloscope();
+  }
+  
+  const normalizedPartials = normalizePartials(partials);
+  
+  const convolver = audioCtx.createConvolver();
+  convolver.buffer = createImpulseResponse(audioCtx);
+  
+  // Создаем два анализатора для стерео каналов
+  analyserLeft = audioCtx.createAnalyser();
+  analyserRight = audioCtx.createAnalyser();
+  
+  analyserLeft.fftSize = 2048;
+  analyserRight.fftSize = 2048;
+  
+  bufferLength = analyserLeft.frequencyBinCount;
+  dataArrayLeft = new Uint8Array(bufferLength);
+  dataArrayRight = new Uint8Array(bufferLength);
+  
+  const masterGain = audioCtx.createGain();
+  masterGain.gain.value = 1.0;
+  
+  const splitter = audioCtx.createChannelSplitter(2);
+  convolver.connect(splitter);
+  splitter.connect(analyserLeft, 0);
+  splitter.connect(analyserRight, 1);
+  splitter.connect(masterGain);
+  masterGain.connect(audioCtx.destination);
+  
+  const now = audioCtx.currentTime;
+  const currentNodes = [];
+  
+  const limitedPartials = normalizedPartials.slice(0, MAX_PARTIALS);
+  
+  limitedPartials.forEach((p, index) => {
+  if (audioMode === 'stereo90') {
+  createStereo90Bell(f0, p, index, limitedPartials.length, now, 
+  attackTime, sustainTime, releaseTime, convolver, currentNodes);
+  } else {
+  createStereoBell(f0, p, index, limitedPartials.length, now,
+  attackTime, sustainTime, releaseTime, convolver, currentNodes);
+  }
+  });
+  
+  updateOscilloscope();
+  
+  const totalDuration = attackTime + sustainTime + releaseTime + 1.1;
+  setTimeout(() => {
+  try {
+  currentNodes.forEach(node => {
+  try {
+  if (node.stop) node.stop();
+  node.disconnect();
+  } catch(e) {
+  console.warn('Ошибка при остановке узла:', e);
+  }
+  });
+  stopOscilloscope();
+  resolve();
+  } catch (error) {
+  reject(error);
+  }
+  }, totalDuration * 1000);
+  
+  } catch (error) {
+  reject(error);
+  }
+  });
+  }
+  
+  // ОБНОВЛЕННАЯ функция для offline-рендеринга с новой формулой затухания
+  function createStereo90BellOffline(ctx, f0, partial, index, total, startTime, attack, sustain, release, convolver) {
+  const oscLeft = ctx.createOscillator();
+  const gainLeft = ctx.createGain();
+  const oscRight = ctx.createOscillator();
+  const gainRight = ctx.createGain();
+  
+  oscLeft.type = 'sine';
+  oscRight.type = 'sine';
+  
+  const baseFreq = f0 * partial.ratio + (Math.random() * 2 - 1);
+  oscLeft.frequency.value = baseFreq;
+  oscRight.frequency.value = baseFreq;
+  
+  const vibrato = ctx.createOscillator();
+  const vibratoGain = ctx.createGain();
+  vibrato.frequency.value = 5 + Math.random() * 2;
+  vibratoGain.gain.value = 1 + Math.random();
+  
+  vibrato.connect(vibratoGain);
+  vibratoGain.connect(oscLeft.frequency);
+  vibratoGain.connect(oscRight.frequency);
+  
+  const T0 = sustain + release;
+  const finalFadeTime = 1;
+  const endTime = startTime + attack + T0 + finalFadeTime;
+  
+  // Расчет точек для экспоненциального затухания
+  const points = [];
+  const step = 0.1;
+  
+  points.push({ time: startTime, value: 0 });
+  points.push({ time: startTime + attack, value: partial.amp * VOLUME_MULTIPLIER });
+  
+  for (let t = attack; t <= T0; t += step) {
+  const currentTime = startTime + t;
+  const decayValue = calculateExponentialDecay(partial, T0, t) * VOLUME_MULTIPLIER;
+  points.push({ time: currentTime, value: decayValue });
+  }
+  
+  const valueAtT0 = calculateExponentialDecay(partial, T0, T0) * VOLUME_MULTIPLIER;
+  points.push({ time: startTime + attack + T0, value: valueAtT0 });
+  points.push({ time: endTime, value: 0.001 });
+  
+  // Применяем кривую к gain
+  for (let i = 0; i < points.length; i++) {
+  const point = points[i];
+  if (i === 0) {
+  gainLeft.gain.setValueAtTime(point.value, point.time);
+  gainRight.gain.setValueAtTime(point.value, point.time);
+  } else {
+  const prevPoint = points[i-1];
+  if (point.value < prevPoint.value) {
+  gainLeft.gain.exponentialRampToValueAtTime(point.value, point.time);
+  gainRight.gain.exponentialRampToValueAtTime(point.value, point.time);
+  } else {
+  gainLeft.gain.linearRampToValueAtTime(point.value, point.time);
+  gainRight.gain.linearRampToValueAtTime(point.value, point.time);
+  }
+  }
+  }
+  
+  const phaseShiftTime = 1 / (4 * baseFreq);
+  
+  oscLeft.connect(gainLeft);
+  oscRight.connect(gainRight);
+  
+  const merger = ctx.createChannelMerger(2);
+  gainLeft.connect(merger, 0, 0);
+  gainRight.connect(merger, 0, 1);
+  merger.connect(convolver);
+  
+  oscLeft.start(startTime);
+  oscRight.start(startTime + phaseShiftTime);
+  vibrato.start(startTime);
+  
+  oscLeft.stop(endTime + 0.1);
+  oscRight.stop(endTime + 0.1 + phaseShiftTime);
+  vibrato.stop(endTime + 0.1);
+  }
+  
+  // ОБНОВЛЕННАЯ функция для обычного стерео offline
+  function createStereoBellOffline(ctx, f0, partial, index, total, startTime, attack, sustain, release, convolver) {
+  const panPosition = (index / total) * 2 - 1;
+  
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const panner = ctx.createStereoPanner();
+  
+  osc.type = 'sine';
+  osc.frequency.value = f0 * partial.ratio + (Math.random() * 2 - 1);
+  panner.pan.value = panPosition;
+  
+  const vibrato = ctx.createOscillator();
+  const vibratoGain = ctx.createGain();
+  vibrato.frequency.value = 5 + Math.random() * 2;
+  vibratoGain.gain.value = 1 + Math.random();
+  
+  vibrato.connect(vibratoGain).connect(osc.frequency);
+  
+  const T0 = sustain + release;
+  const finalFadeTime = 1;
+  const endTime = startTime + attack + T0 + finalFadeTime;
+  
+  // Расчет точек для экспоненциального затухания
+  const points = [];
+  const step = 0.1;
+  
+  points.push({ time: startTime, value: 0 });
+  points.push({ time: startTime + attack, value: partial.amp * VOLUME_MULTIPLIER });
+  
+  for (let t = attack; t <= T0; t += step) {
+  const currentTime = startTime + t;
+  const decayValue = calculateExponentialDecay(partial, T0, t) * VOLUME_MULTIPLIER;
+  points.push({ time: currentTime, value: decayValue });
+  }
+  
+  const valueAtT0 = calculateExponentialDecay(partial, T0, T0) * VOLUME_MULTIPLIER;
+  points.push({ time: startTime + attack + T0, value: valueAtT0 });
+  points.push({ time: endTime, value: 0.001 });
+  
+  // Применяем кривую к gain
+  for (let i = 0; i < points.length; i++) {
+  const point = points[i];
+  if (i === 0) {
+  gain.gain.setValueAtTime(point.value, point.time);
+  } else {
+  const prevPoint = points[i-1];
+  if (point.value < prevPoint.value) {
+  gain.gain.exponentialRampToValueAtTime(point.value, point.time);
+  } else {
+  gain.gain.linearRampToValueAtTime(point.value, point.time);
+  }
+  }
+  }
+  
+  osc.connect(gain).connect(panner).connect(convolver);
+  osc.start(startTime);
+  osc.stop(endTime + 0.1);
+  vibrato.start(startTime);
+  vibrato.stop(endTime + 0.1);
+  }
+  
+  // ОБНОВЛЕННАЯ основная функция генерации для offline
+  function generateBellForOffline(ctx, startTime, f0, partials, convolverBuffer) {
+  const audioMode = document.getElementById('audioMode').value;
+  const attackTime = parseFloat(document.getElementById('attack').value) || 0.01;
+  const sustainTime = parseFloat(document.getElementById('long').value) || 0;
+  const releaseTime = parseFloat(document.getElementById('release').value) || 3.5;
+  
+  const normalizedPartials = normalizePartials(partials);
+  
+  const convolver = ctx.createConvolver();
+  convolver.buffer = convolverBuffer;
+  
+  const masterGain = ctx.createGain();
+  masterGain.gain.value = 1.0;
+  
+  convolver.connect(masterGain);
+  masterGain.connect(ctx.destination);
+  
+  const limitedPartials = normalizedPartials.slice(0, MAX_PARTIALS);
+  
+  limitedPartials.forEach((p, index) => {
+  if (audioMode === 'stereo90') {
+  createStereo90BellOffline(ctx, f0, p, index, limitedPartials.length, startTime, 
+  attackTime, sustainTime, releaseTime, convolver);
+  } else {
+  createStereoBellOffline(ctx, f0, p, index, limitedPartials.length, startTime,
+  attackTime, sustainTime, releaseTime, convolver);
+  }
+  });
+  }
+  
+  // Функции для WAV экспорта
+  function bufferToWav(buffer) {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const format = 3; // 32-bit float
+  const bitDepth = 32;
+  const bytesPerSample = bitDepth / 8;
+  const blockAlign = numChannels * bytesPerSample;
+  
+  const dataLength = buffer.length * numChannels * bytesPerSample;
+  const bufferSize = 44 + dataLength;
+  const arrayBuffer = new ArrayBuffer(bufferSize);
+  const view = new DataView(arrayBuffer);
+  
+  writeString(view, 0, 'RIFF');
+  view.setUint32(4, 36 + dataLength, true);
+  writeString(view, 8, 'WAVE');
+  writeString(view, 12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, format, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, sampleRate * blockAlign, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitDepth, true);
+  writeString(view, 36, 'data');
+  view.setUint32(40, dataLength, true);
+  
+  let offset = 44;
+  for (let i = 0; i < buffer.length; i++) {
+  for (let ch = 0; ch < numChannels; ch++) {
+  const sample = buffer.getChannelData(ch)[i];
+  view.setFloat32(offset, sample, true);
+  offset += 4;
+  }
+  }
+  
+  return new Blob([view], { type: 'audio/wav' });
+  }
+  
+  function writeString(view, offset, string) {
+  for (let i = 0; i < string.length; i++) {
+  view.setUint8(offset + i, string.charCodeAt(i));
+  }
+  }
+  
+  function downloadWav(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  }, 100);
+  }
+  
+  // Функция обновления прогресса
+  function updateProgress(percent, message) {
+  if (saveProgressBar) {
+  saveProgressBar.style.width = percent + '%';
+  saveProgressBar.textContent = Math.round(percent) + '%';
+  }
+  if (progressInfo) {
+  progressInfo.textContent = message;
+  }
+  }
+  
+  // ОБНОВЛЕННАЯ функция сохранения WAV с прогресс-баром
+  saveBtn.onclick = async () => {
+  let freqs = setFreqsInput.value.split(/[,;]+/)
+  .map(v => parseFloat(v.trim()))
+  .filter(v => !isNaN(v));
+  
+  if (freqs.length === 0) {
+  alert("Набор частот пуст. Добавьте частоты.");
+  return;
+  }
+  
+  if (freqs.length > MAX_FREQUENCIES) {
+  alert(`Превышено максимальное количество частот: ${MAX_FREQUENCIES}`);
+  return;
+  }
+  
+  const repeats = prompt("Введите количество повторов набора частот:", "1");
+  if (!repeats || isNaN(repeats) || parseInt(repeats) <= 0) {
+  return;
+  }
+  const repeatCount = parseInt(repeats);
+  
+  if (repeatCount > MAX_REPEATS) {
+  alert(`Превышено максимальное количество повторов: ${MAX_REPEATS}`);
+  return;
+  }
+  
+  let filenamePrefix = "";
+  switch (instrumentSelect.value) {
+  case "bell": filenamePrefix = "Колокол"; break;
+  case "bowl": filenamePrefix = "Чаша"; break;
+  case "smallbell": filenamePrefix = "Колокольчики"; break;
+  default: filenamePrefix = "Звук";
+  }
+  
+  const additionalName = prompt("Введите дополнительное название для файла:", "");
+  const filename = (filenamePrefix ? filenamePrefix + "-" : "") + 
+  (additionalName || "звук") + ".wav";
+  
+  const partials = parsePartials(partialsInput.value);
+  if (partials.length === 0) {
+  alert("Ошибка: не заданы обертона.");
+  return;
+  }
+  
+  const hitDelay = parseInt(hitDelayInput.value) || 0;
+  const cycleDelay = parseInt(cycleDelayInput.value) || 0;
+  
+  const attackTime = parseFloat(document.getElementById('attack').value) || 0.01;
+  const sustainTime = parseFloat(document.getElementById('long').value) || 0;
+  const releaseTime = parseFloat(document.getElementById('release').value) || 3.5;
+  const bellDuration = attackTime + sustainTime + releaseTime + 1.1;
+  
+  const hitDelayInSeconds = hitDelay / 1000;
+  const cycleDelayInSeconds = cycleDelay / 1000;
+  
+  const cycleDuration = freqs.length * bellDuration + 
+  (freqs.length - 1) * hitDelayInSeconds + 
+  cycleDelayInSeconds;
+  const totalDuration = cycleDuration * repeatCount;
+  
+  if (totalDuration > MAX_DURATION) {
+  alert(`Превышена максимальная длительность (${MAX_DURATION} сек). Уменьшите количество частот или повторов.`);
+  return;
+  }
+  
+  if (totalDuration < 0.1) {
+  alert("Длительность слишком мала для генерации файла.");
+  return;
+  }
+  
+  // Показываем прогресс-бар
+  updateProgress(0, "Подготовка к генерации...");
+  progressModal.show();
+  
+  try {
+  const sampleRate = 44100;
+  const totalSamples = Math.ceil(totalDuration * sampleRate);
+  
+  console.log(`Генерация аудио: ${totalDuration.toFixed(2)} сек, ${totalSamples} сэмплов`);
+  
+  // ИСПРАВЛЕНИЕ: Возвращаем старый синтаксис который работал
+  const offlineCtx = new OfflineAudioContext(2, totalSamples, sampleRate);
+  
+  updateProgress(10, "Создание импульсного ответа...");
+  
+  const convolverBuffer = createImpulseResponse(offlineCtx);
+  
+  updateProgress(20, "Генерация звуков...");
+  
+  // Генерация всех звуков
+  for (let repeat = 0; repeat < repeatCount; repeat++) {
+  const cycleStartTime = repeat * cycleDuration;
+  
+  for (let i = 0; i < freqs.length; i++) {
+  const bellStartTime = cycleStartTime + i * (bellDuration + hitDelayInSeconds);
+  const progress = 20 + (repeat * freqs.length + i) / (repeatCount * freqs.length) * 70;
+  updateProgress(progress, `Генерация ${repeat * freqs.length + i + 1} из ${repeatCount * freqs.length} звуков...`);
+  
+  generateBellForOffline(offlineCtx, bellStartTime, freqs[i], partials, convolverBuffer);
+  }
+  }
+  
+  updateProgress(90, "Финальный рендеринг...");
+  
+  // Рендеринг аудио
+  const renderedBuffer = await offlineCtx.startRendering();
+  
+  updateProgress(95, "Создание WAV файла...");
+  
+  // Создание WAV файла
+  const wavBlob = bufferToWav(renderedBuffer);
+  
+  updateProgress(100, "Сохранение файла...");
+  
+  // Скачивание файла
+  downloadWav(wavBlob, filename);
+  
+  setTimeout(() => {
+  progressModal.hide();
+  alert(`Файл "${filename}" успешно создан! Длительность: ${totalDuration.toFixed(1)} сек.`);
+  }, 500);
+  
+  } catch (error) {
+  console.error("Ошибка генерации:", error);
+  progressModal.hide();
+  alert("Ошибка при создании файла: " + error.message);
+  }
+  };
+  
+  // Обработчики кнопок с улучшенной обработкой ошибок
+  toggleBtn.onclick = () => {
+  const f0 = parseFloat(freqInput.value);
+  const partials = parsePartials(partialsInput.value);
+  if (isPlaying || isNaN(f0) || !partials.length) return;
+  
+  isPlaying = true;
+  toggleBtn.textContent = '⏳ Звук...';
+  toggleBtn.classList.remove('btn-success');
+  toggleBtn.classList.add('btn-secondary');
+  
+  startBell(f0, partials).then(() => {
+  isPlaying = false;
+  toggleBtn.textContent = '▶️ Старт';
+  toggleBtn.classList.remove('btn-secondary');
+  toggleBtn.classList.add('btn-success');
+  }).catch(error => {
+  console.error('Ошибка воспроизведения:', error);
+  isPlaying = false;
+  toggleBtn.textContent = '▶️ Старт';
+  toggleBtn.classList.remove('btn-secondary');
+  toggleBtn.classList.add('btn-success');
+  alert('Ошибка при воспроизведении звука: ' + error.message);
+  });
+  };
+  
+  playSetBtn.onclick = async () => {
+  if (isPlayingSet) {
+  isPlayingSet = false;
+  playSetBtn.textContent = '🔔 Проиграть набор';
+  playSetBtn.classList.remove('btn-danger');
+  playSetBtn.classList.add('btn-primary');
+  return;
+  }
+  
+  if (!oscilloscopeSvg || oscilloscopeSvg.children.length === 0) {
+  initOscilloscope();
+  }
+  
+  isPlayingSet = true;
+  playSetBtn.textContent = '⏹ Остановить';
+  playSetBtn.classList.remove('btn-primary');
+  playSetBtn.classList.add('btn-danger');
+  
+  let freqs = setFreqsInput.value
+  .split(/[,;]+/)
+  .map(v => parseFloat(v.trim()))
+  .filter(v => !isNaN(v))
+  .filter(v => v >= 80 && v <= 10000);
+  
+  if (freqs.length === 0) {
+  isPlayingSet = false;
+  playSetBtn.textContent = '🔔 Проиграть набор';
+  playSetBtn.classList.remove('btn-danger');
+  playSetBtn.classList.add('btn-primary');
+  return;
+  }
+  
+  const partials = parsePartials(partialsInput.value);
+  if (partials.length === 0) {
+  isPlayingSet = false;
+  playSetBtn.textContent = '🔔 Проиграть набор';
+  playSetBtn.classList.remove('btn-danger');
+  playSetBtn.classList.add('btn-primary');
+  return;
+  }
+  
+  const hitDelay = parseInt(hitDelayInput.value) || 0;
+  const cycleDelay = parseInt(cycleDelayInput.value) || 0;
+  
+  try {
+  do {
+  for (const freq of freqs) {
+  if (!isPlayingSet) break;
+  await startBell(freq, partials);
+  if (!isPlayingSet) break;
+  await new Promise(resolve => setTimeout(resolve, hitDelay));
+  }
+  if (!isPlayingSet) break;
+  if (!loopCheckbox.checked) break;
+  await new Promise(resolve => setTimeout(resolve, cycleDelay));
+  } while (isPlayingSet && loopCheckbox.checked);
+  } catch (error) {
+  console.error('Ошибка воспроизведения набора:', error);
+  alert('Ошибка при воспроизведении набора: ' + error.message);
+  } finally {
+  isPlayingSet = false;
+  playSetBtn.textContent = '🔔 Проиграть набор';
+  playSetBtn.classList.remove('btn-danger');
+  playSetBtn.classList.add('btn-primary');
+  }
+  };
+  
+  // Инициализация
+  document.addEventListener('DOMContentLoaded', function() {
+  initOscilloscope();
+  renderSavedSets();
+  
+  // Инициализация модального окна прогресса
+  progressModal = new bootstrap.Modal(document.getElementById('progressModal'));
+  saveProgressBar = document.getElementById('saveProgressBar');
+  progressInfo = document.getElementById('progressInfo');
+  
+  // Инициализация инструмента
+  instrumentSelect.addEventListener('change', () => {
+  if (instrumentSelect.value !== 'custom') {
+  document.getElementById('partials').value = instrumentPresets[instrumentSelect.value];
+  }
+  });
+  });
+  
+  // Код для сохранения наборов частот
+  const SAVED_SETS_KEY = 'savedFrequencySets';
+  
+  function getSavedSets() {
+  const data = localStorage.getItem(SAVED_SETS_KEY);
+  if (!data) return {};
+  try {
+  return JSON.parse(data);
+  } catch (e) {
+  console.error("Ошибка при чтении наборов:", e);
+  return {};
+  }
+  }
+  
+  function saveFrequencySet(name, frequencies) {
+  const savedSets = getSavedSets();
+  savedSets[name] = frequencies;
+  localStorage.setItem(SAVED_SETS_KEY, JSON.stringify(savedSets));
+  renderSavedSets();
+  }
+  
+  function deleteFrequencySet(name) {
+  const savedSets = getSavedSets();
+  delete savedSets[name];
+  localStorage.setItem(SAVED_SETS_KEY, JSON.stringify(savedSets));
+  renderSavedSets();
+  }
+  
+  function clearAllSets() {
+  localStorage.removeItem(SAVED_SETS_KEY);
+  renderSavedSets();
+  }
+  
+  function renderSavedSets() {
+  const savedSets = getSavedSets();
+  const container = document.getElementById('savedSetsList');
+  container.innerHTML = '';
+  
+  const keys = Object.keys(savedSets);
+  if (keys.length === 0) {
+  container.innerHTML = '<div class="text-center py-3">Нет сохранённых наборов</div>';
+  return;
+  }
+  
+  const sortedNames = keys.sort();
+  sortedNames.forEach(name => {
+  const frequencies = savedSets[name];
+  const setElement = document.createElement('div');
+  setElement.className = 'saved-set-item';
+  
+  const nameElement = document.createElement('div');
+  nameElement.className = 'set-name';
+  nameElement.textContent = name;
+  nameElement.title = frequencies.join(', ');
+  
+  nameElement.addEventListener('click', () => {
+  setFreqsInput.value = frequencies.join(', ');
+  setFreqsInput.classList.add('highlight');
+  setTimeout(() => {
+  setFreqsInput.classList.remove('highlight');
+  }, 1000);
+  });
+  
+  const deleteElement = document.createElement('span');
+  deleteElement.className = 'delete-set';
+  deleteElement.innerHTML = '❌';
+  deleteElement.title = 'Удалить набор';
+  
+  deleteElement.addEventListener('click', (e) => {
+  e.stopPropagation();
+  if (confirm(`Удалить набор "${name}"?`)) {
+  deleteFrequencySet(name);
+  }
+  });
+  
+  setElement.appendChild(nameElement);
+  setElement.appendChild(deleteElement);
+  container.appendChild(setElement);
+  });
+  }
+  
+  // Обработчики для модального окна и CSV
+  document.getElementById('saveSetBtn').addEventListener('click', () => {
+  const freqs = setFreqsInput.value
+  .split(/[,;]+/) 
+  .map(v => parseFloat(v.trim()))
+  .filter(v => !isNaN(v))
+  .filter(v => v >= 80 && v <= 10000);
+  
+  if (freqs.length === 0) {
+  alert('Добавьте частоты для сохранения набора');
+  return;
+  }
+  
+  document.getElementById('setFrequenciesPreview').textContent = freqs.join(', ');
+  document.getElementById('setNameInput').value = '';
+  
+  const modal = new bootstrap.Modal(document.getElementById('saveSetModal'));
+  modal.show();
+  });
+  
+  document.getElementById('confirmSaveSet').addEventListener('click', () => {
+  const name = document.getElementById('setNameInput').value.trim();
+  const freqsText = document.getElementById('setFrequenciesPreview').textContent;
+  
+  if (!name) {
+  alert('Введите название для набора');
+  return;
+  }
+  
+  const freqs = freqsText.split(',')
+  .map(v => parseFloat(v.trim()))
+  .filter(v => !isNaN(v));
+  
+  saveFrequencySet(name, freqs);
+  
+  const modal = bootstrap.Modal.getInstance(document.getElementById('saveSetModal'));
+  modal.hide();
+  
+  alert(`Набор "${name}" успешно сохранён!`);
+  });
+  
+  document.getElementById('clearSets').addEventListener('click', () => {
+  if (confirm('Вы уверены, что хотите удалить все сохранённые наборы?')) {
+  clearAllSets();
+  }
+  });
+  
+  // CSV функции
+  function exportToCSV() {
+  const savedSets = getSavedSets();
+  if (Object.keys(savedSets).length === 0) {
+  alert("Нет наборов для экспорта");
+  return;
+  }
+  
+  let csvContent = "Название,Частоты\n";
+  for (const [name, frequencies] of Object.entries(savedSets)) {
+  const escapedName = name.includes(',') ? `"${name}"` : name;
+  csvContent += `${escapedName},${frequencies.join(',')}\n`;
+  }
+  
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'frequency_sets.csv';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  }, 100);
+  }
+  
+  function importFromCSV(file) {
+  const reader = new FileReader();
+  reader.onload = function(e) {
+  try {
+  const content = e.target.result;
+  const lines = content.split('\n').slice(1);
+  const savedSets = getSavedSets();
+  let importedCount = 0;
+  
+  for (const line of lines) {
+  if (!line.trim()) continue;
+  
+  let parts = [];
+  let inQuotes = false;
+  let current = '';
+  
+  for (let i = 0; i < line.length; i++) {
+  const char = line[i];
+  if (char === '"') {
+  inQuotes = !inQuotes;
+  } else if (char === ',' && !inQuotes) {
+  parts.push(current);
+  current = '';
+  } else {
+  current += char;
+  }
+  }
+  parts.push(current);
+  
+  if (parts.length < 2) continue;
+  
+  const name = parts[0].trim();
+  const frequencies = parts.slice(1)
+  .map(v => parseFloat(v.trim()))
+  .filter(v => !isNaN(v))
+  .filter(v => v >= 80 && v <= 10000);
+  
+  if (name && frequencies.length > 0) {
+  savedSets[name] = frequencies;
+  importedCount++;
+  }
+  }
+  
+  if (importedCount > 0) {
+  localStorage.setItem(SAVED_SETS_KEY, JSON.stringify(savedSets));
+  renderSavedSets();
+  alert(`Успешно импортировано наборов: ${importedCount}`);
+  } else {
+  alert("Не удалось импортировать ни одного набора");
+  }
+  } catch (error) {
+  console.error("Ошибка при импорте CSV:", error);
+  alert("Ошибка при импорте файла: " + error.message);
+  }
+  };
+  reader.readAsText(file);
+  }
+  
+  document.getElementById('exportCSV').addEventListener('click', exportToCSV);
+  document.getElementById('importCSV').addEventListener('click', () => {
+  document.getElementById('csvFileInput').click();
+  });
+  
+  document.getElementById('csvFileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) {
+  if (confirm("Импортировать наборы из CSV? Существующие наборы с такими же именами будут перезаписаны.")) {
+  importFromCSV(file);
+  }
+  }
+  e.target.value = '';
+  });
+  
+  // Обработчики пресетов
+  document.querySelectorAll('.preset-link').forEach(link => {
+  link.addEventListener('click', function(e) {
+  e.preventDefault();
+  const presetName = this.textContent;
+  const presetValue = presetValues[presetName];
+  
+  if (presetValue) {
+  const partialsInput = document.getElementById('partials');
+  partialsInput.value = presetValue;
+  
+  const event = new Event('input', { bubbles: true });
+  partialsInput.dispatchEvent(event);
+  
+  partialsInput.focus();
+  partialsInput.classList.add('highlight');
+  setTimeout(() => partialsInput.classList.remove('highlight'), 1000);
+  
+  document.getElementById('instrument').value = 'custom';
+  }
+  });
+  });
+  
+  // Обработчик ресайза окна для перерисовки осциллографа
+  window.addEventListener('resize', initOscilloscope);
   </script>
 </body>
 </html>
