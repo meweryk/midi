@@ -898,7 +898,7 @@
             <li>Переход фазы корректно отрабатывает только после остановки и нового старта</li>
             <li>Добавлена нормализация амплитуды для предотвращения клиппинга</li>
             <li>Реализован компрессор для мягкого ограничения сигнала</li>
-            <li>Перебор частот: проигрывает по 2 частоты с введённого пресета, каждую пару частот по 3 минуты, после чего воспроизведение останавливается</li>
+            <li>Перебор частот: проигрывает по 4 частоты с введённого пресета, каждую пару частот по 1 минуте, после чего воспроизведение останавливается</li>
             <li>Громкость осцилляторов: если поле громкости заполнено - используется указанное значение, иначе рассчитывается автоматически</li>
             <li>Формат быстрого сохранения: "частота,громкость; частота,громкость; ..."</li>
             </ul>
@@ -1502,69 +1502,112 @@
         }
         
         function togglePlayback() {
-            if (isFrequencyCycling) {
-                stopFrequencyCycle();
-            }
-            
-            initAudio();
-            isPlaying = !isPlaying;
-            const toggleBtn = document.getElementById('toggleBtn');
-            toggleBtn.textContent = isPlaying ? 'Стоп' : 'Старт';
-            toggleBtn.classList.toggle('active', isPlaying);
-            
-            document.getElementById('addFrequency').disabled = isPlaying;
-            document.getElementById('cycleFrequencies').disabled = isPlaying;
-            toggleBtn.disabled = false;
-            
-            if (isPlaying) {
-                // Проверяем, есть ли хотя бы одно поле громкости заполненное
-                const hasCustomVolumes = Array.from(document.querySelectorAll('.volume-input'))
-                    .some(input => input.value.trim() !== '');
-                
-                if (hasCustomVolumes) {
-                    // Используем пользовательские настройки громкости
-                    document.querySelectorAll('.frequency-item').forEach(item => {
-                        const id = item.dataset.id;
-                        const freq = parseFloat(item.querySelector('.freq-range').value);
-                        const pan = parseFloat(item.querySelector('.pan-selector').value);
-                        const deg = parseFloat(item.querySelector('.phase-shift').value);
-                        const volumeInput = item.querySelector('.volume-input');
-                        const volumeValue = volumeInput.value.trim();
-                        
-                        let volume = null;
-                        if (volumeValue !== '') {
-                            volume = parseFloat(volumeValue);
-                            if (isNaN(volume) || volume < 0 || volume > 100) {
-                                volume = 100; // Значение по умолчанию если некорректное
-                            }
-                        }
-                        
-                        const chain = createOscillatorChain(freq, pan, deg, volume);
-                        channels.set(id, chain);
-                        chain.oscillator.start();
-                    });
-                } else {
-                    // Используем автоматическую нормализацию
-                    recalculateGains();
-                }
-            } else {
-                channels.forEach(chain => {
-                    chain.oscillator.stop();
-                });
-                channels.clear();
-                document.getElementById('addFrequency').disabled = false;
-                document.getElementById('cycleFrequencies').disabled = false;
-            }
-            
-            // Управление визуализацией
-            if (isPlaying) {
-                oscilloscopeCtx.clearRect(0, 0, oscilloscopeCanvas.width, oscilloscopeCanvas.height);
-                lissajousCtx.clearRect(0, 0, lissajousCanvas.width, lissajousCanvas.height);
-                
-                visualizerAnimationId = requestAnimationFrame(drawVisualizer);
-            } else {
-                cancelAnimationFrame(visualizerAnimationId);
-            }
+        if (isFrequencyCycling) {
+        stopFrequencyCycle();
+        }
+        
+        initAudio();
+        isPlaying = !isPlaying;
+        const toggleBtn = document.getElementById('toggleBtn');
+        toggleBtn.textContent = isPlaying ? 'Стоп' : 'Старт';
+        toggleBtn.classList.toggle('active', isPlaying);
+        
+        document.getElementById('addFrequency').disabled = isPlaying;
+        document.getElementById('cycleFrequencies').disabled = isPlaying;
+        toggleBtn.disabled = false;
+        
+        if (isPlaying) {
+        // Собираем все частоты с их параметрами
+        const frequencies = [];
+        
+        document.querySelectorAll('.frequency-item').forEach(item => {
+        const id = item.dataset.id;
+        const freq = parseFloat(item.querySelector('.freq-range').value);
+        const pan = parseFloat(item.querySelector('.pan-selector').value);
+        const phaseShift = parseFloat(item.querySelector('.phase-shift').value);
+        const volumeInput = item.querySelector('.volume-input');
+        const volumeValue = volumeInput.value.trim();
+        
+        let volume = null;
+        if (volumeValue !== '') {
+        volume = parseFloat(volumeValue);
+        if (isNaN(volume) || volume < 0 || volume > 100) {
+        volume = 100;
+        }
+        }
+        
+        frequencies.push({ id, freq, pan, phaseShift, volume });
+        });
+        
+        // НОРМАЛИЗАЦИЯ: Приводим сумму громкостей к 100% по каждому каналу
+        const leftFrequencies = frequencies.filter(f => f.pan <= 0);
+        const rightFrequencies = frequencies.filter(f => f.pan >= 0);
+        
+        // Суммируем громкости для каждого канала
+        let leftVolumeSum = leftFrequencies.reduce((sum, f) => sum + (f.volume || 100), 0);
+        let rightVolumeSum = rightFrequencies.reduce((sum, f) => sum + (f.volume || 100), 0);
+        
+        // Если все поля громкости пустые, устанавливаем равномерное распределение
+        const allVolumesEmpty = frequencies.every(f => {
+        const volumeInput = document.querySelector(`.frequency-item[data-id="${f.id}"] .volume-input`);
+        return volumeInput.value.trim() === '';
+        });
+        
+        if (allVolumesEmpty) {
+        // Равномерное распределение: каждая частота получает свою долю от 100%
+        leftFrequencies.forEach(f => {
+        f.normalizedVolume = 100 / leftFrequencies.length;
+        });
+        rightFrequencies.forEach(f => {
+        f.normalizedVolume = 100 / rightFrequencies.length;
+        });
+        } else {
+        // Нормализация пользовательских громкостей
+        leftFrequencies.forEach(f => {
+        const volume = f.volume || 100;
+        f.normalizedVolume = (volume / leftVolumeSum) * 100;
+        });
+        
+        rightFrequencies.forEach(f => {
+        const volume = f.volume || 100;
+        f.normalizedVolume = (volume / rightVolumeSum) * 100;
+        });
+        }
+        
+        // Создаем осцилляторы с нормализованными громкостями
+        frequencies.forEach(freqItem => {
+        const { id, freq, pan, phaseShift, normalizedVolume } = freqItem;
+        
+        const chain = createOscillatorChain(freq, pan, phaseShift, normalizedVolume);
+        channels.set(id, chain);
+        chain.oscillator.start();
+        
+        console.log(`Частота ${freq}Hz, канал ${pan}, громкость: ${normalizedVolume.toFixed(1)}%`);
+        });
+        
+        // Проверяем суммы громкостей (для отладки)
+        const finalLeftSum = leftFrequencies.reduce((sum, f) => sum + f.normalizedVolume, 0);
+        const finalRightSum = rightFrequencies.reduce((sum, f) => sum + f.normalizedVolume, 0);
+        console.log(`Сумма громкостей: Левый канал=${finalLeftSum.toFixed(1)}%, Правый канал=${finalRightSum.toFixed(1)}%`);
+        
+        } else {
+        channels.forEach(chain => {
+        chain.oscillator.stop();
+        });
+        channels.clear();
+        document.getElementById('addFrequency').disabled = false;
+        document.getElementById('cycleFrequencies').disabled = false;
+        }
+        
+        // Управление визуализацией
+        if (isPlaying) {
+        oscilloscopeCtx.clearRect(0, 0, oscilloscopeCanvas.width, oscilloscopeCanvas.height);
+        lissajousCtx.clearRect(0, 0, lissajousCanvas.width, lissajousCanvas.height);
+        
+        visualizerAnimationId = requestAnimationFrame(drawVisualizer);
+        } else {
+        cancelAnimationFrame(visualizerAnimationId);
+        }
         }
 
         function recalculateGains() {
@@ -1602,81 +1645,86 @@
         }
 
         function startFrequencyCycle() {
-            if (isPlaying) {
-                togglePlayback();
-            }
-            
-            const frequencyItems = document.querySelectorAll('.frequency-item');
-            if (frequencyItems.length === 0) {
-                alert('Добавьте частоты для перебора');
-                return;
-            }
-            
-            frequencyPairs = [];
-            const frequencies = [];
-            
-            frequencyItems.forEach(item => {
-                const id = item.dataset.id;
-                const freq = parseFloat(item.querySelector('.freq-range').value);
-                const phaseShift = parseFloat(item.querySelector('.phase-shift').value);
-                const pan = parseFloat(item.querySelector('.pan-selector').value);
-                const volumeInput = item.querySelector('.volume-input');
-                const volumeValue = volumeInput.value.trim();
-                let volume = null;
-                if (volumeValue !== '') {
-                    volume = parseFloat(volumeValue);
-                    if (isNaN(volume) || volume < 0 || volume > 100) {
-                        volume = 100;
-                    }
-                }
-                
-                frequencies.push({ id, freq, phaseShift, pan, volume });
-            });
-            
-            for (let i = 0; i < frequencies.length; i += 2) {
-                const pair = frequencies.slice(i, i + 2);
-                frequencyPairs.push(pair);
-            }
-            
-            if (frequencyPairs.length === 0) return;
-            
-            totalCycleTime = frequencyPairs.length * 3 * 60;
-            remainingTime = totalCycleTime;
-            
-            isFrequencyCycling = true;
-            const cycleBtn = document.getElementById('cycleFrequencies');
-            cycleBtn.classList.add('active');
-            cycleBtn.textContent = formatTime(remainingTime);
-            
-            document.getElementById('addFrequency').disabled = true;
-            document.getElementById('toggleBtn').disabled = true;
-            cycleBtn.disabled = false;
-            
-            currentPairIndex = 0;
-            playFrequencyPair(frequencyPairs[currentPairIndex]);
-            
-            cycleInterval = setInterval(() => {
-                stopCurrentPair();
-                currentPairIndex++;
-                
-                if (currentPairIndex < frequencyPairs.length) {
-                    playFrequencyPair(frequencyPairs[currentPairIndex]);
-                } else {
-                    stopFrequencyCycle();
-                }
-            }, 3 * 60 * 1000);
-            
-            countdownInterval = setInterval(() => {
-                remainingTime--;
-                cycleBtn.textContent = formatTime(remainingTime);
-                
-                if (remainingTime <= 0) {
-                    clearInterval(countdownInterval);
-                }
-            }, 1000);
-            
-            // Запускаем визуализацию
-            visualizerAnimationId = requestAnimationFrame(drawVisualizer);
+        if (isPlaying) {
+        togglePlayback();
+        }
+        
+        const frequencyItems = document.querySelectorAll('.frequency-item');
+        if (frequencyItems.length === 0) {
+        alert('Добавьте частоты для перебора');
+        return;
+        }
+        
+        frequencyPairs = [];
+        const frequencies = [];
+        
+        frequencyItems.forEach(item => {
+        const id = item.dataset.id;
+        const freq = parseFloat(item.querySelector('.freq-range').value);
+        const phaseShift = parseFloat(item.querySelector('.phase-shift').value);
+        const pan = parseFloat(item.querySelector('.pan-selector').value);
+        const volumeInput = item.querySelector('.volume-input');
+        const volumeValue = volumeInput.value.trim();
+        let volume = null;
+        if (volumeValue !== '') {
+        volume = parseFloat(volumeValue);
+        if (isNaN(volume) || volume < 0 || volume > 100) {
+        volume = 100;
+        }
+        }
+        
+        frequencies.push({ id, freq, phaseShift, pan, volume });
+        });
+        
+        // ИСПРАВЛЕНИЕ: Создаем пары по 4 частоты
+        for (let i = 0; i < frequencies.length; i += 4) {
+        const pair = frequencies.slice(i, i + 4);
+        frequencyPairs.push(pair);
+        }
+        
+        if (frequencyPairs.length === 0) {
+        alert('Не удалось создать пары частот');
+        return;
+        }
+        
+        // ИСПРАВЛЕНИЕ: Время проигрывания 2 минуты на пару
+        const pairDuration = 120; // 2 минуты на пару
+        totalCycleTime = frequencyPairs.length * pairDuration;
+        remainingTime = totalCycleTime;
+        
+        isFrequencyCycling = true;
+        const cycleBtn = document.getElementById('cycleFrequencies');
+        cycleBtn.classList.add('active');
+        cycleBtn.textContent = formatTime(remainingTime);
+        
+        document.getElementById('addFrequency').disabled = true;
+        document.getElementById('toggleBtn').disabled = true;
+        cycleBtn.disabled = false;
+        
+        currentPairIndex = 0;
+        playFrequencyPair(frequencyPairs[currentPairIndex]);
+        
+        cycleInterval = setInterval(() => {
+        stopCurrentPair();
+        currentPairIndex++;
+        
+        if (currentPairIndex < frequencyPairs.length) {
+        playFrequencyPair(frequencyPairs[currentPairIndex]);
+        } else {
+        stopFrequencyCycle();
+        }
+        }, pairDuration * 1000); // 2 минуты
+        
+        countdownInterval = setInterval(() => {
+        remainingTime--;
+        cycleBtn.textContent = formatTime(remainingTime);
+        
+        if (remainingTime <= 0) {
+        clearInterval(countdownInterval);
+        }
+        }, 1000);
+        
+        visualizerAnimationId = requestAnimationFrame(drawVisualizer);
         }
         
         function stopFrequencyCycle() {
@@ -1698,44 +1746,62 @@
         }
         
         function playFrequencyPair(pair) {
-            initAudio();
-            stopCurrentPair();
-            
-            // Проверяем, есть ли пользовательские настройки громкости
-            const hasCustomVolumes = pair.some(freqItem => freqItem.volume !== null);
-            
-            if (hasCustomVolumes) {
-                // Используем пользовательские настройки громкости
-                currentPairOscillators = [];
-                pair.forEach(freqItem => {
-                    const { freq, pan, phaseShift, volume } = freqItem;
-                    const chain = createOscillatorChain(freq, pan, phaseShift, volume);
-                    chain.oscillator.start();
-                    currentPairOscillators.push(chain);
-                });
-            } else {
-                // Используем автоматическую нормализацию
-                let leftSum = 0;
-                let rightSum = 0;
-                
-                pair.forEach(freqItem => {
-                    const pan = freqItem.pan;
-                    leftSum += pan <= 0 ? 1 : 1 - pan;
-                    rightSum += pan >= 0 ? 1 : 1 + pan;
-                });
-                
-                const maxSum = Math.max(leftSum, rightSum, 1);
-                const normalizationFactor = 1 / maxSum;
-                
-                currentPairOscillators = [];
-                pair.forEach(freqItem => {
-                    const { freq, pan, phaseShift } = freqItem;
-                    const chain = createOscillatorChain(freq, pan, phaseShift, null);
-                    chain.gainNode.gain.value = normalizationFactor * 0.5;
-                    chain.oscillator.start();
-                    currentPairOscillators.push(chain);
-                });
-            }
+        initAudio();
+        stopCurrentPair();
+        
+        if (!pair || pair.length === 0) {
+        console.warn('Пустая пара частот');
+        return;
+        }
+        
+        // НОРМАЛИЗАЦИЯ: Приводим сумму громкостей к 100% по каждому каналу
+        const leftFrequencies = pair.filter(f => f.pan <= 0);
+        const rightFrequencies = pair.filter(f => f.pan >= 0);
+        
+        // Суммируем громкости для каждого канала
+        let leftVolumeSum = leftFrequencies.reduce((sum, f) => sum + (f.volume || 100), 0);
+        let rightVolumeSum = rightFrequencies.reduce((sum, f) => sum + (f.volume || 100), 0);
+        
+        // Если все поля громкости пустые, устанавливаем равномерное распределение
+        const allVolumesEmpty = pair.every(f => f.volume === null);
+        
+        if (allVolumesEmpty) {
+        // Равномерное распределение: каждая частота получает свою долю от 100%
+        leftFrequencies.forEach(f => {
+        f.normalizedVolume = 100 / leftFrequencies.length;
+        });
+        rightFrequencies.forEach(f => {
+        f.normalizedVolume = 100 / rightFrequencies.length;
+        });
+        } else {
+        // Нормализация пользовательских громкостей
+        leftFrequencies.forEach(f => {
+        const volume = f.volume || 100;
+        f.normalizedVolume = (volume / leftVolumeSum) * 100;
+        });
+        
+        rightFrequencies.forEach(f => {
+        const volume = f.volume || 100;
+        f.normalizedVolume = (volume / rightVolumeSum) * 100;
+        });
+        }
+        
+        // Создаем осцилляторы с нормализованными громкостями
+        currentPairOscillators = [];
+        pair.forEach(freqItem => {
+        const { freq, pan, phaseShift, normalizedVolume } = freqItem;
+        
+        const chain = createOscillatorChain(freq, pan, phaseShift, normalizedVolume);
+        chain.oscillator.start();
+        currentPairOscillators.push(chain);
+        
+        console.log(`Перебор: Частота ${freq}Hz, канал ${pan}, громкость: ${normalizedVolume.toFixed(1)}%`);
+        });
+        
+        // Проверяем суммы громкостей (для отладки)
+        const finalLeftSum = leftFrequencies.reduce((sum, f) => sum + f.normalizedVolume, 0);
+        const finalRightSum = rightFrequencies.reduce((sum, f) => sum + f.normalizedVolume, 0);
+        console.log(`Перебор: Сумма громкостей: Левый=${finalLeftSum.toFixed(1)}%, Правый=${finalRightSum.toFixed(1)}%`);
         }
         
         function stopCurrentPair() {
@@ -2060,140 +2126,188 @@
         
         // Web Worker функция для генерации WAV
         function wavWorkerFunction() {
-            self.onmessage = function(e) {
-                const config = e.data;
-                const sampleRate = config.sampleRate;
-                const duration = config.duration;
-                const numSamples = Math.floor(duration * sampleRate);
-                const numChannels = config.stereo ? 2 : 1;
-                const buffer = new ArrayBuffer(44 + numSamples * numChannels * 2);
-                const view = new DataView(buffer);
-                
-                // Write WAV header
-                function writeString(view, offset, string) {
-                    for (let i = 0; i < string.length; i++) {
-                        view.setUint8(offset + i, string.charCodeAt(i));
-                    }
-                }
-                
-                writeString(view, 0, 'RIFF');
-                view.setUint32(4, 36 + numSamples * numChannels * 2, true);
-                writeString(view, 8, 'WAVE');
-                writeString(view, 12, 'fmt ');
-                view.setUint32(16, 16, true);
-                view.setUint16(20, 1, true); // PCM format
-                view.setUint16(22, numChannels, true);
-                view.setUint32(24, sampleRate, true);
-                view.setUint32(28, sampleRate * numChannels * 2, true); // byte rate
-                view.setUint16(32, numChannels * 2, true); // block align
-                view.setUint16(34, 16, true); // bits per sample
-                writeString(view, 36, 'data');
-                view.setUint32(40, numSamples * numChannels * 2, true);
-                
-                // Generate audio data
-                const dataOffset = 44;
-                const samples = new Float32Array(numSamples * numChannels);
-                const volume = config.volume;
-                
-                // Функция для расчета частоты с FM модуляцией
-                function calculateFrequency(baseFreq, time, fmFreq, fmDepth) {
-                    if (!config.fmEnabled) return baseFreq;
-                    return baseFreq + baseFreq * (fmDepth / 100) * Math.sin(2 * Math.PI * fmFreq * time);
-                }
-                
-                // Генерация данных
-                for (let i = 0; i < numSamples; i++) {
-                    const time = i / sampleRate;
-                    
-                    // Суммируем все частоты
-                    for (const freq of config.frequencies) {
-                        const effectiveFreq = calculateFrequency(freq.freq, time, config.fmFreq, config.fmDepth);
-                        const phaseShift = freq.phaseShift * (Math.PI / 180);
-                        let channelValue = 0;
-                        
-                        if (config.waveType === 'sine') {
-                            channelValue = Math.sin(2 * Math.PI * effectiveFreq * time + phaseShift);
-                        } else { // square wave
-                            const period = 1 / effectiveFreq;
-                            const position = (time % period) / period;
-                            channelValue = position < 0.5 ? 1 : -1;
-                        }
-                        
-                        // Применяем пользовательскую громкость если указана
-                        let gain = 1;
-                        if (freq.volume !== null && freq.volume !== undefined) {
-                            gain = freq.volume / 100;
-                        }
-                        
-                        channelValue *= gain;
-                        
-                        // Применяем панорамирование
-                        if (config.stereo) {
-                            const pan = freq.pan;
-                            const leftGain = pan <= 0 ? 1 : 1 - pan;
-                            const rightGain = pan >= 0 ? 1 : 1 + pan;
-                            
-                            samples[i * numChannels] += channelValue * leftGain;
-                            samples[i * numChannels + 1] += channelValue * rightGain;
-                        } else {
-                            samples[i] += channelValue;
-                        }
-                    }
-                    
-                    // Отправляем прогресс каждые 1000 сэмплов
-                    if (i % 1000 === 0) {
-                        const progress = (i / numSamples) * 100;
-                        self.postMessage({ type: 'progress', value: progress });
-                    }
-                }
-                
-                // Упрощенная умная нормализация
-                // Умная нормализация - проверяем максимальную амплитуду
-                let maxAmplitude = 0;
-                for (let i = 0; i < samples.length; i++) {
-                if (Math.abs(samples[i]) > maxAmplitude) maxAmplitude = Math.abs(samples[i]);
-                }
-                
-                // Применяем нормализацию в зависимости от ситуации
-                if (maxAmplitude > 1.0) {
-                // Случай 1: Обнаружен клиппинг - нормализуем до 0.99
-                const normalizeFactor = 0.99 / maxAmplitude;
-                for (let i = 0; i < samples.length; i++) {
-                samples[i] *= normalizeFactor * volume;
-                }
-                console.log(`Нормализация от клиппинга: ${maxAmplitude.toFixed(3)} → 0.99`);
-                } else if (maxAmplitude > 0 && maxAmplitude < 1.0) {
-                // Случай 2: Сигнал тихий - усиливаем до 1.0
-                const normalizeFactor = 1.0 / maxAmplitude;
-                for (let i = 0; i < samples.length; i++) {
-                samples[i] *= normalizeFactor * volume;
-                }
-                console.log(`Усиление тихого сигнала: ${maxAmplitude.toFixed(3)} → 1.0`);
-                } else if (maxAmplitude === 1.0) {
-                // Случай 3: Идеальный уровень - просто применяем громкость
-                for (let i = 0; i < samples.length; i++) {
-                samples[i] *= volume;
-                }
-                console.log('Идеальный уровень, применяем громкость');
-                } else {
-                // Случай 4: Тишина (maxAmplitude = 0)
-                for (let i = 0; i < samples.length; i++) {
-                samples[i] *= volume;
-                }
-                console.log('Тихий сигнал, применяем громкость');
-                }
-                
-                // Запись данных в буфер
-                let index = dataOffset;
-                for (let i = 0; i < samples.length; i++) {
-                    const s = Math.max(-1, Math.min(1, samples[i]));
-                    const val = s < 0 ? s * 32768 : s * 32767;
-                    view.setInt16(index, val, true);
-                    index += 2;
-                }
-                
-                self.postMessage({ type: 'complete', wavData: buffer });
-            };
+        self.onmessage = function(e) {
+        const config = e.data;
+        const sampleRate = config.sampleRate;
+        const duration = config.duration;
+        const numSamples = Math.floor(duration * sampleRate);
+        const numChannels = config.stereo ? 2 : 1;
+        const buffer = new ArrayBuffer(44 + numSamples * numChannels * 2);
+        const view = new DataView(buffer);
+        
+        // Write WAV header
+        function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+        view.setUint8(offset + i, string.charCodeAt(i));
+        }
+        }
+        
+        writeString(view, 0, 'RIFF');
+        view.setUint32(4, 36 + numSamples * numChannels * 2, true);
+        writeString(view, 8, 'WAVE');
+        writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true); // PCM format
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * numChannels * 2, true); // byte rate
+        view.setUint16(32, numChannels * 2, true); // block align
+        view.setUint16(34, 16, true); // bits per sample
+        writeString(view, 36, 'data');
+        view.setUint32(40, numSamples * numChannels * 2, true);
+        
+        // Generate audio data
+        const dataOffset = 44;
+        const samples = new Float32Array(numSamples * numChannels);
+        const volume = config.volume;
+        
+        // НОРМАЛИЗАЦИЯ ДЛЯ WAV: Приводим сумму громкостей к 100% по каждому каналу
+        const leftFrequencies = config.frequencies.filter(f => f.pan <= 0);
+        const rightFrequencies = config.frequencies.filter(f => f.pan >= 0);
+        
+        // Суммируем громкости для каждого канала
+        let leftVolumeSum = leftFrequencies.reduce((sum, f) => sum + (f.volume || 100), 0);
+        let rightVolumeSum = rightFrequencies.reduce((sum, f) => sum + (f.volume || 100), 0);
+        
+        // Если все поля громкости пустые, устанавливаем равномерное распределение
+        const allVolumesEmpty = config.frequencies.every(f => f.volume === null);
+        
+        // Вычисляем нормализованные громкости
+        const normalizedVolumes = config.frequencies.map(freq => {
+        if (allVolumesEmpty) {
+        // Равномерное распределение
+        if (freq.pan <= 0) {
+        return 100 / leftFrequencies.length;
+        } else {
+        return 100 / rightFrequencies.length;
+        }
+        } else {
+        // Нормализация пользовательских громкостей
+        const volume = freq.volume || 100;
+        if (freq.pan <= 0 && leftVolumeSum > 0) {
+        return (volume / leftVolumeSum) * 100;
+        } else if (freq.pan >= 0 && rightVolumeSum > 0) {
+        return (volume / rightVolumeSum) * 100;
+        }
+        return volume;
+        }
+        });
+        
+        console.log('WAV Normalization:', {
+        leftFrequencies: leftFrequencies.length,
+        rightFrequencies: rightFrequencies.length,
+        leftVolumeSum,
+        rightVolumeSum,
+        allVolumesEmpty,
+        normalizedVolumes
+        });
+        
+        // ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЛЯ FM МОДУЛЯЦИИ
+        function calculateFMPhase(baseFreq, time, fmFreq, fmDepth, phaseShift) {
+        if (!config.fmEnabled) {
+        return 2 * Math.PI * baseFreq * time + phaseShift;
+        }
+        
+        // Правильная формула для FM: интегрированная фаза
+        // θ(t) = 2πf₀t + (Δf/fₘ) * sin(2πfₘt)
+        const modulationIndex = (baseFreq * (fmDepth / 100)) / fmFreq;
+        const carrierPhase = 2 * Math.PI * baseFreq * time;
+        const modulationPhase = modulationIndex * Math.sin(2 * Math.PI * fmFreq * time);
+        
+        return carrierPhase + modulationPhase + phaseShift;
+        }
+        
+        // Генерация данных с нормализованными громкостями
+        for (let i = 0; i < numSamples; i++) {
+        const time = i / sampleRate;
+        
+        // Суммируем все частоты с нормализованными громкостями
+        for (let j = 0; j < config.frequencies.length; j++) {
+        const freq = config.frequencies[j];
+        const normalizedVolume = normalizedVolumes[j] / 100; // Преобразуем % в коэффициент
+        const phaseShift = freq.phaseShift * (Math.PI / 180);
+        
+        let channelValue = 0;
+        
+        if (config.waveType === 'sine') {
+        // ИСПРАВЛЕННЫЙ ВЫЗОВ: используем правильную FM фазу
+        const phase = calculateFMPhase(freq.freq, time, config.fmFreq, config.fmDepth, phaseShift);
+        channelValue = Math.sin(phase);
+        } else { // square wave
+        // Для меандра FM модуляция сложнее, пока оставим без FM
+        const period = 1 / freq.freq;
+        const position = (time % period) / period;
+        channelValue = position < 0.5 ? 1 : -1;
+        }
+        
+        channelValue *= normalizedVolume;
+        
+        // Применяем панорамирование
+        if (config.stereo) {
+        const pan = freq.pan;
+        const leftGain = pan <= 0 ? 1 : 1 - pan;
+        const rightGain = pan >= 0 ? 1 : 1 + pan;
+        
+        samples[i * numChannels] += channelValue * leftGain;
+        samples[i * numChannels + 1] += channelValue * rightGain;
+        } else {
+        samples[i] += channelValue;
+        }
+        }
+        
+        // Отправляем прогресс каждые 1000 сэмплов
+        if (i % 1000 === 0) {
+        const progress = (i / numSamples) * 100;
+        self.postMessage({ type: 'progress', value: progress });
+        }
+        }
+        
+        // Упрощенная умная нормализация
+        let maxAmplitude = 0;
+        for (let i = 0; i < samples.length; i++) {
+        if (Math.abs(samples[i]) > maxAmplitude) maxAmplitude = Math.abs(samples[i]);
+        }
+        
+        // Применяем нормализацию в зависимости от ситуации
+        if (maxAmplitude > 1.0) {
+        // Случай 1: Обнаружен клиппинг - нормализуем до 0.99
+        const normalizeFactor = 0.99 / maxAmplitude;
+        for (let i = 0; i < samples.length; i++) {
+        samples[i] *= normalizeFactor * volume;
+        }
+        console.log(`Нормализация от клиппинга: ${maxAmplitude.toFixed(3)} → 0.99`);
+        } else if (maxAmplitude > 0 && maxAmplitude < 1.0) {
+        // Случай 2: Сигнал тихий - усиливаем до 1.0
+        const normalizeFactor = 1.0 / maxAmplitude;
+        for (let i = 0; i < samples.length; i++) {
+        samples[i] *= normalizeFactor * volume;
+        }
+        console.log(`Усиление тихого сигнала: ${maxAmplitude.toFixed(3)} → 1.0`);
+        } else if (maxAmplitude === 1.0) {
+        // Случай 3: Идеальный уровень - просто применяем громкость
+        for (let i = 0; i < samples.length; i++) {
+        samples[i] *= volume;
+        }
+        console.log('Идеальный уровень, применяем громкость');
+        } else {
+        // Случай 4: Тишина (maxAmplitude = 0)
+        for (let i = 0; i < samples.length; i++) {
+        samples[i] *= volume;
+        }
+        console.log('Тихий сигнал, применяем громкость');
+        }
+        
+        // Запись данных в буфер
+        let index = dataOffset;
+        for (let i = 0; i < samples.length; i++) {
+        const s = Math.max(-1, Math.min(1, samples[i]));
+        const val = s < 0 ? s * 32768 : s * 32767;
+        view.setInt16(index, val, true);
+        index += 2;
+        }
+        
+        self.postMessage({ type: 'complete', wavData: buffer });
+        };
         }
 
         // Инициализация визуализатора
