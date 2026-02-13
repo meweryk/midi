@@ -1,5 +1,5 @@
-const CACHE_NAME = 'midi-bells-v10.02';
-const DYNAMIC_CACHE = 'dynamic-cache-v10.02';
+const CACHE_NAME = 'midi-bells-v10.03';
+const DYNAMIC_CACHE = 'dynamic-cache-v10.03';
 const FALLBACK_HTML = '/midi/index.html';
 const FALLBACK_IMAGE = '/midi/icon-192.png';
 
@@ -159,7 +159,7 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('message', event => {
-  if (event.data.action === 'skipWaiting') {
-    self.skipWaiting();
-  }
+    if (event.data.action === 'skipWaiting') {
+        self.skipWaiting();
+    }
 });
