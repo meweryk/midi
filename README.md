@@ -1,4 +1,4 @@
-# MIDI Project
+# MIDI Project V11.xx
 
 ## 📄 Лицензия
 

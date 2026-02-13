@@ -1,5 +1,5 @@
-const CACHE_NAME = 'midi-bells-v11.00';
-const DYNAMIC_CACHE = 'dynamic-cache-v11.00';
+const CACHE_NAME = 'midi-bells-v11.01';
+const DYNAMIC_CACHE = 'dynamic-cache-v11.01';
 const FALLBACK_HTML = '/midi/index.html';
 const FALLBACK_IMAGE = '/midi/icon-192.png';
 
@@ -13,6 +13,7 @@ const urlsToCache = [
   '/midi/calc_music.html',
   '/midi/Raman-ir-uv.html',
   '/midi/Eyler.html',
+  '/midi/README.html',
   
   // Статические активы
   '/midi/icon-192.png',
