@@ -1,0 +1,722 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>OrganicStudio - Pro Hybrid</title>
+    <style>
+      :root {
+        --accent: #dfa0ff;
+        --bg: #1a0b2e;
+        --panel: #2d144d;
+        --text: #f0e6ff;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: "Segoe UI", sans-serif;
+        margin: 0;
+        padding: 8px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      .container {
+        width: 100%;
+        max-width: 900px;
+      }
+      .panel {
+        background: var(--panel);
+        padding: 10px;
+        border-radius: 12px;
+        border: 1px solid #4a2574;
+        margin-bottom: 10px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+      }
+
+      .keyboard {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        width: 100%;
+        margin-bottom: 16px;
+      }
+      .octave-row {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+      }
+
+      /* КНОПКИ: Альбомная ориентация и touch-action для мгновенного отклика */
+      button.note-btn {
+        width: 100%;
+        border: none;
+        border-radius: 6px;
+        background: #4a2574;
+        color: var(--text);
+        cursor: pointer;
+        font-weight: bold;
+        transition: none;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 3px 0 #31184d;
+        padding: 0;
+        aspect-ratio: 1.414 / 1;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+      }
+      .note-name {
+        font-size: 13px;
+        margin-bottom: 2px;
+      }
+      .hz-val {
+        font-size: 11px;
+        font-weight: normal;
+        color: var(--accent);
+        opacity: 0.9;
+      }
+      .oct-num {
+        position: absolute;
+        top: 5px;
+        right: 7px;
+        font-size: 9px;
+        opacity: 0.5;
+        font-weight: normal;
+      }
+
+      @media (max-width: 600px) {
+        button.note-btn {
+          aspect-ratio: 1 / 1;
+        }
+        .hz-val {
+          display: none;
+        }
+        .oct-num {
+          font-size: 8px;
+          top: 3px;
+          right: 4px;
+        }
+        .note-name {
+          font-size: 11px;
+        }
+      }
+
+      button.f-sharp {
+        background: #2e5a40;
+        box-shadow: 0 3px 0 #1b3827;
+      }
+      button.c-sharp {
+        background: #7a3e3e;
+        box-shadow: 0 3px 0 #522929;
+      }
+
+      .note-btn.touch-active {
+        background: #7d3cb0 !important;
+        transform: translateY(2px);
+        box-shadow: none !important;
+      }
+      .f-sharp.touch-active {
+        background: #3e7a5a !important;
+        transform: translateY(2px);
+        box-shadow: none !important;
+      }
+      .c-sharp.touch-active {
+        background: #a04a4a !important;
+        transform: translateY(2px);
+        box-shadow: none !important;
+      }
+
+      .controls {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+        gap: 6px;
+      }
+      .full-width {
+        grid-column: 1 / -1;
+        width: 100%;
+      }
+      .label-small {
+        display: block;
+        font-size: 8px;
+        color: #b399d4;
+        margin-bottom: 2px;
+        text-transform: uppercase;
+        font-weight: bold;
+      }
+      input,
+      select,
+      textarea {
+        background: #000;
+        color: var(--accent);
+        border: 1px solid #5e358c;
+        padding: 5px;
+        border-radius: 6px;
+        width: 100%;
+        box-sizing: border-box;
+        font-size: 11px;
+        outline: none;
+      }
+
+      textarea {
+        resize: none;
+        overflow-y: hidden;
+        line-height: 1.5;
+        min-height: 44px;
+      }
+
+      .action-btn {
+        padding: 9px;
+        cursor: pointer;
+        border: none;
+        border-radius: 6px;
+        font-weight: bold;
+        color: white;
+        transition: none;
+        font-size: 11px;
+        touch-action: manipulation;
+      }
+      #recBtn {
+        background: #9b30ff;
+      }
+      #seqBtn {
+        background: #4d4dff;
+      }
+      .save-preset-btn {
+        background: #2e5a40;
+        margin-top: 5px;
+        width: 100%;
+        touch-action: manipulation;
+      }
+      .active-rec {
+        background: #ff4d4d !important;
+      }
+
+      .accordion {
+        border: 1px solid #5e358c;
+        border-radius: 8px;
+        overflow: hidden;
+        margin-top: 8px;
+        width: 100%;
+      }
+      .acc-header {
+        background: #3d1c66;
+        padding: 8px;
+        cursor: pointer;
+        font-weight: bold;
+        text-align: center;
+        font-size: 11px;
+        touch-action: manipulation;
+      }
+      .acc-content {
+        display: none;
+        background: #1a0b2e;
+        padding: 5px;
+        max-height: 180px;
+        overflow-y: auto;
+      }
+      .preset-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 6px 8px;
+        border-bottom: 1px solid #2d144d;
+      }
+
+      .title-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin-bottom: 4px;
+      }
+      .info-btn {
+        background: #4a2574;
+        border: 1px solid #7a4caf;
+        color: var(--accent);
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        font-size: 14px;
+        font-weight: bold;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 0 #31184d;
+        padding: 0;
+        touch-action: manipulation;
+      }
+
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+      }
+      .modal-content {
+        background: var(--panel);
+        border: 2px solid #7a4caf;
+        border-radius: 12px;
+        width: 92%;
+        max-width: 520px;
+        max-height: 80vh;
+        overflow-y: auto;
+        padding: 14px;
+        color: var(--text);
+        font-size: 10px;
+        line-height: 1.5;
+      }
+      .close-btn {
+        float: right;
+        background: none;
+        border: none;
+        color: #ffb3b3;
+        font-size: 18px;
+        cursor: pointer;
+      }
+      .back-btn {
+        background: #5d2f92;
+        border: 2px solid #8855c2;
+        color: #ebd4a2;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        font-size: 14px;
+        font-weight: bold;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 2px 0 #31184d;
+        padding: 0;
+        touch-action: manipulation;
+      }
+
+      .back-btn:hover {
+        background-color: #8855c2;
+        border: 2px solid #55c255;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="panel">
+        <div class="title-row">
+          <h2 style="color: var(--accent); margin: 0; font-size: 16px">
+            OrganicStudio
+          </h2>
+          <button id="infoModalBtn" class="info-btn">i</button>
+          <button
+            class="back-btn"
+            onclick="
+              window.location.href = 'https://meweryk.github.io/midi/index.html'
+            "
+          >
+            &#11013;
+          </button>
+        </div>
+        <div class="controls">
+          <div>
+            <label class="label-small">Атака</label
+            ><input type="number" id="attack" value="0.1" step="0.05" />
+          </div>
+          <div>
+            <label class="label-small">Удержание</label
+            ><input type="number" id="decay" value="1.9" step="0.1" />
+          </div>
+          <div>
+            <label class="label-small">Затухание</label
+            ><input type="number" id="release" value="3.0" step="0.1" />
+          </div>
+          <div>
+            <label class="label-small">Интервал</label
+            ><input type="number" id="stepTime" value="2.0" step="0.1" />
+          </div>
+          <div>
+            <label class="label-small">Огибающая</label>
+            <select id="envType">
+              <option value="symbiosis">Option C: Резонанс+</option>
+              <option value="cosine">S-Кривая</option>
+              <option value="linear">Линейная</option>
+              <option value="exponential">Логарифм</option>
+            </select>
+          </div>
+          <div class="full-width">
+            <label class="label-small">Обертоны (Золотой Эталон)</label>
+            <textarea id="overtones" rows="1" oninput="autoResize(this)">
+0.5:20, 1:40, 1.1852:15, 1.5:10, 2:5, 4:3, 8:7, 9.6:3, 12:1.5, 16:1, 32:1.5</textarea
+            >
+          </div>
+          <div class="full-width">
+            <label class="label-small"
+              >Последовательность (Knight's Spiral)</label
+            >
+            <textarea id="sequence" rows="1" oninput="autoResize(this)">
+273.375, 546.750, 136.688, 273.375, 729.000, 364.500, 729.000, 182.250, 243.000, 486.000, 243.000, 972.000, 486.000, 384.000, 162.000, 273.375, 729.000, 729.000, 273.375, 162.000, 384.000, 486.000, 972.000, 243.000, 486.000, 243.000, 182.250, 729.000, 364.500, 729.000, 273.375, 136.688, 546.750, 273.375, 273.375, 546.750, 273.375</textarea
+            >
+          </div>
+          <div class="full-width" style="display: flex; gap: 6px">
+            <button id="recBtn" class="action-btn" style="flex: 1">
+              ЗАПИСЬ WAV
+            </button>
+            <button id="seqBtn" class="action-btn" style="flex: 1">
+              ИГРАТЬ
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div id="keyboard" class="keyboard"></div>
+
+      <button onclick="saveNewPreset()" class="action-btn save-preset-btn">
+        СОХРАНИТЬ ПРЕСЕТ
+      </button>
+      <div class="accordion">
+        <div class="acc-header" onclick="toggleAcc()">📚 ПРЕСЕТЫ</div>
+        <div id="accContent" class="acc-content">
+          <div id="presetsList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="infoModal" class="modal">
+      <div class="modal-content">
+        <button class="close-btn">&times;</button>
+        <h4 style="margin-top: 0">🧬 OrganicStudio — пифагорейский строй</h4>
+        <p style="font-size: 10px">
+          Синтезатор на Web Audio, строй — пифагорейский. Обертоны, реверб,
+          запись WAV. Концепция: золотое сечение, рыцарская спираль.
+        </p>
+        <h4>🔊 1. Генерация</h4>
+        <p>48kHz, обертоны с весами (множитель:амплитуда).</p>
+        <h4>🎹 2. Клавиатура</h4>
+        <p>4 октавы, 7 ступеней — пифагорейский строй. Фа#, До# выделены.</p>
+        <h4>📉 3. Огибающая</h4>
+        <p>Атака, удерж., затух. Форма: S, линейная, логарифм.</p>
+        <h4>🌀 4. Эффекты</h4>
+        <p>Реверберация. Фазовый сдвиг 90°: задержка 1/(4f) на правый канал.</p>
+        <h4>⏯ 5. Секвенсор</h4>
+        <p>Список частот, кнопка ИГРАТЬ с интервалом.</p>
+        <h4>💾 6. Запись WAV</h4>
+        <p>32bit float, 48kHz, стерео. ScriptProcessor.</p>
+        <h4>📚 7. Пресеты</h4>
+        <p>localStorage, сохранение/загрузка.</p>
+        <h4>🧠 Интеллект</h4>
+        <p>Пифагорейский строй, обертоны по золотому сечению, стерео 90°.</p>
+      </div>
+    </div>
+
+    <script>
+      function autoResize(el) {
+        el.style.height = "auto";
+        el.style.height = el.scrollHeight + "px";
+      }
+
+      // ТАЧ-ПОДСВЕТКА
+      function addTouchFeedback() {
+        const buttons = document.querySelectorAll("button, .acc-header");
+        buttons.forEach((btn) => {
+          btn.ontouchstart = () => btn.classList.add("touch-active");
+          btn.ontouchend = () => btn.classList.remove("touch-active");
+          btn.ontouchcancel = () => btn.classList.remove("touch-active");
+        });
+      }
+
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)({
+        sampleRate: 48000,
+        latencyHint: "interactive",
+      });
+      const masterGain = audioCtx.createGain();
+      masterGain.gain.value = 0.5;
+      const limiter = audioCtx.createDynamicsCompressor();
+      limiter.threshold.setValueAtTime(-1.0, audioCtx.currentTime);
+      masterGain.connect(limiter);
+      limiter.connect(audioCtx.destination);
+
+      const reverb = audioCtx.createConvolver(),
+        revG = audioCtx.createGain();
+      revG.gain.value = 0.2;
+      (function () {
+        const len = 48000 * 4,
+          buf = audioCtx.createBuffer(2, len, 48000);
+        for (let i = 0; i < 2; i++) {
+          let ch = buf.getChannelData(i);
+          for (let j = 0; j < len; j++)
+            ch[j] = (Math.random() * 2 - 1) * Math.exp(-j / (48000 * 0.85));
+        }
+        reverb.buffer = buf;
+      })();
+      reverb.connect(revG);
+      revG.connect(masterGain);
+
+      const octaves = [
+        [128.0, 136.688, 162.0, 182.25, 192.0, 216.0, 243.0],
+        [256.0, 273.376, 324.0, 364.5, 384.0, 432.0, 486.0],
+        [512.0, 546.752, 648.0, 729.0, 768.0, 864.0, 972.0],
+        [1024.0, 1093.504, 1296.0, 1458.0, 1536.0, 1728.0, 1944.0],
+      ];
+      const noteNames = ["До", "До#", "Ми", "Фа#", "Соль", "Ля", "Си"];
+
+      const kb = document.getElementById("keyboard");
+      octaves.forEach((freqs, octIdx) => {
+        const row = document.createElement("div");
+        row.className = "octave-row";
+        freqs.forEach((f, nIdx) => {
+          const btn = document.createElement("button");
+          const name = noteNames[nIdx];
+          btn.className = "note-btn";
+          if (name === "Фа#") btn.classList.add("f-sharp");
+          if (name === "До#") btn.classList.add("c-sharp");
+          btn.innerHTML = `<span class="oct-num">${octIdx + 1}</span><span class="note-name">${name}</span><span class="hz-val">${f} Hz</span>`;
+
+          const trigger = (e) => {
+            e.preventDefault();
+            playNote(f);
+          };
+          btn.onmousedown = trigger;
+          btn.ontouchstart = (e) => {
+            btn.classList.add("touch-active");
+            trigger(e);
+          };
+          row.appendChild(btn);
+        });
+        kb.appendChild(row);
+      });
+
+      function playNote(f, start = audioCtx.currentTime) {
+        if (audioCtx.state === "suspended") audioCtx.resume();
+        const att = parseFloat(document.getElementById("attack").value),
+          dec = parseFloat(document.getElementById("decay").value);
+        const rel = parseFloat(document.getElementById("release").value),
+          type = document.getElementById("envType").value;
+        const ovs = document
+          .getElementById("overtones")
+          .value.split(",")
+          .map((s) => s.trim().split(":").map(Number));
+        const totalWeight = ovs.reduce((s, x) => s + x[1], 0);
+        const endTime = start + att + dec + rel;
+
+        ovs.forEach(([m, a]) => {
+          const freq = f * m,
+            osc = audioCtx.createOscillator(),
+            g = audioCtx.createGain();
+          const merger = audioCtx.createChannelMerger(2),
+            delay = audioCtx.createDelay();
+          const finalAmp = (a / totalWeight) * 0.9;
+
+          osc.frequency.setValueAtTime(freq, start);
+          delay.delayTime.setValueAtTime(1 / (4 * freq), start);
+          g.gain.setValueAtTime(0, start);
+          g.gain.linearRampToValueAtTime(finalAmp, start + att);
+
+          if (type === "symbiosis") {
+            const curve = [];
+            const pts = 120;
+            const pulseSpeed = freq / 120;
+            for (let i = 0; i <= pts; i++) {
+              const phase = i / pts;
+              // ГЛУБИНА 0.25 (База 0.75 + Мод 0.25)
+              const mod = 0.75 + 0.25 * Math.sin(i * (pulseSpeed / 5));
+              const sFade = 0.5 * (1 + Math.cos(phase * Math.PI));
+              curve.push(finalAmp * mod * sFade);
+            }
+            g.gain.setValueCurveAtTime(curve, start + att, dec + rel);
+          } else if (type === "cosine") {
+            g.gain.setValueCurveAtTime(
+              [finalAmp, finalAmp * 0.5, 0],
+              start + att + dec,
+              rel,
+            );
+          } else if (type === "linear") {
+            g.gain.linearRampToValueAtTime(0, endTime);
+          } else {
+            g.gain.exponentialRampToValueAtTime(0.001, endTime);
+          }
+
+          osc.connect(g);
+          g.connect(merger, 0, 0);
+          g.connect(delay);
+          delay.connect(merger, 0, 1);
+          merger.connect(masterGain);
+          merger.connect(reverb);
+
+          osc.start(start);
+          osc.stop(endTime);
+
+          // ОЧИСТКА УЗЛОВ
+          osc.onended = () => {
+            delay.disconnect();
+            merger.disconnect();
+            g.disconnect();
+            osc.disconnect();
+          };
+        });
+      }
+
+      function toggleAcc() {
+        const c = document.getElementById("accContent");
+        c.style.display = c.style.display === "block" ? "none" : "block";
+      }
+      function saveNewPreset() {
+        const name = prompt("Название пресета:");
+        if (!name) return;
+        const d = {
+          att: document.getElementById("attack").value,
+          dec: document.getElementById("decay").value,
+          rel: document.getElementById("release").value,
+          step: document.getElementById("stepTime").value,
+          env: document.getElementById("envType").value,
+          ovs: document.getElementById("overtones").value,
+          seq: document.getElementById("sequence").value,
+        };
+        let ps = JSON.parse(localStorage.getItem("organicPresets") || "{}");
+        ps[name] = d;
+        localStorage.setItem("organicPresets", JSON.stringify(ps));
+        renderPresets();
+      }
+      function renderPresets() {
+        const list = document.getElementById("presetsList");
+        const ps = JSON.parse(localStorage.getItem("organicPresets") || "{}");
+        list.innerHTML = "";
+        Object.keys(ps).forEach((name) => {
+          const div = document.createElement("div");
+          div.className = "preset-item";
+          div.innerHTML = `<span style="cursor:pointer; color:var(--accent); font-size:11px;" onclick="loadPreset('${name}')">▶ ${name}</span><span style="color:#ff4d4d; cursor:pointer;" onclick="deletePreset('${name}')">✕</span>`;
+          list.appendChild(div);
+        });
+        addTouchFeedback();
+      }
+      window.loadPreset = (n) => {
+        const d = JSON.parse(localStorage.getItem("organicPresets"))[n];
+        [
+          "attack",
+          "decay",
+          "release",
+          "stepTime",
+          "envType",
+          "overtones",
+          "sequence",
+        ].forEach(
+          (k) =>
+            (document.getElementById(k).value = d[k.substring(0, 3)] || d[k]),
+        );
+        autoResize(document.getElementById("overtones"));
+        autoResize(document.getElementById("sequence"));
+      };
+      window.deletePreset = (n) => {
+        if (confirm("Удалить?")) {
+          let ps = JSON.parse(localStorage.getItem("organicPresets"));
+          delete ps[n];
+          localStorage.setItem("organicPresets", JSON.stringify(ps));
+          renderPresets();
+        }
+      };
+
+      let L = [],
+        R = [],
+        rec = false;
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const proc = audioCtx.createScriptProcessor(isMobile ? 8192 : 4096, 2, 2);
+      proc.onaudioprocess = (e) => {
+        if (rec) {
+          L.push(new Float32Array(e.inputBuffer.getChannelData(0)));
+          R.push(new Float32Array(e.inputBuffer.getChannelData(1)));
+        }
+      };
+      limiter.connect(proc);
+      proc.connect(audioCtx.destination);
+      document.getElementById("recBtn").onclick = function () {
+        if (!rec) {
+          L = [];
+          R = [];
+          rec = true;
+          this.classList.add("active-rec");
+          this.innerText = "СТОП";
+        } else {
+          rec = false;
+          this.classList.remove("active-rec");
+          this.innerText = "ЗАПИСЬ WAV";
+          saveWav();
+        }
+      };
+      function saveWav() {
+        const name = prompt("Имя файла:", "Organic_Session");
+        if (!name) return;
+        const FL = flatten(L),
+          FR = flatten(R),
+          buf = new ArrayBuffer(44 + FL.length * 8),
+          v = new DataView(buf);
+        const s = (o, str) => {
+          for (let i = 0; i < str.length; i++)
+            v.setUint8(o + i, str.charCodeAt(i));
+        };
+        s(0, "RIFF");
+        v.setUint32(4, 36 + FL.length * 8, true);
+        s(8, "WAVEfmt ");
+        v.setUint32(16, 16, true);
+        v.setUint16(20, 3, true);
+        v.setUint16(22, 2, true);
+        v.setUint32(24, 48000, true);
+        v.setUint32(28, 48000 * 8, true);
+        v.setUint16(32, 8, true);
+        v.setUint16(34, 32, true);
+        s(36, "data");
+        v.setUint32(40, FL.length * 8, true);
+        for (let i = 0; i < FL.length; i++) {
+          v.setFloat32(44 + i * 8, FL[i], true);
+          v.setFloat32(48 + i * 8, FR[i], true);
+        }
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([v], { type: "audio/wav" }));
+        a.download = name + ".wav";
+        a.click();
+      }
+      function flatten(ch) {
+        let l = ch.reduce((a, b) => a + b.length, 0),
+          r = new Float32Array(l),
+          o = 0;
+        for (let b of ch) {
+          r.set(b, o);
+          o += b.length;
+        }
+        return r;
+      }
+      document.getElementById("seqBtn").onclick = () => {
+        const seq = document
+            .getElementById("sequence")
+            .value.split(",")
+            .map(Number),
+          step = parseFloat(document.getElementById("stepTime").value);
+        let t = audioCtx.currentTime;
+        seq.forEach((f) => {
+          playNote(f, t);
+          t += step;
+        });
+      };
+
+      window.onload = () => {
+        autoResize(document.getElementById("overtones"));
+        autoResize(document.getElementById("sequence"));
+        renderPresets();
+        addTouchFeedback();
+      };
+      const modal = document.getElementById("infoModal");
+      document.getElementById("infoModalBtn").onclick = () =>
+        (modal.style.display = "flex");
+      modal.querySelector(".close-btn").onclick = () =>
+        (modal.style.display = "none");
+    </script>
+  </body>
+</html>
