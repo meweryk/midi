@@ -2589,7 +2589,7 @@
         }
         
         // Регистрация с версией
-        const swVersion = Date.now(); // или фиксированная версия
+        const swVersion = Date.now();
         navigator.serviceWorker.register(`/midi/sw.js?v=${swVersion}`, { 
             scope: '/midi/' 
         })
@@ -2599,15 +2599,25 @@
             // Проверка обновлений
             reg.update();
             
+            // Флаг, чтобы не показывать уведомление при уже обновленной странице
+            let preventReloadLoop = false;
+            
             // Обработка нового SW
             reg.addEventListener('updatefound', () => {
                 const newWorker = reg.installing;
                 
                 newWorker.addEventListener('statechange', () => {
-                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                        // Предлагаем обновление
+                    // Показываем уведомление ТОЛЬКО когда новый SW установлен
+                    // И это действительно новая версия (не та, что только что активировалась)
+                    if (newWorker.state === 'installed' && 
+                        navigator.serviceWorker.controller &&
+                        !preventReloadLoop) {
+                        
+                        // Предлагаем обновление только один раз
                         if (confirm('🔄 Доступна новая версия! Обновить сейчас?')) {
+                            // Отправляем сообщение новому воркеру
                             newWorker.postMessage({ action: 'skipWaiting' });
+                            preventReloadLoop = true; // Блокируем повторные уведомления
                         }
                     }
                 });
@@ -2615,17 +2625,19 @@
         })
         .catch(err => {
             console.error('❌ SW registration failed:', err);
-            // Если SW не загружается, пробуем очистить кэш
             if (err.message.includes('bad') || err.message.includes('404')) {
                 console.log('Пробуем очистить кэш...');
                 forceUpdate();
             }
         });
         
-        // Автоматическая перезагрузка при активации нового SW
+        // Обработка активации нового SW и перезагрузки
         navigator.serviceWorker.addEventListener('controllerchange', () => {
             console.log('🔄 Новый SW активирован, перезагружаем...');
-            window.location.reload();
+            // Используем setTimeout чтобы избежать конфликтов
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
         });
     } else {
         console.warn('❌ Service Worker не поддерживается');
