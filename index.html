@@ -2573,11 +2573,63 @@
         });
     </script>
     <script>
-        if('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('./sw.js', { scope: '/midi/' })
-            .then(reg => console.log('SW registered'))
-            .catch(err => console.error('SW error:', err));
+    if('serviceWorker' in navigator) {
+        // Функция для принудительного обновления
+        function forceUpdate() {
+            caches.keys().then(names => {
+                names.forEach(name => {
+                    if (name.includes('midi-bells') || name.includes('dynamic-cache')) {
+                        caches.delete(name);
+                        console.log('Удалён кэш:', name);
+                    }
+                });
+            }).then(() => {
+                window.location.reload(true);
+            });
         }
-    </script>
+        
+        // Регистрация с версией
+        const swVersion = Date.now(); // или фиксированная версия
+        navigator.serviceWorker.register(`/midi/sw.js?v=${swVersion}`, { 
+            scope: '/midi/' 
+        })
+        .then(reg => {
+            console.log('✅ SW registered (v' + swVersion + ')');
+            
+            // Проверка обновлений
+            reg.update();
+            
+            // Обработка нового SW
+            reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
+                
+                newWorker.addEventListener('statechange', () => {
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        // Предлагаем обновление
+                        if (confirm('🔄 Доступна новая версия! Обновить сейчас?')) {
+                            newWorker.postMessage({ action: 'skipWaiting' });
+                        }
+                    }
+                });
+            });
+        })
+        .catch(err => {
+            console.error('❌ SW registration failed:', err);
+            // Если SW не загружается, пробуем очистить кэш
+            if (err.message.includes('bad') || err.message.includes('404')) {
+                console.log('Пробуем очистить кэш...');
+                forceUpdate();
+            }
+        });
+        
+        // Автоматическая перезагрузка при активации нового SW
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('🔄 Новый SW активирован, перезагружаем...');
+            window.location.reload();
+        });
+    } else {
+        console.warn('❌ Service Worker не поддерживается');
+    }
+</script>
 </body>
 </html>
