@@ -2574,32 +2574,41 @@
     </script>
     <script>
     if('serviceWorker' in navigator) {
-        // Убиваем всех старых воркеров перед регистрацией
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-            registrations.forEach(registration => {
-                registration.unregister();
-                console.log('Удалена старая регистрация SW');
-            });
+        // Используем localStorage чтобы запомнить, что уже обновлялись
+        const lastVersion = localStorage.getItem('swVersion');
+        const currentVersion = '10.01'; // Меняйте это число при каждом деплое на GitHub
+        
+        // Регистрируем SW с фиксированной версией
+        navigator.serviceWorker.register(`/midi/sw.js?v=${currentVersion}`, { 
+            scope: '/midi/' 
+        })
+        .then(reg => {
+            console.log('✅ SW registered');
             
-            // Теперь регистрируем нового
-            const swVersion = Date.now();
-            navigator.serviceWorker.register(`/midi/sw.js?v=${swVersion}`, { 
-                scope: '/midi/' 
-            })
-            .then(reg => {
-                console.log('✅ Новый SW зарегистрирован');
+            // Проверяем, нужно ли обновление
+            if (lastVersion !== currentVersion) {
+                console.log('🆕 Новая версия SW, сохраняем...');
+                localStorage.setItem('swVersion', currentVersion);
                 
-                // Не используем update() - это вызывает цикл
-                // Просто ждем активации
+                // Ждем активации нового SW
+                let refreshing = false;
                 
-                // Слушаем только реальные обновления
+                // Слушаем событие активации нового воркера
                 navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    console.log('SW активирован, перезагрузка...');
-                    window.location.reload();
+                    if (!refreshing) {
+                        refreshing = true;
+                        console.log('🔄 Обновляем страницу...');
+                        window.location.reload();
+                    }
                 });
-            })
-            .catch(err => console.error('SW error:', err));
-        });
+                
+                // Если есть ожидающий воркер, активируем его
+                if (reg.waiting) {
+                    reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+                }
+            }
+        })
+        .catch(err => console.error('❌ SW error:', err));
     }
 </script>
 </body>
