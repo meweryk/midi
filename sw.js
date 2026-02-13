@@ -1,5 +1,5 @@
-const CACHE_NAME = 'midi-bells-v10.05';
-const DYNAMIC_CACHE = 'dynamic-cache-v10.05';
+const CACHE_NAME = 'midi-bells-v11.00';
+const DYNAMIC_CACHE = 'dynamic-cache-v11.00';
 const FALLBACK_HTML = '/midi/index.html';
 const FALLBACK_IMAGE = '/midi/icon-192.png';
 
@@ -140,22 +140,30 @@ self.addEventListener('fetch', event => {
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(keys => {
-      return Promise.all(
-        keys.filter(key => 
-          key !== CACHE_NAME && 
-          key !== DYNAMIC_CACHE
-        ).map(key => {
-          console.log('[SW] Удаляем старый кэш:', key);
-          return caches.delete(key);
+    event.waitUntil(
+        Promise.all([
+            caches.keys().then(keys => {
+                return Promise.all(
+                    keys.filter(key => 
+                        key !== CACHE_NAME && 
+                        key !== DYNAMIC_CACHE
+                    ).map(key => {
+                        console.log('[SW] Удаляем старый кэш:', key);
+                        return caches.delete(key);
+                    })
+                );
+            }),
+            self.clients.claim()
+        ]).then(() => {
+            console.log('[SW] Активирован с новым кэшем');
+            // Уведомляем все клиенты об обновлении
+            return self.clients.matchAll().then(clients => {
+                clients.forEach(client => {
+                    client.postMessage({ type: 'SW_UPDATED' });
+                });
+            });
         })
-      );
-    }).then(() => {
-      console.log('[SW] Активирован с новым кэшем');
-      return self.clients.claim();
-    })
-  );
+    );
 });
 
 self.addEventListener('message', event => {
