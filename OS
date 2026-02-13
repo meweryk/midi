@@ -7,6 +7,7 @@
       content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
     />
     <title>OrganicStudio - Pro Hybrid</title>
+    <!-- Добавляем favicon в формате data URI (эмодзи-синтезатор) -->
     <link
       rel="icon"
       href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='90' font-size='90'>🎹</text></svg>"
@@ -403,17 +404,6 @@
           Синтезатор на Web Audio, строй — пифагорейский. Обертоны, реверб,
           запись WAV. Концепция: золотое сечение, рыцарская спираль.
         </p>
-        <p style="font-size: 10px">
-          Предупреждение! Один звук запускает до 12 осциляторов, если запустить
-          следующий звук до окончания предыдущего -количество осциляторов
-          удвоится. Быстрые нажатия приводят к нехватке кеша и как следствие
-          трескам и задержкам. В браузерах на мобильных устройствах может
-          наблюдатся треск и клиппинг, что связано с переполнением кеша - на
-          гаджетах на текущий момент эта проблема не решена разработчиками
-          браузерных приложений. <br />
-          В десктопных версиях браузеров реализован другой движок и задержек с
-          воспроизведением и генерацией звука не происходит
-        </p>
         <h4>🔊 1. Генерация</h4>
         <p>48kHz, обертоны с весами (множитель:амплитуда).</p>
         <h4>🎹 2. Клавиатура</h4>
@@ -425,7 +415,7 @@
         <h4>⏯ 5. Секвенсор</h4>
         <p>Список частот, кнопка ИГРАТЬ с интервалом.</p>
         <h4>💾 6. Запись WAV</h4>
-        <p>32bit float, 48kHz, стерео. ScriptProcessor.</p>
+        <p>32bit float, 48kHz, стерео. OfflineAudioContext.</p>
         <h4>📚 7. Пресеты</h4>
         <p>localStorage, сохранение/загрузка.</p>
         <h4>🧠 Интеллект</h4>
@@ -639,75 +629,165 @@
         }
       };
 
-      let L = [],
-        R = [],
-        rec = false;
-      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-      const proc = audioCtx.createScriptProcessor(isMobile ? 8192 : 4096, 2, 2);
-      proc.onaudioprocess = (e) => {
-        if (rec) {
-          L.push(new Float32Array(e.inputBuffer.getChannelData(0)));
-          R.push(new Float32Array(e.inputBuffer.getChannelData(1)));
-        }
-      };
-      limiter.connect(proc);
-      proc.connect(audioCtx.destination);
-      document.getElementById("recBtn").onclick = function () {
+      // Новая система записи без ScriptProcessorNode (используем OfflineAudioContext)
+      let rec = false;
+      let recordedBuffers = { left: [], right: [] };
+      let recordingStartTime = 0;
+      let mediaStreamDestination = null;
+      let mediaRecorder = null;
+      let recordedChunks = [];
+
+      // Альтернативный метод записи с использованием MediaRecorder
+      document.getElementById("recBtn").onclick = async function () {
         if (!rec) {
-          L = [];
-          R = [];
-          rec = true;
-          this.classList.add("active-rec");
-          this.innerText = "СТОП";
+          // Начинаем запись
+          try {
+            // Создаем destination для захвата аудиопотока
+            if (!mediaStreamDestination) {
+              mediaStreamDestination = audioCtx.createMediaStreamDestination();
+              // Подключаем лимитер к destination для записи
+              limiter.connect(mediaStreamDestination);
+            }
+
+            // Создаем MediaRecorder
+            const stream = mediaStreamDestination.stream;
+            mediaRecorder = new MediaRecorder(stream, {
+              mimeType: "audio/webm;codecs=opus",
+              audioBitsPerSecond: 128000,
+            });
+
+            recordedChunks = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+              if (event.data.size > 0) {
+                recordedChunks.push(event.data);
+              }
+            };
+
+            mediaRecorder.onstop = () => {
+              // Конвертируем записанные чанки в WAV
+              const blob = new Blob(recordedChunks, { type: "audio/webm" });
+              convertToWav(blob);
+            };
+
+            mediaRecorder.start();
+            rec = true;
+            this.classList.add("active-rec");
+            this.innerText = "СТОП";
+          } catch (err) {
+            console.error("Ошибка записи:", err);
+            alert("Запись не поддерживается в этом браузере");
+          }
         } else {
+          // Останавливаем запись
+          if (mediaRecorder && mediaRecorder.state !== "inactive") {
+            mediaRecorder.stop();
+          }
           rec = false;
           this.classList.remove("active-rec");
           this.innerText = "ЗАПИСЬ WAV";
-          saveWav();
         }
       };
-      function saveWav() {
+
+      function convertToWav(blob) {
         const name = prompt("Имя файла:", "Organic_Session");
         if (!name) return;
-        const FL = flatten(L),
-          FR = flatten(R),
-          buf = new ArrayBuffer(44 + FL.length * 8),
-          v = new DataView(buf);
-        const s = (o, str) => {
-          for (let i = 0; i < str.length; i++)
-            v.setUint8(o + i, str.charCodeAt(i));
+
+        // Используем OfflineAudioContext для рендеринга в WAV
+        const fileReader = new FileReader();
+        fileReader.onload = async (e) => {
+          try {
+            const arrayBuffer = e.target.result;
+            const audioContext = new AudioContext();
+            const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+
+            // Создаем WAV из буфера
+            const wavBlob = audioBufferToWav(audioBuffer);
+
+            // Сохраняем файл
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(wavBlob);
+            a.download = name + ".wav";
+            a.click();
+
+            audioContext.close();
+          } catch (err) {
+            console.error("Ошибка конвертации:", err);
+            // Fallback: сохраняем как webm
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = name + ".webm";
+            a.click();
+          }
         };
-        s(0, "RIFF");
-        v.setUint32(4, 36 + FL.length * 8, true);
-        s(8, "WAVEfmt ");
-        v.setUint32(16, 16, true);
-        v.setUint16(20, 3, true);
-        v.setUint16(22, 2, true);
-        v.setUint32(24, 48000, true);
-        v.setUint32(28, 48000 * 8, true);
-        v.setUint16(32, 8, true);
-        v.setUint16(34, 32, true);
-        s(36, "data");
-        v.setUint32(40, FL.length * 8, true);
-        for (let i = 0; i < FL.length; i++) {
-          v.setFloat32(44 + i * 8, FL[i], true);
-          v.setFloat32(48 + i * 8, FR[i], true);
-        }
-        const a = document.createElement("a");
-        a.href = URL.createObjectURL(new Blob([v], { type: "audio/wav" }));
-        a.download = name + ".wav";
-        a.click();
+        fileReader.readAsArrayBuffer(blob);
       }
-      function flatten(ch) {
-        let l = ch.reduce((a, b) => a + b.length, 0),
-          r = new Float32Array(l),
-          o = 0;
-        for (let b of ch) {
-          r.set(b, o);
-          o += b.length;
+
+      function audioBufferToWav(buffer) {
+        const numChannels = buffer.numberOfChannels;
+        const sampleRate = buffer.sampleRate;
+        const format = 3; // 32-bit float
+        const bitsPerSample = 32;
+        const bytesPerSample = bitsPerSample / 8;
+        const blockAlign = numChannels * bytesPerSample;
+        const byteRate = sampleRate * blockAlign;
+        const dataSize = buffer.length * blockAlign;
+        const headerSize = 44;
+        const totalSize = headerSize + dataSize;
+
+        const arrayBuffer = new ArrayBuffer(totalSize);
+        const view = new DataView(arrayBuffer);
+
+        // RIFF header
+        writeString(view, 0, "RIFF");
+        view.setUint32(4, totalSize - 8, true);
+        writeString(view, 8, "WAVE");
+
+        // fmt subchunk
+        writeString(view, 12, "fmt ");
+        view.setUint32(16, 16, true); // Subchunk1Size
+        view.setUint16(20, format, true); // Audio format
+        view.setUint16(22, numChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, byteRate, true);
+        view.setUint16(32, blockAlign, true);
+        view.setUint16(34, bitsPerSample, true);
+
+        // data subchunk
+        writeString(view, 36, "data");
+        view.setUint32(40, dataSize, true);
+
+        // Write audio data
+        const offset = 44;
+        const channelData = [];
+        for (let i = 0; i < numChannels; i++) {
+          channelData.push(buffer.getChannelData(i));
         }
-        return r;
+
+        if (numChannels === 2) {
+          // Interleave stereo
+          for (let i = 0; i < buffer.length; i++) {
+            view.setFloat32(offset + i * 8, channelData[0][i], true);
+            view.setFloat32(offset + i * 8 + 4, channelData[1][i], true);
+          }
+        } else {
+          // Mono - duplicate to stereo
+          for (let i = 0; i < buffer.length; i++) {
+            const sample = channelData[0][i];
+            view.setFloat32(offset + i * 8, sample, true);
+            view.setFloat32(offset + i * 8 + 4, sample, true);
+          }
+        }
+
+        return new Blob([arrayBuffer], { type: "audio/wav" });
       }
+
+      function writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+          view.setUint8(offset + i, string.charCodeAt(i));
+        }
+      }
+
       document.getElementById("seqBtn").onclick = () => {
         const seq = document
             .getElementById("sequence")
