@@ -2574,41 +2574,64 @@
     </script>
     <script>
     if('serviceWorker' in navigator) {
-        // Используем localStorage чтобы запомнить, что уже обновлялись
-        const lastVersion = localStorage.getItem('swVersion');
-        const currentVersion = '10.01'; // Меняйте это число при каждом деплое на GitHub
+        // Текущая версия (меняйте при каждом деплое)
+        const currentVersion = '10.02';
         
-        // Регистрируем SW с фиксированной версией
+        // Проверяем, показывали ли уже уведомление для этой версии
+        const notificationShown = localStorage.getItem(`sw_notify_${currentVersion}`);
+        
         navigator.serviceWorker.register(`/midi/sw.js?v=${currentVersion}`, { 
             scope: '/midi/' 
         })
         .then(reg => {
             console.log('✅ SW registered');
             
-            // Проверяем, нужно ли обновление
-            if (lastVersion !== currentVersion) {
-                console.log('🆕 Новая версия SW, сохраняем...');
-                localStorage.setItem('swVersion', currentVersion);
+            // Проверяем наличие обновлений
+            reg.update();
+            
+            // Обработка нового Service Worker
+            reg.addEventListener('updatefound', () => {
+                const newWorker = reg.installing;
                 
-                // Ждем активации нового SW
-                let refreshing = false;
-                
-                // Слушаем событие активации нового воркера
-                navigator.serviceWorker.addEventListener('controllerchange', () => {
-                    if (!refreshing) {
-                        refreshing = true;
-                        console.log('🔄 Обновляем страницу...');
-                        window.location.reload();
+                newWorker.addEventListener('statechange', () => {
+                    // Когда новый SW установлен и готов к активации
+                    if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                        
+                        // Показываем уведомление только один раз для этой версии
+                        if (!notificationShown) {
+                            // Запоминаем, что уведомление уже показано
+                            localStorage.setItem(`sw_notify_${currentVersion}`, 'shown');
+                            
+                            // Спрашиваем пользователя
+                            if (confirm('🔄 Доступна новая версия приложения! Обновить сейчас?')) {
+                                // Отправляем команду на активацию
+                                newWorker.postMessage({ action: 'skipWaiting' });
+                            }
+                        }
                     }
                 });
-                
-                // Если есть ожидающий воркер, активируем его
-                if (reg.waiting) {
-                    reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+            });
+            
+            // Слушаем сообщения от Service Worker
+            navigator.serviceWorker.addEventListener('message', event => {
+                if (event.data.type === 'SW_UPDATED') {
+                    console.log('SW обновлен, перезагружаем...');
+                    window.location.reload();
                 }
-            }
+            });
         })
         .catch(err => console.error('❌ SW error:', err));
+        
+        // Обработка активации нового SW
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+            console.log('🔄 Новый SW активирован');
+            // Отправляем сообщение, что можно перезагрузить
+            if (navigator.serviceWorker.controller) {
+                navigator.serviceWorker.controller.postMessage({ 
+                    type: 'RELOAD_PAGE' 
+                });
+            }
+        });
     }
 </script>
 </body>
