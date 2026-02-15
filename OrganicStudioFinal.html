@@ -480,15 +480,15 @@ function triggerVisuals(freq, name, octave) {
   const rel = parseFloat(document.getElementById('release').value);
   const color = getSpectralColor(name, octave);
   
-  // 1. Подсветка фона (подложки)
+  /*// 1. Подсветка фона (подложки)
   body.style.transition = "none";
-  body.style.backgroundColor = color.replace(/[\d.]+\%\)/, (7 + octave * 2) + '%)'); 
+  body.style.backgroundColor = color.replace(/[\d.]+\%\)/, ( + octave * 2) + '%)'); 
 
   setTimeout(() => {
 body.style.transition = `background-color ${rel}s cubic-bezier(0.4, 0, 0.2, 1)`;
 
     body.style.backgroundColor = "var(--bg)";
-  }, 50);
+  }, 50);*/
 
   // 2. Поиск и подсветка кнопки
   const btns = document.querySelectorAll('.note-btn');
