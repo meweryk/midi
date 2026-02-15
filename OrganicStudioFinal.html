@@ -28,6 +28,24 @@
         flex-direction: column;
         align-items: center;
       }
+      /* Плавное затухание фона */
+body {
+  transition: background-color 0.5s ease-out;
+}
+
+/* Класс для активной подсветки кнопок */
+.note-btn.active-visual {
+  transform: translateY(2px);
+  box-shadow: none !important;
+  /* Цвет фона и border-color будут назначены через JS */
+}
+
+/* Особая подсветка для Фа# по контуру */
+.note-btn.f-sharp.active-visual {
+  border: 2px solid red;
+  box-shadow: 0 0 15px red !important;
+}
+
       .container {
         width: 100%;
         max-width: 900px;
@@ -438,6 +456,66 @@
         el.style.height = "auto";
         el.style.height = el.scrollHeight + "px";
       }
+      
+      // Матрица HSL цветов (Фа# - красный, До# - зеленый/синий, Ми - фиолетовый)
+const spectralColors = {
+  "Фа#": 0,    // Red
+  "Соль": 30,  // Orange
+  "Ля": 60,    // Yellow
+  "Си": 100,   // Green
+  "До": 180,   // Cyan
+  "До#": 220,  // Blue
+  "Ми": 280    // Violet
+};
+
+function getSpectralColor(name, octave) {
+  const hue = spectralColors[name];
+  // Октавная "пронзительность": 1 октава (35% яркости), 4 октава (80% яркости)
+  const lightness = 35 + (octave * 15); 
+  return `hsl(${hue}, 100%, ${lightness}%)`;
+}
+
+function triggerVisuals(freq, name, octave) {
+  const body = document.body;
+  const rel = parseFloat(document.getElementById('release').value);
+  const color = getSpectralColor(name, octave);
+  
+  // 1. Подсветка фона (подложки)
+  body.style.transition = "none";
+  body.style.backgroundColor = color.replace(/[\d.]+\%\)/, (7 + octave * 2) + '%)'); 
+
+  setTimeout(() => {
+body.style.transition = `background-color ${rel}s cubic-bezier(0.4, 0, 0.2, 1)`;
+
+    body.style.backgroundColor = "var(--bg)";
+  }, 50);
+
+  // 2. Поиск и подсветка кнопки
+  const btns = document.querySelectorAll('.note-btn');
+  btns.forEach(btn => {
+    // Ищем кнопку по тексту частоты внутри неё
+    if (btn.querySelector('.hz-val').innerText.includes(freq)) {
+      btn.style.transition = "none";
+      btn.classList.add('active-visual');
+      btn.style.backgroundColor = color;
+      
+      // Для Фа# добавляем пронзительный красный контур разной яркости
+      if (name === "Фа#") {
+          const redLightness = 30 + (octave * 20);
+          btn.style.borderColor = `hsl(0, 100%, ${redLightness}%)`;
+          btn.style.boxShadow = `0 0 15px hsl(0, 100%, ${redLightness}%)`;
+      }
+
+      setTimeout(() => {
+        btn.style.transition = `all ${rel}s ease-out`;
+        btn.classList.remove('active-visual');
+        btn.style.backgroundColor = ""; // Возврат к CSS стилю
+        btn.style.borderColor = "";
+        btn.style.boxShadow = "";
+      }, 100);
+    }
+  });
+}
 
       // ТАЧ-ПОДСВЕТКА
       function addTouchFeedback() {
@@ -499,6 +577,7 @@
           const trigger = (e) => {
             e.preventDefault();
             playNote(f);
+            triggerVisuals(f, name, octIdx);
           };
           btn.onmousedown = trigger;
           btn.ontouchstart = (e) => {
@@ -717,6 +796,14 @@
         let t = audioCtx.currentTime;
         seq.forEach((f) => {
           playNote(f, t);
+          const delayMs = (t - audioCtx.currentTime) * 1000;
+setTimeout(() => {
+  // Находим имя ноты и октаву по частоте из массива octaves
+  octaves.forEach((freqs, octIdx) => {
+    const nIdx = freqs.indexOf(f);
+    if (nIdx !== -1) triggerVisuals(f, noteNames[nIdx], octIdx);
+  });
+}, delayMs);
           t += step;
         });
       };
