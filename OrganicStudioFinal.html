@@ -590,6 +590,8 @@ body.style.transition = `background-color ${rel}s cubic-bezier(0.4, 0, 0.2, 1)`;
       });
 
       function playNote(f, start = audioCtx.currentTime) {
+        // Если частота 0, просто ничего не делаем
+  if (!f || f === 0) return; 
         if (audioCtx.state === "suspended") audioCtx.resume();
         const att = parseFloat(document.getElementById("attack").value),
           dec = parseFloat(document.getElementById("decay").value);
@@ -788,25 +790,33 @@ body.style.transition = `background-color ${rel}s cubic-bezier(0.4, 0, 0.2, 1)`;
         return r;
       }
       document.getElementById("seqBtn").onclick = () => {
-        const seq = document
-            .getElementById("sequence")
-            .value.split(",")
-            .map(Number),
-          step = parseFloat(document.getElementById("stepTime").value);
-        let t = audioCtx.currentTime;
-        seq.forEach((f) => {
-          playNote(f, t);
-          const delayMs = (t - audioCtx.currentTime) * 1000;
-setTimeout(() => {
-  // Находим имя ноты и октаву по частоте из массива octaves
-  octaves.forEach((freqs, octIdx) => {
-    const nIdx = freqs.indexOf(f);
-    if (nIdx !== -1) triggerVisuals(f, noteNames[nIdx], octIdx);
-  });
-}, delayMs);
-          t += step;
+  const seq = document
+      .getElementById("sequence")
+      .value.split(",")
+      .map(Number),
+    step = parseFloat(document.getElementById("stepTime").value);
+  let t = audioCtx.currentTime;
+  
+  seq.forEach((f) => {
+    // Вызываем звук (если f=0, сработает защита внутри playNote)
+    playNote(f, t);
+    
+    // Визуализация: запускаем только если частота больше нуля
+    if (f > 0) {
+      const delayMs = (t - audioCtx.currentTime) * 1000;
+      setTimeout(() => {
+        octaves.forEach((freqs, octIdx) => {
+          const nIdx = freqs.indexOf(f);
+          if (nIdx !== -1) triggerVisuals(f, noteNames[nIdx], octIdx);
         });
-      };
+      }, Math.max(0, delayMs));
+    }
+    
+    // Время t увеличивается всегда, даже если f=0 (создаем паузу)
+    t += step;
+  });
+};
+
 
       window.onload = () => {
         autoResize(document.getElementById("overtones"));
