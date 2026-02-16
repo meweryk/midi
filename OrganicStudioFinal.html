@@ -378,7 +378,7 @@ body {
           <div class="full-width">
             <label class="label-small">Обертоны (Золотой Эталон)</label>
             <textarea id="overtones" rows="1" oninput="autoResize(this)">
-0.5:20, 1:40, 1.1852:15, 1.5:10, 2:5, 4:3, 8:7, 9.6:3, 12:1.5, 16:1, 32:1.5</textarea
+0.5:20, 1:40, 1.1852:15, 1.5:10, 2:5, 4:3, 8:2, 16:1, 32:0.7</textarea
             >
           </div>
           <div class="full-width">
@@ -452,6 +452,10 @@ body {
     </div>
 
     <script>
+      let activeOscillators = []; // Хранилище для остановки всех звуков
+      let sequenceIntervals = []; // Хранилище для отмены запланированных таймаутов
+      let isPlaying = false;      // Флаг состояния
+
       function autoResize(el) {
         el.style.height = "auto";
         el.style.height = el.scrollHeight + "px";
@@ -591,7 +595,7 @@ body.style.transition = `background-color ${rel}s cubic-bezier(0.4, 0, 0.2, 1)`;
 
       function playNote(f, start = audioCtx.currentTime) {
         // Если частота 0, просто ничего не делаем
-  if (!f || f === 0) return; 
+        if (!f || f === 0) return; 
         if (audioCtx.state === "suspended") audioCtx.resume();
         const att = parseFloat(document.getElementById("attack").value),
           dec = parseFloat(document.getElementById("decay").value);
@@ -650,9 +654,12 @@ body.style.transition = `background-color ${rel}s cubic-bezier(0.4, 0, 0.2, 1)`;
 
           osc.start(start);
           osc.stop(endTime);
+          activeOscillators.push(osc); // Добавляем в список активных
 
           // ОЧИСТКА УЗЛОВ
           osc.onended = () => {
+            // Удаляем из списка по завершении
+            activeOscillators = activeOscillators.filter(item => item !== osc);
             delay.disconnect();
             merger.disconnect();
             g.disconnect();
@@ -660,6 +667,26 @@ body.style.transition = `background-color ${rel}s cubic-bezier(0.4, 0, 0.2, 1)`;
           };
         });
       }
+      
+      function stopAllSounds() {
+        // Останавливаем все осцилляторы
+        activeOscillators.forEach(osc => {
+          try { osc.stop(); } catch(e) {}
+          osc.disconnect();
+        });
+        activeOscillators = [];
+        
+        // Отменяем все будущие ноты в секвенсоре
+        sequenceIntervals.forEach(timeoutId => clearTimeout(timeoutId));
+        sequenceIntervals = [];
+        
+        // Возвращаем кнопку в исходное состояние
+        isPlaying = false;
+        const btn = document.getElementById("seqBtn");
+        btn.innerText = "ИГРАТЬ";
+        btn.style.background = "#4d4dff";
+      }
+
 
       function toggleAcc() {
         const c = document.getElementById("accContent");
@@ -789,33 +816,49 @@ body.style.transition = `background-color ${rel}s cubic-bezier(0.4, 0, 0.2, 1)`;
         }
         return r;
       }
-      document.getElementById("seqBtn").onclick = () => {
-  const seq = document
-      .getElementById("sequence")
-      .value.split(",")
-      .map(Number),
-    step = parseFloat(document.getElementById("stepTime").value);
+      document.getElementById("seqBtn").onclick = function() {
+  if (isPlaying) {
+    stopAllSounds();
+    return;
+  }
+
+  const seq = document.getElementById("sequence").value.split(",").map(Number);
+  const step = parseFloat(document.getElementById("stepTime").value);
+  
+  isPlaying = true;
+  this.innerText = "СТОП";
+  this.style.background = "#ff4d4d"; // Красный цвет при игре
+
   let t = audioCtx.currentTime;
   
-  seq.forEach((f) => {
-    // Вызываем звук (если f=0, сработает защита внутри playNote)
+  seq.forEach((f, index) => {
+    // Планируем звук
     playNote(f, t);
     
-    // Визуализация: запускаем только если частота больше нуля
-    if (f > 0) {
-      const delayMs = (t - audioCtx.currentTime) * 1000;
-      setTimeout(() => {
+    // Планируем визуализацию и логику завершения
+    const delayMs = (t - audioCtx.currentTime) * 1000;
+    
+    const timeoutId = setTimeout(() => {
+      if (f > 0) {
         octaves.forEach((freqs, octIdx) => {
           const nIdx = freqs.indexOf(f);
           if (nIdx !== -1) triggerVisuals(f, noteNames[nIdx], octIdx);
         });
-      }, Math.max(0, delayMs));
-    }
-    
-    // Время t увеличивается всегда, даже если f=0 (создаем паузу)
+      }
+      
+      // Если это последняя нота в списке — сбрасываем кнопку
+      if (index === seq.length - 1) {
+        setTimeout(() => {
+            if (isPlaying) stopAllSounds();
+        }, step * 1000);
+      }
+    }, Math.max(0, delayMs));
+
+    sequenceIntervals.push(timeoutId);
     t += step;
   });
 };
+
 
 
       window.onload = () => {
