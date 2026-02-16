@@ -411,7 +411,15 @@ body {
           <div id="presetsList"></div>
         </div>
       </div>
+      
+      <div style="display: flex; gap: 6px; margin-top: 8px; width: 100%;">
+  <button onclick="exportPresets()" class="action-btn" style="flex: 1; background: #5e358c; font-size: 10px;">ЭКСПОРТ CSV</button>
+  <button onclick="importPresets()" class="action-btn" style="flex: 1; background: #5e358c; font-size: 10px;">ИМПОРТ CSV</button>
+</div>
+
     </div>
+    
+    
 
     <div id="infoModal" class="modal">
       <div class="modal-content">
@@ -723,21 +731,30 @@ body.style.transition = `background-color ${rel}s cubic-bezier(0.4, 0, 0.2, 1)`;
       }
       window.loadPreset = (n) => {
         const d = JSON.parse(localStorage.getItem("organicPresets"))[n];
-        [
-          "attack",
-          "decay",
-          "release",
-          "stepTime",
-          "envType",
-          "overtones",
-          "sequence",
-        ].forEach(
-          (k) =>
-            (document.getElementById(k).value = d[k.substring(0, 3)] || d[k]),
-        );
+        if (!d) return;
+      
+        // Маппинг ключей объекта на ID элементов
+        const config = {
+          "attack": d.att,
+          "decay": d.dec,
+          "release": d.rel,
+          "stepTime": d.step,
+          "envType": d.env,
+          "overtones": d.ovs,
+          "sequence": d.seq
+        };
+      
+        Object.keys(config).forEach(id => {
+          const el = document.getElementById(id);
+          if (el) {
+            el.value = config[id];
+          }
+        });
+      
         autoResize(document.getElementById("overtones"));
         autoResize(document.getElementById("sequence"));
       };
+
       window.deletePreset = (n) => {
         if (confirm("Удалить?")) {
           let ps = JSON.parse(localStorage.getItem("organicPresets"));
@@ -817,47 +834,127 @@ body.style.transition = `background-color ${rel}s cubic-bezier(0.4, 0, 0.2, 1)`;
         return r;
       }
       document.getElementById("seqBtn").onclick = function() {
-  if (isPlaying) {
-    stopAllSounds();
-    return;
-  }
+          if (isPlaying) {
+            stopAllSounds();
+            return;
+          }
+        
+          const seq = document.getElementById("sequence").value.split(",").map(Number);
+          const step = parseFloat(document.getElementById("stepTime").value);
+          
+          isPlaying = true;
+          this.innerText = "СТОП";
+          this.style.background = "#ff4d4d"; // Красный цвет при игре
+        
+          let t = audioCtx.currentTime;
+          
+          seq.forEach((f, index) => {
+            // Планируем звук
+            playNote(f, t);
+            
+            // Планируем визуализацию и логику завершения
+            const delayMs = (t - audioCtx.currentTime) * 1000;
+            
+            const timeoutId = setTimeout(() => {
+              if (f > 0) {
+                octaves.forEach((freqs, octIdx) => {
+                  const nIdx = freqs.indexOf(f);
+                  if (nIdx !== -1) triggerVisuals(f, noteNames[nIdx], octIdx);
+                });
+              }
+              
+              // Если это последняя нота в списке — сбрасываем кнопку
+              if (index === seq.length - 1) {
+                setTimeout(() => {
+                    if (isPlaying) stopAllSounds();
+                }, step * 1000);
+              }
+            }, Math.max(0, delayMs));
+        
+            sequenceIntervals.push(timeoutId);
+            t += step;
+          });
+        };
 
-  const seq = document.getElementById("sequence").value.split(",").map(Number);
-  const step = parseFloat(document.getElementById("stepTime").value);
-  
-  isPlaying = true;
-  this.innerText = "СТОП";
-  this.style.background = "#ff4d4d"; // Красный цвет при игре
-
-  let t = audioCtx.currentTime;
-  
-  seq.forEach((f, index) => {
-    // Планируем звук
-    playNote(f, t);
-    
-    // Планируем визуализацию и логику завершения
-    const delayMs = (t - audioCtx.currentTime) * 1000;
-    
-    const timeoutId = setTimeout(() => {
-      if (f > 0) {
-        octaves.forEach((freqs, octIdx) => {
-          const nIdx = freqs.indexOf(f);
-          if (nIdx !== -1) triggerVisuals(f, noteNames[nIdx], octIdx);
+      function exportPresets() {
+        if (!confirm("Экспортировать все пресеты в файл?")) return;
+        
+        const ps = JSON.parse(localStorage.getItem("organicPresets") || "{}");
+        if (Object.keys(ps).length === 0) return alert("Нет пресетов для экспорта");
+      
+        // Заголовок CSV
+        let csvContent = "data:text/csv;charset=utf-8,Name;Attack;Decay;Release;Step;Env;Overtones;Sequence\n";
+      
+        // Наполнение данными
+        Object.keys(ps).forEach(name => {
+          const d = ps[name];
+          // Экранируем возможные точки с запятой в текстах
+          const ovs = `"${d.ovs.replace(/"/g, '""')}"`;
+          const seq = `"${d.seq.replace(/"/g, '""')}"`;
+          csvContent += `${name};${d.att};${d.dec};${d.rel};${d.step};${d.env};${ovs};${seq}\n`;
         });
+      
+        // Формируем дату для имени файла
+        const now = new Date();
+        const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+        
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `presetOrganicStudio_${dateStr}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
       }
       
-      // Если это последняя нота в списке — сбрасываем кнопку
-      if (index === seq.length - 1) {
-        setTimeout(() => {
-            if (isPlaying) stopAllSounds();
-        }, step * 1000);
+      function importPresets() {
+        if (!confirm("Импортировать пресеты из файла? Текущие пресеты останутся, дубликаты будут перезаписаны.")) return;
+      
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.csv';
+      
+        input.onchange = e => {
+          const file = e.target.files[0];
+          const reader = new FileReader();
+          reader.readAsText(file, "UTF-8");
+      
+          reader.onload = readerEvent => {
+            const content = readerEvent.target.result;
+            const lines = content.split('\n');
+            let ps = JSON.parse(localStorage.getItem("organicPresets") || "{}");
+            let count = 0;
+      
+            // Пропускаем заголовок (i=1)
+            for (let i = 1; i < lines.length; i++) {
+              if (!lines[i].trim()) continue;
+              
+              // Регулярка для корректного разделения CSV с учетом кавычек
+              const parts = lines[i].split(/;(?=(?:(?:[^"]*"){2})*[^"]*$)/);
+              
+              if (parts.length >= 8) {
+                const name = parts[0];
+                ps[name] = {
+                  att: parts[1],
+                  dec: parts[2],
+                  rel: parts[3],
+                  step: parts[4],
+                  env: parts[5],
+                  ovs: parts[6].replace(/^"|"$/g, '').replace(/""/g, '"'),
+                  seq: parts[7].replace(/^"|"$/g, '').replace(/""/g, '"')
+                };
+                count++;
+              }
+            }
+      
+            localStorage.setItem("organicPresets", JSON.stringify(ps));
+            renderPresets();
+            alert(`Успешно импортировано пресетов: ${count}`);
+          };
+        };
+      
+        input.click();
       }
-    }, Math.max(0, delayMs));
-
-    sequenceIntervals.push(timeoutId);
-    t += step;
-  });
-};
 
 
 
