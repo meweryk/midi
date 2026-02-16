@@ -834,47 +834,60 @@ body.style.transition = `background-color ${rel}s cubic-bezier(0.4, 0, 0.2, 1)`;
         return r;
       }
       document.getElementById("seqBtn").onclick = function() {
+  if (isPlaying) {
+    stopAllSounds();
+    return;
+  }
+
+  const seq = document.getElementById("sequence").value.split(",").map(Number);
+  const step = parseFloat(document.getElementById("stepTime").value);
+  
+  isPlaying = true;
+  this.innerText = "СТОП";
+  this.style.background = "#ff4d4d"; 
+
+  let t = audioCtx.currentTime;
+  
+  seq.forEach((f, index) => {
+    playNote(f, t);
+    
+    const delayMs = (t - audioCtx.currentTime) * 1000;
+    
+    const timeoutId = setTimeout(() => {
+      if (f > 0) {
+        octaves.forEach((freqs, octIdx) => {
+          const nIdx = freqs.indexOf(f);
+          if (nIdx !== -1) triggerVisuals(f, noteNames[nIdx], octIdx);
+        });
+      }
+      
+      // ИСПРАВЛЕННЫЙ БЛОК ДЛЯ ПОСЛЕДНЕЙ НОТЫ:
+      if (index === seq.length - 1) {
+        const att = parseFloat(document.getElementById("attack").value);
+        const dec = parseFloat(document.getElementById("decay").value);
+        const rel = parseFloat(document.getElementById("release").value);
+        // Ждем полное время звучания (ADR)
+        const totalNoteDurationMs = (att + dec + rel) * 1000;
+
+        const endTimeoutId = setTimeout(() => {
           if (isPlaying) {
-            stopAllSounds();
-            return;
+            // Просто меняем статус интерфейса, не обрывая хвост осциллятора
+            isPlaying = false;
+            this.innerText = "ИГРАТЬ";
+            this.style.background = "#4d4dff";
+            sequenceIntervals = []; 
           }
+        }, totalNoteDurationMs);
         
-          const seq = document.getElementById("sequence").value.split(",").map(Number);
-          const step = parseFloat(document.getElementById("stepTime").value);
-          
-          isPlaying = true;
-          this.innerText = "СТОП";
-          this.style.background = "#ff4d4d"; // Красный цвет при игре
-        
-          let t = audioCtx.currentTime;
-          
-          seq.forEach((f, index) => {
-            // Планируем звук
-            playNote(f, t);
-            
-            // Планируем визуализацию и логику завершения
-            const delayMs = (t - audioCtx.currentTime) * 1000;
-            
-            const timeoutId = setTimeout(() => {
-              if (f > 0) {
-                octaves.forEach((freqs, octIdx) => {
-                  const nIdx = freqs.indexOf(f);
-                  if (nIdx !== -1) triggerVisuals(f, noteNames[nIdx], octIdx);
-                });
-              }
-              
-              // Если это последняя нота в списке — сбрасываем кнопку
-              if (index === seq.length - 1) {
-                setTimeout(() => {
-                    if (isPlaying) stopAllSounds();
-                }, step * 1000);
-              }
-            }, Math.max(0, delayMs));
-        
-            sequenceIntervals.push(timeoutId);
-            t += step;
-          });
-        };
+        sequenceIntervals.push(endTimeoutId);
+      }
+    }, Math.max(0, delayMs));
+
+    sequenceIntervals.push(timeoutId);
+    t += step;
+  });
+};
+
 
       function exportPresets() {
         if (!confirm("Экспортировать все пресеты в файл?")) return;
