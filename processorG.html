@@ -1326,7 +1326,7 @@ async function autoTuneDelay() {
     
     const results = [{ delay: 0, quality: zeroDelayQuality }];
     
-    for (let d = 0.5; d <= 20; d += 0.5) {
+    for (let d = 0.2; d <= 20; d += 0.2) {
         const testDelay = d / 1000;
         const quality = await testDelayQuality(testDelay);
         results.push({ delay: testDelay, quality: quality });
@@ -1632,13 +1632,11 @@ phaseBtn.addEventListener('click', async () => {
     if (!audioBuffer) return;
 
     // 1. Временный анализ качества (без применения сдвига)
-    // Создаём временный анализатор, чтобы не трогать текущее воспроизведение
     console.log("Анализ исходного файла перед включением сдвига...");
     showProcessingOverlay("Анализ исходного файла...");
     
     let originalQuality = 0;
     try {
-        // Используем offline контекст для теста (0 мс, без Hilbert)
         const analysisDuration = Math.min(20, audioBuffer.duration);
         const analysisSamples = Math.floor(audioBuffer.sampleRate * analysisDuration);
         const offlineCtx = new OfflineAudioContext(2, analysisSamples, audioBuffer.sampleRate);
@@ -1649,7 +1647,6 @@ phaseBtn.addEventListener('click', async () => {
         source.connect(splitter);
         const merger = offlineCtx.createChannelMerger(2);
         
-        // Просто копируем сигнал без Hilbert (как будет при testDelay=0 в нашей функции)
         if (audioBuffer.numberOfChannels === 1) {
             splitter.connect(merger, 0, 0);
             splitter.connect(merger, 0, 1);
@@ -1665,7 +1662,6 @@ phaseBtn.addEventListener('click', async () => {
         const leftData = renderedBuffer.getChannelData(0);
         const rightData = renderedBuffer.getChannelData(1);
         
-        // Вычисляем корреляцию (качество)
         let sumXY = 0, sumX2 = 0, sumY2 = 0;
         let sumX = 0, sumY = 0;
         const sampleLen = Math.min(leftData.length, 50000);
@@ -1700,9 +1696,7 @@ phaseBtn.addEventListener('click', async () => {
 
     // 2. Принимаем решение на основе качества
     if (originalQuality > 90) {
-        // Исходный файл уже идеален -> запрещаем включение сдвига
         if (phaseShiftActive) {
-            // Если сдвиг был включен, выключаем его и предупреждаем
             phaseShiftActive = false;
             phaseInfo.style.display = 'none';
             phaseBtn.textContent = 'Применить сдвиг';
@@ -1710,29 +1704,41 @@ phaseBtn.addEventListener('click', async () => {
                 pauseAudio();
                 playAudio();
             }
-            showToast("Оптимальное смещение фазы уже есть, сдвиг не требуется");
+            showToast("Оптимальное смещение фазы уже есть, сдвиг отключён");
         } else {
-            // Просто показываем сообщение, что включать не нужно
             showToast("Оптимальное смещение фазы уже есть");
         }
-        return; // Выходим, не меняя состояние и не запуская автоподстройку
+        return;
     }
 
-    // 3. Если качество плохое -> запускаем автоподстройку (как было раньше)
+    // 3. Если качество плохое -> запускаем автоподстройку
     const wasActive = phaseShiftActive;
     phaseShiftActive = !phaseShiftActive;
     phaseInfo.style.display = phaseShiftActive ? 'inline-block' : 'none';
     phaseBtn.textContent = phaseShiftActive ? 'Убрать сдвиг' : 'Применить сдвиг';
     
     if (phaseShiftActive && audioBuffer) {
-        // Если включили сдвиг (а он был выключен), запускаем подстройку
-        await autoTuneDelay();
+        // Если для этого файла уже есть сохранённая оптимальная задержка - используем её
+        if (currentTrackIndex !== -1 && playlistData[currentTrackIndex]?.optimizedDelay !== null && playlistData[currentTrackIndex]?.optimizedDelay !== undefined) {
+            const savedDelay = playlistData[currentTrackIndex].optimizedDelay;
+            config.delayCompensation = savedDelay;
+            delaySlider.value = savedDelay * 1000;
+            delayInput.value = savedDelay * 1000;
+            delayValue.textContent = (savedDelay * 1000).toFixed(1);
+            console.log(`Используем сохранённую задержку: ${(savedDelay * 1000).toFixed(1)} мс`);
+        } else {
+            await autoTuneDelay();
+            // Сохраняем найденную задержку для текущего трека
+            if (currentTrackIndex !== -1 && playlistData[currentTrackIndex]) {
+                playlistData[currentTrackIndex].optimizedDelay = config.delayCompensation;
+                console.log(`Сохранена задержка для файла: ${(config.delayCompensation * 1000).toFixed(1)} мс`);
+            }
+        }
         if (isPlaying) {
             pauseAudio();
             playAudio();
         }
     } else if (!phaseShiftActive && wasActive && isPlaying) {
-        // Если выключили сдвиг
         pauseAudio();
         playAudio();
     }
@@ -1744,58 +1750,77 @@ phaseBtn.addEventListener('click', async () => {
                 return;
             }
             
-            phiboActive = !phiboActive;
+            const track = playlistData[currentTrackIndex];
+            const wasPhiboApplied = track.phiboApplied; // Сохраняем состояние до изменения
+            const isPhaseActive = phaseShiftActive; // Запоминаем, активен ли сдвиг
             
-            if (phiboActive) {
-                phiboBtn.style.background = '#6a9eff';
-                phiboBtn.style.color = 'white';
-                phiboBtn.style.border = '2px solid #ffd700';
-                phiboBtn.style.boxShadow = '0 0 10px rgba(106, 158, 255, 0.5)';
-                
-                if (!document.getElementById('phiboIndicator')) {
-                    const indicator = document.createElement('div');
-                    indicator.id = 'phiboIndicator';
-                    indicator.className = 'phibo-indicator';
-                    indicator.innerHTML = '<i class="fas fa-gold"></i> Фрактальный эффект активен (φ = 1.618) — создание гармоник по золотому сечению';
-                    phaseInfo.parentNode.insertBefore(indicator, phaseInfo.nextSibling);
-                }
-            } else {
-                phiboBtn.style.background = '';
-                phiboBtn.style.color = '';
-                phiboBtn.style.border = '';
-                phiboBtn.style.boxShadow = '';
-                
-                const indicator = document.getElementById('phiboIndicator');
-                if (indicator) indicator.remove();
+            // Сохраняем оригинал при первом включении (ещё не применяли эффект)
+            if (!track.originalBuffer && !track.phiboApplied) {
+                track.originalBuffer = track.buffer;
             }
             
-            const track = playlistData[currentTrackIndex];
-            if (!track.originalBuffer) track.originalBuffer = track.buffer;
-            
-            if (phiboActive) {
+            if (!track.phiboApplied) {
+                // === ВКЛЮЧАЕМ ЭФФЕКТ "Ф" ===
                 showProcessingOverlay('Применение фрактального эффекта...');
                 try {
-                    const processedBuffer = await applyPhiboEffect(track.originalBuffer);
+                    const processedBuffer = await applyPhiboEffect(track.originalBuffer || track.buffer);
                     track.buffer = processedBuffer;
                     audioBuffer = processedBuffer;
                     totalTime.textContent = formatTime(processedBuffer.duration);
+                    track.phiboApplied = true;
+                    phiboActive = true;
                     console.log('Эффект "Ф" применён успешно');
                 } catch (error) {
                     console.error('Ошибка эффекта "Ф":', error);
-                    alert('Ошибка применения эффекта');
+                    showToast('Ошибка применения эффекта', true);
+                    track.phiboApplied = false;
                     phiboActive = false;
-                    phiboBtn.style.background = '';
-                    track.buffer = track.originalBuffer;
-                    audioBuffer = track.originalBuffer;
                 } finally {
                     hideProcessingOverlay();
                 }
             } else {
-                track.buffer = track.originalBuffer;
-                audioBuffer = track.originalBuffer;
-                totalTime.textContent = formatTime(audioBuffer.duration);
+                // === ВЫКЛЮЧАЕМ ЭФФЕКТ "Ф" ===
+                if (track.originalBuffer) {
+                    track.buffer = track.originalBuffer;
+                    audioBuffer = track.originalBuffer;
+                    totalTime.textContent = formatTime(audioBuffer.duration);
+                    track.phiboApplied = false;
+                    phiboActive = false;
+                    console.log('Эффект "Ф" отключён, восстановлен оригинал');
+                }
             }
             
+            // Обновляем внешний вид кнопки
+            updatePhiboButtonState();
+            
+            // Обновляем плейлист (чтобы отобразить/скрыть иконку золота)
+            updatePlaylist();
+            
+            // ===== ПЕРЕСЧЁТ ЗАДЕРЖКИ ЕСЛИ НУЖНО =====
+            // Условие: сдвиг активен И состояние эффекта "Ф" изменилось
+            if (isPhaseActive && (wasPhiboApplied !== track.phiboApplied)) {
+                const action = track.phiboApplied ? 'включения' : 'отключения';
+                showToast(`После ${action} эффекта "Ф" выполняется пересчёт задержки...`);
+                showProcessingOverlay(`Пересчёт оптимальной задержки после ${action} эффекта "Ф"...`);
+                
+                // Сбрасываем сохранённую задержку для этого трека
+                track.optimizedDelay = null;
+                
+                try {
+                    await autoTuneDelay();
+                    // Сохраняем новую задержку
+                    track.optimizedDelay = config.delayCompensation;
+                    console.log(`Новая оптимальная задержка после ${action} эффекта "Ф": ${(config.delayCompensation * 1000).toFixed(1)} мс`);
+                    showToast(`Новая оптимальная задержка: ${(config.delayCompensation * 1000).toFixed(1)} мс`);
+                } catch (e) {
+                    console.error('Ошибка пересчёта задержки:', e);
+                    showToast('Ошибка пересчёта задержки', true);
+                } finally {
+                    hideProcessingOverlay();
+                }
+            }
+            
+            // Перезапускаем воспроизведение если активно
             if (isPlaying) {
                 pauseAudio();
                 playAudio();
@@ -1839,7 +1864,7 @@ phaseBtn.addEventListener('click', async () => {
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 if (!file.type.match('audio.*')) { alert(`Файл "${file.name}" не является аудиофайлом и будет пропущен`); continue; }
-                playlistData.push({ file: file, analyzed: false, buffer: null, originalBuffer: null, phiboApplied: false });
+                playlistData.push({ file: file, analyzed: false, buffer: null, originalBuffer: null, phiboApplied: false, optimizedDelay: null });
             }
             playlist.style.display = 'block';
             updatePlaylist();
@@ -1894,6 +1919,15 @@ phaseBtn.addEventListener('click', async () => {
                 totalTime.textContent = formatTime(track.buffer.duration);
                 phiboActive = track.phiboApplied || false;
                 updatePhiboButtonState();
+                
+                // Восстанавливаем оптимизированную задержку для этого трека
+                if (track.optimizedDelay !== null && track.optimizedDelay !== undefined) {
+                    config.delayCompensation = track.optimizedDelay;
+                    delaySlider.value = track.optimizedDelay * 1000;
+                    delayInput.value = track.optimizedDelay * 1000;
+                    delayValue.textContent = (track.optimizedDelay * 1000).toFixed(1);
+                    console.log(`Восстановлена задержка для файла: ${(track.optimizedDelay * 1000).toFixed(1)} мс`);
+                }
             }
             updatePlaylist();
         }
@@ -1904,7 +1938,7 @@ phaseBtn.addEventListener('click', async () => {
             reader.onload = function(e) {
                 if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 audioContext.decodeAudioData(e.target.result).then(buffer => {
-                    track.buffer = buffer; track.analyzed = true; track.phiboApplied = false; track.originalBuffer = null;
+                    track.buffer = buffer; track.analyzed = true; track.phiboApplied = false; track.originalBuffer = null; track.optimizedDelay = null;
                     uploadArea.innerHTML = `
                         <i>🎵</i>
                         <h3>${escapeHtml(track.file.name)}</h3>
