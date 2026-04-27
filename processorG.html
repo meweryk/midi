@@ -18,7 +18,7 @@
 
     Лицензировано под Apache License, Version 2.0 (далее "Лицензия");
   вы не можете использовать этот файл кроме как в соответствии с Лицензией.
-  Вы можете получить копию Лицензии по адресу:
+  Вы можете получить копию Лицензии по адреcu:
 
       http://www.apache.org/licenses/LICENSE-2.0
 
@@ -88,7 +88,7 @@
         }
         
         .upload-area i {
-            font-size: 48px;
+            font-size: 28px;
             color: #6a9eff;
             margin-bottom: 15px;
             display: block;
@@ -136,10 +136,10 @@
         }
         
         .control-btn.play-btn {
-            width: 60px;
-            height: 60px;
+            width: 50px;
+            height: 50px;
             background: #6a9eff;
-            font-size: 22px;
+            font-size: 18px;
         }
         
         .control-btn.play-btn:hover:not(:disabled) {
@@ -216,7 +216,7 @@
         }
         
         .visualizer {
-            height: 300px;
+            height: 400px;
             width: 100%;
             margin: 20px 0;
             position: relative;
@@ -267,7 +267,6 @@
             font-weight: 500;
         }
         
-        /* Модальные окна */
         .modal {
             display: none;
             position: fixed;
@@ -491,7 +490,6 @@
             font-size: 14px;
         }
         
-        /* Стили для плейлиста */
         .playlist {
             margin-top: 15px;
             max-height: 200px;
@@ -576,7 +574,6 @@
             margin-left: 10px;
         }
         
-        /* Стили для кнопки сохранения */
         .save-btn {
             background: linear-gradient(45deg, #6a9eff, #8c6bff);
             color: white;
@@ -608,6 +605,62 @@
             display: none;
         }
         
+        .phibo-indicator {
+            text-align: center;
+            margin: 10px 0;
+            padding: 8px 15px;
+            background: rgba(106, 158, 255, 0.15);
+            border-radius: 50px;
+            font-size: 14px;
+            color: #ffd700;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+        }
+        
+        .quality-indicator {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #888888;
+            box-shadow: 0 0 8px rgba(0,0,0,0.5);
+            transition: background 0.3s;
+            z-index: 10;
+        }
+        
+        .tune-message {
+            text-align: center;
+            font-size: 12px;
+            color: #6a9eff;
+            margin-top: 5px;
+            margin-bottom: 5px;
+            padding: 4px 8px;
+            background: rgba(106, 158, 255, 0.1);
+            border-radius: 20px;
+            display: inline-block;
+        }
+        
+        .tune-container {
+            text-align: center;
+            margin: 5px 0;
+        }
+        
+        @keyframes loadingAnim {
+            0% { width: 0%; margin-left: 0%; }
+            50% { width: 80%; margin-left: 10%; }
+            100% { width: 0%; margin-left: 100%; }
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .fa-spin {
+            animation: spin 1s linear infinite;
+        }
+        
         @media (max-width: 600px) {
             .container {
                 padding: 20px 15px;
@@ -623,14 +676,44 @@
             }
             
             .control-btn.play-btn {
-                width: 56px;
-                height: 56px;
+                width: 46px;
+                height: 46px;
             }
             
             .modal-content {
                 padding: 20px 15px;
             }
+            
+            .visualizer {
+                height: 350px;
+            }
         }
+        /* Кастомное всплывающее сообщение (toast) */
+.custom-toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #1a1a24;
+    border: 1px solid #6a9eff;
+    border-radius: 50px;
+    padding: 12px 24px;
+    color: #6a9eff;
+    font-size: 14px;
+    font-weight: 500;
+    z-index: 3000;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    animation: toastFadeInOut 3s ease-in-out forwards;
+    pointer-events: none;
+}
+
+@keyframes toastFadeInOut {
+    0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+    15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-20px); visibility: hidden; }
+}
     </style>
 </head>
 <body>
@@ -656,6 +739,9 @@
                 <i class="fas fa-stop"></i>
             </button>
             <button id="phaseBtn" class="secondary-btn" disabled>Применить сдвиг</button>
+            <button id="phiboBtn" class="control-btn" disabled title="Фрактальный эффект (Золотое сечение)">
+                <span style="font-family: serif; font-weight: bold;">Ф</span>
+            </button>
             <button id="settingsBtn" class="control-btn" title="Настройки">
                 <i class="fas fa-cog"></i>
             </button>
@@ -664,11 +750,11 @@
             </button>
         </div>
         
-        <!-- Добавим кнопку сохранения и статус -->
         <div style="text-align: center; margin: 15px 0;">
             <button id="saveBtn" class="save-btn" disabled>
-                <i class="fas fa-download"></i> Сохранить WAV с фазовым сдвигам
+                <i class="fas fa-download"></i> Сохранить WAV
             </button>
+            <div id="tuneMessageContainer" class="tune-container"></div>
             <div id="saveStatus" class="save-status">
                 <i class="fas fa-spinner fa-spin"></i> Идёт обработка...
             </div>
@@ -691,9 +777,9 @@
         <div class="visualizer" id="visualizer">
             <canvas id="lissajousCanvas"></canvas>
             <canvas id="oscilloscopeCanvas"></canvas>
+            <div id="qualityIndicator" class="quality-indicator" title="Качество фазового сдвига"></div>
         </div>
         
-        <!-- Плейлист -->
         <div class="playlist" id="playlist">
             <div class="playlist-header">
                 <div class="playlist-title">Плейлист</div>
@@ -704,7 +790,6 @@
             <div id="playlistItems"></div>
         </div>
         
-        <!-- Модальное окно настроек -->
         <div class="modal" id="settingsModal">
             <div class="modal-content">
                 <button class="close-modal" id="closeSettings">
@@ -718,7 +803,7 @@
                     <div class="setting-item">
                         <div class="setting-label">
                             <span>Минимальная частота (Гц)</span>
-                            <span class="setting-value" id="minFreqValue">50</span>
+                            <span class="setting-value" id="minFreqValue">100</span>
                         </div>
                         <div class="setting-control">
                             <input type="range" id="minFreqSlider" min="10" max="300" step="10" value="100">
@@ -765,8 +850,8 @@
                             <span class="setting-value" id="delayValue">8</span>
                         </div>
                         <div class="setting-control">
-                            <input type="range" id="delaySlider" min="1" max="20" step="1" value="8">
-                            <input type="number" id="delayInput" min="1" max="20" value="8">
+                            <input type="range" id="delaySlider" min="0" max="20" step="0.5" value="8">
+                            <input type="number" id="delayInput" min="0" max="20" step="0.5" value="8">
                         </div>
                     </div>
                 </div>
@@ -833,7 +918,6 @@
             </div>
         </div>
         
-        <!-- Модальное окно информации -->
         <div class="modal" id="infoModal">
             <div class="modal-content">
                 <button class="close-modal" id="closeInfo">
@@ -851,7 +935,7 @@
                     </div>
                     
                     <div class="info-section">
-                        <h3 class="section-title">Настройка параметов</h3>
+                        <h3 class="section-title">Настройка параметров</h3>
                         
                         <div class="param-list">
                             <div class="param-item">
@@ -891,7 +975,7 @@
                                     <span class="param-name">Задержка</span>
                                     <span class="param-value">8 мс</span>
                                 </div>
-                                <div class="param-description">Компенсация рассинхронизации каналов. Тестируйте с шагом 1 мс</div>
+                                <div class="param-description">Компенсация рассинхронизации каналов. Автоматически подбирается при включении сдвига. Зелёный индикатор = отличный сдвиг.</div>
                             </div>
                         </div>
                     </div>
@@ -909,7 +993,7 @@
                             </div>
                             
                             <div class="param-item">
-                                <div class="param-header>
+                                <div class="param-header">
                                     <span class="param-name">Амплитуда</span>
                                     <span class="param-value">0.8</span>
                                 </div>
@@ -934,7 +1018,8 @@
                             <ul>
                                 <li>Используйте синус 1 кГц и белый шум для теста</li>
                                 <li>Пики одного канала должны совпадать с нулями другого</li>
-                                <li>Корректируйте задержку при рассинхронизации</li>
+                                <li>При включении сдвига задержка подбирается автоматически</li>
+                                <li>Зелёный индикатор = отличный сдвиг, красный = требуется ручная подстройка</li>
                             </ul>
                         </div>
                         
@@ -955,6 +1040,14 @@
                             <p>Взаимодействие фазово-сдвинутых волн создаёт области усиления/ослабления звука, формируя акустический вихрь. Экспериментируя с настройками, можно управлять плотностью этого вихря - от мягкого вращения до интенсивной турбулентности.</p>
                         </div>
                     </div>
+                    
+                    <div class="info-section">
+                        <h3 class="section-title">Эффект "Ф" (Золотое сечение)</h3>
+                        <div class="description">
+                            <p>Кнопка "Ф" активирует фрактальный эффект, основанный на золотом сечении (φ = 1.61803398875). Для каждой частоты f создаётся дополнительная гармоника на частоте f × φ с амплитудой A / φ². Производится нормализация для сохранения исходной громкости.</p>
+                            <p>Это создаёт богатый, "фрактальный" звук, обогащая спектр гармониками по закону золотого сечения. Эффект может использоваться как отдельно, так и вместе с фазовым сдвигом.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -964,20 +1057,16 @@
                 На главную
             </button>
         </div>                        
-        
     </div>
 
     <script>
         // ===== КОНФИГУРАЦИОННЫЕ ПАРАМЕТРЫ =====
         let config = {
-            // Параметры фазовращателя
             hilbertMinFreq: 100,
             hilbertMaxFreq: 10000,
             hilbertNumFilters: 9,
             hilbertQ: 1.0,
             delayCompensation: 0.008,
-            
-            // Параметры визуализации
             visibleSamples: 1024,
             amplitudeScale: 1.0,
             leftChannelColor: '#FFFF00',
@@ -993,6 +1082,7 @@
         const fileInput = document.getElementById('fileInput');
         const playBtn = document.getElementById('playBtn');
         const phaseBtn = document.getElementById('phaseBtn');
+        const phiboBtn = document.getElementById('phiboBtn');
         const stopBtn = document.getElementById('stopBtn');
         const visualizer = document.getElementById('visualizer');
         
@@ -1014,6 +1104,8 @@
         const resetSettingsBtn = document.getElementById('resetSettingsBtn');
         const saveBtn = document.getElementById('saveBtn');
         const saveStatus = document.getElementById('saveStatus');
+        const qualityIndicator = document.getElementById('qualityIndicator');
+        const tuneMessageContainer = document.getElementById('tuneMessageContainer');
         
         // Элементы настроек
         const minFreqSlider = document.getElementById('minFreqSlider');
@@ -1056,61 +1148,660 @@
         let visualizerAnimationId;
         let leftAnalyser, rightAnalyser;
         
+        // Переменные для эффекта "Ф"
+        let phiboActive = false;
+        const PHI = 1.61803398875;
+        let processingOverlay = null;
+        
         // Плейлист
         let playlistData = [];
         let currentTrackIndex = -1;
         let autoPlayNext = false;
-        let isEnded = false; // Флаг окончания трека
+        let isEnded = false;
         
-        // Инициализация настроек
+        // ===== ФУНКЦИЯ АНАЛИЗА КАЧЕСТВА ФАЗОВОГО СДВИГА =====
+        function analyzePhaseQuality(leftData, rightData, samples) {
+            let sumXY = 0, sumX2 = 0, sumY2 = 0;
+            let validSamples = 0;
+            
+            for (let i = 0; i < Math.min(samples, leftData.length, rightData.length); i++) {
+                const x = (leftData[i] - 128) / 128;
+                const y = (rightData[i] - 128) / 128;
+                if (Math.abs(x) < 1.5 && Math.abs(y) < 1.5) {
+                    sumXY += x * y;
+                    sumX2 += x * x;
+                    sumY2 += y * y;
+                    validSamples++;
+                }
+            }
+            
+            if (validSamples === 0 || sumX2 === 0 || sumY2 === 0) return 1;
+            const correlation = Math.abs(sumXY / Math.sqrt(sumX2 * sumY2));
+            return Math.min(1, correlation);
+        }
+        
+        // ===== ФУНКЦИЯ ПОКАЗА СООБЩЕНИЯ =====
+        function showTuneMessage(delayMs, qualityPercent) {
+            if (tuneMessageContainer) {
+                tuneMessageContainer.innerHTML = `<div class="tune-message"><i class="fas fa-magic"></i> Оптимальная задержка: ${delayMs} мс (качество: ${qualityPercent}%)</div>`;
+                setTimeout(() => {
+                    if (tuneMessageContainer.innerHTML.includes(delayMs)) {
+                        tuneMessageContainer.innerHTML = '';
+                    }
+                }, 5000);
+            }
+        }
+        
+// ===== ФУНКЦИЯ АВТОПОДСТРОЙКИ ЗАДЕРЖКИ (полностью исправленная) =====
+async function autoTuneDelay() {
+    if (!phaseShiftActive || !audioBuffer) {
+        console.log('Автоподстройка: условия не выполнены');
+        return null;
+    }
+    
+    console.log('Автоподстройка задержки началась...');
+    showProcessingOverlay('Автоподстройка задержки...');
+    
+    const wasPlaying = isPlaying;
+    const savedPausedTime = pausedTime;
+    
+    if (wasPlaying) pauseAudio();
+    
+    // Вспомогательная функция для тестирования задержки
+    async function testDelayQuality(testDelay) {
+        const analysisDuration = Math.min(20, audioBuffer.duration);
+        const analysisSamples = Math.floor(audioBuffer.sampleRate * analysisDuration);
+        
+        const offlineCtx = new OfflineAudioContext(2, analysisSamples, audioBuffer.sampleRate);
+        const source = offlineCtx.createBufferSource();
+        source.buffer = audioBuffer;
+        
+        const splitter = offlineCtx.createChannelSplitter(audioBuffer.numberOfChannels);
+        source.connect(splitter);
+        const merger = offlineCtx.createChannelMerger(2);
+        
+        const numChannels = audioBuffer.numberOfChannels;
+        
+        if (numChannels === 1) {
+            if (testDelay === 0) {
+                // Без Hilbert - просто копируем в стерео
+                splitter.connect(merger, 0, 0);
+                splitter.connect(merger, 0, 1);
+            } else {
+                const delayNode = offlineCtx.createDelay();
+                delayNode.delayTime.value = testDelay;
+                const hilbert = createHilbertTransformerStatic(offlineCtx);
+                splitter.connect(delayNode, 0);
+                splitter.connect(hilbert.input, 0);
+                delayNode.connect(merger, 0, 0);
+                hilbert.output.connect(merger, 0, 1);
+            }
+        } else {
+            if (testDelay === 0) {
+                // Без Hilbert - просто копируем каналы
+                splitter.connect(merger, 0, 0);
+                splitter.connect(merger, 1, 1);
+            } else {
+                const delayNode = offlineCtx.createDelay();
+                delayNode.delayTime.value = testDelay;
+                const hilbert = createHilbertTransformerStatic(offlineCtx);
+                splitter.connect(delayNode, 0);
+                splitter.connect(hilbert.input, 1);
+                delayNode.connect(merger, 0, 0);
+                hilbert.output.connect(merger, 0, 1);
+            }
+        }
+        
+        merger.connect(offlineCtx.destination);
+        source.start(0);
+        
+        try {
+            const renderedBuffer = await offlineCtx.startRendering();
+            const leftData = renderedBuffer.getChannelData(0);
+            const rightData = renderedBuffer.getChannelData(1);
+            
+            let sumXY = 0, sumX2 = 0, sumY2 = 0;
+            let sumX = 0, sumY = 0;
+            const sampleLen = Math.min(leftData.length, 50000);
+            
+            for (let i = 0; i < sampleLen; i++) {
+                const x = leftData[i];
+                const y = rightData[i];
+                sumXY += x * y;
+                sumX2 += x * x;
+                sumY2 += y * y;
+                sumX += x;
+                sumY += y;
+            }
+            
+            if (sumX2 === 0 || sumY2 === 0) return 1;
+            
+            const meanX = sumX / sampleLen;
+            const meanY = sumY / sampleLen;
+            
+            let cov = 0, varX = 0, varY = 0;
+            for (let i = 0; i < sampleLen; i++) {
+                const x = leftData[i] - meanX;
+                const y = rightData[i] - meanY;
+                cov += x * y;
+                varX += x * x;
+                varY += y * y;
+            }
+            
+            if (varX === 0 || varY === 0) return 1;
+            const correlation = Math.abs(cov / Math.sqrt(varX * varY));
+            return Math.min(1, correlation);
+        } catch(e) {
+            console.error('Ошибка при тестировании задержки', testDelay, e);
+            return 1;
+        }
+    }
+    
+    // ШАГ 1: Тестируем исходный файл БЕЗ Hilbert
+    console.log('📊 Тестирование исходного качества (задержка 0 мс, без Hilbert)...');
+    const zeroDelayQuality = await testDelayQuality(0);
+    const zeroDelayQualityPercent = ((1 - zeroDelayQuality) * 100).toFixed(1);
+    console.log(`📊 Исходное качество: ${zeroDelayQualityPercent}% (корреляция: ${zeroDelayQuality.toFixed(4)})`);
+    
+    // Для идеального 90° сдвига корреляция должна быть < 0.05
+    if (zeroDelayQuality < 0.08) {
+        console.log(`✅ Исходный файл имеет отличный 90° сдвиг (качество ${zeroDelayQualityPercent}%), задержка 0 мс`);
+        config.delayCompensation = 0;
+        delaySlider.value = 0;
+        delayInput.value = 0;
+        delayValue.textContent = '0';
+        showTuneMessage('0', zeroDelayQualityPercent);
+        
+        if (wasPlaying) {
+            pausedTime = savedPausedTime;
+            startPlayback();
+        }
+        
+        hideProcessingOverlay();
+        return 0;
+    }
+    
+    // ШАГ 2: Перебираем задержки С Hilbert
+    console.log(`🔍 Качество ${zeroDelayQualityPercent}% < 92%, поиск оптимальной задержки...`);
+    
+    const results = [{ delay: 0, quality: zeroDelayQuality }];
+    
+    for (let d = 0.5; d <= 20; d += 0.5) {
+        const testDelay = d / 1000;
+        const quality = await testDelayQuality(testDelay);
+        results.push({ delay: testDelay, quality: quality });
+        console.log(`   Задержка ${d.toFixed(1)}мс: качество ${((1-quality)*100).toFixed(1)}% (корр: ${quality.toFixed(4)})`);
+    }
+    
+    // Выбираем лучшую
+    let best = results[0];
+    for (let i = 1; i < results.length; i++) {
+        if (results[i].quality < best.quality) best = results[i];
+    }
+    
+    const bestDelayMs = (best.delay * 1000).toFixed(1);
+    const bestQualityPercent = ((1 - best.quality) * 100).toFixed(1);
+    
+    config.delayCompensation = best.delay;
+    delaySlider.value = best.delay * 1000;
+    delayInput.value = best.delay * 1000;
+    delayValue.textContent = bestDelayMs;
+    
+    console.log(`✅ Результат: задержка ${bestDelayMs} мс (качество ${bestQualityPercent}%)`);
+    if (best.delay === 0) {
+        console.log(`   (исходный файл оказался лучшим)`);
+    } else {
+        console.log(`   Улучшение с ${zeroDelayQualityPercent}% до ${bestQualityPercent}%`);
+    }
+    
+    showTuneMessage(bestDelayMs, bestQualityPercent);
+    
+    if (wasPlaying) {
+        pausedTime = savedPausedTime;
+        startPlayback();
+    }
+    
+    hideProcessingOverlay();
+    return best.delay;
+}
+        
+        function createHilbertTransformerStatic(context) {
+            const minFreq = config.hilbertMinFreq;
+            const maxFreq = config.hilbertMaxFreq;
+            const numFilters = config.hilbertNumFilters;
+            
+            const filters = [];
+            for (let i = 0; i < numFilters; i++) {
+                const freq = minFreq * Math.pow(maxFreq / minFreq, i / (numFilters - 1));
+                const filter = context.createBiquadFilter();
+                filter.type = "allpass";
+                filter.frequency.value = freq;
+                filter.Q.value = config.hilbertQ;
+                filters.push(filter);
+                if (i > 0) filters[i-1].connect(filter);
+            }
+            return { input: filters[0], output: filters[filters.length-1] };
+        }
+        
+        // ===== ФУНКЦИИ ЭФФЕКТА "Ф" =====
+        
+        function showProcessingOverlay(message) {
+            if (processingOverlay) return;
+            
+            processingOverlay = document.createElement('div');
+            processingOverlay.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.8);
+                z-index: 2000;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+            `;
+            
+            const content = document.createElement('div');
+            content.style.cssText = `
+                background: #1a1a24;
+                padding: 30px 40px;
+                border-radius: 16px;
+                text-align: center;
+                border: 1px solid #6a9eff;
+                min-width: 300px;
+            `;
+            
+            content.innerHTML = `
+                <i class="fas fa-spinner fa-spin" style="font-size: 48px; color: #6a9eff;"></i>
+                <h3 style="color: #6a9eff; margin-top: 15px;">${message}</h3>
+                <div style="width: 100%; height: 3px; background: #2a2a3a; margin-top: 20px; border-radius: 3px; overflow: hidden;">
+                    <div style="width: 30%; height: 100%; background: #6a9eff; animation: loadingAnim 1s infinite;"></div>
+                </div>
+            `;
+            
+            processingOverlay.appendChild(content);
+            document.body.appendChild(processingOverlay);
+        }
+        
+        // Кастомное всплывающее сообщение
+function showToast(message, isError = false) {
+    const existingToast = document.querySelector('.custom-toast');
+    if (existingToast) existingToast.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = 'custom-toast';
+    toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}" style="margin-right: 8px;"></i> ${message}`;
+    if (isError) {
+        toast.style.borderColor = '#ff6b6b';
+        toast.style.color = '#ff6b6b';
+    }
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast && toast.remove) toast.remove();
+    }, 3000);
+}
+        
+        function hideProcessingOverlay() {
+            if (processingOverlay) {
+                processingOverlay.remove();
+                processingOverlay = null;
+            }
+        }
+        
+        function simpleFFT(real, imag, inverse) {
+            const n = real.length;
+            let bits = 0;
+            while ((1 << bits) < n) bits++;
+            
+            for (let i = 0; i < n; i++) {
+                let rev = 0;
+                for (let j = 0; j < bits; j++) rev = (rev << 1) | ((i >> j) & 1);
+                if (i < rev) {
+                    [real[i], real[rev]] = [real[rev], real[i]];
+                    [imag[i], imag[rev]] = [imag[rev], imag[i]];
+                }
+            }
+            
+            for (let len = 2; len <= n; len <<= 1) {
+                const half = len >> 1;
+                const angle = (inverse ? 2 : -2) * Math.PI / len;
+                const wlenR = Math.cos(angle);
+                const wlenI = Math.sin(angle);
+                
+                for (let i = 0; i < n; i += len) {
+                    let wr = 1, wi = 0;
+                    for (let j = 0; j < half; j++) {
+                        const uR = real[i + j], uI = imag[i + j];
+                        const vR = real[i + j + half] * wr - imag[i + j + half] * wi;
+                        const vI = real[i + j + half] * wi + imag[i + j + half] * wr;
+                        
+                        real[i + j] = uR + vR;
+                        imag[i + j] = uI + vI;
+                        real[i + j + half] = uR - vR;
+                        imag[i + j + half] = uI - vI;
+                        
+                        const nextWR = wr * wlenR - wi * wlenI;
+                        const nextWI = wr * wlenI + wi * wlenR;
+                        wr = nextWR;
+                        wi = nextWI;
+                    }
+                }
+            }
+            
+            if (inverse) {
+                for (let i = 0; i < n; i++) {
+                    real[i] /= n;
+                    imag[i] /= n;
+                }
+            }
+        }
+        
+        async function applyPhiboEffect(inputBuffer) {
+            const sampleRate = inputBuffer.sampleRate, length = inputBuffer.length, channels = inputBuffer.numberOfChannels;
+            const outputBuffer = new AudioBuffer({ numberOfChannels: channels, length: length, sampleRate: sampleRate });
+            const fftSize = 4096, hopSize = fftSize / 2;
+            const window = new Float32Array(fftSize);
+            for (let i = 0; i < fftSize; i++) window[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / fftSize));
+            
+            for (let ch = 0; ch < channels; ch++) {
+                const channelData = inputBuffer.getChannelData(ch);
+                const result = new Float32Array(length), weights = new Float32Array(length);
+                
+                for (let start = 0; start + fftSize <= length; start += hopSize) {
+                    const real = new Float32Array(fftSize), imag = new Float32Array(fftSize);
+                    for (let i = 0; i < fftSize; i++) { real[i] = channelData[start + i] * window[i]; imag[i] = 0; }
+                    simpleFFT(real, imag, false);
+                    
+                    const nyquist = sampleRate / 2, freqRes = sampleRate / fftSize;
+                    const newComponents = [];
+                    for (let i = 1; i < fftSize / 2; i++) {
+                        const freq = i * freqRes, phiFreq = freq * PHI;
+                        if (phiFreq >= nyquist) continue;
+                        const targetBin = Math.round(phiFreq / freqRes);
+                        if (targetBin <= 0 || targetBin >= fftSize / 2) continue;
+                        const amp = Math.sqrt(real[i] * real[i] + imag[i] * imag[i]);
+                        if (amp < 0.0001) continue;
+                        const phase = Math.atan2(imag[i], real[i]);
+                        const newAmp = amp / (PHI * PHI);
+                        newComponents.push({ bin: targetBin, real: Math.cos(phase) * newAmp, imag: Math.sin(phase) * newAmp, origBin: i, origAmp: amp, newAmp: newAmp });
+                    }
+                    for (const comp of newComponents) {
+                        real[comp.bin] += comp.real; imag[comp.bin] += comp.imag;
+                        const totalAmp = comp.origAmp + comp.newAmp;
+                        const newOrigAmp = (comp.origAmp * comp.origAmp) / totalAmp;
+                        const scale = newOrigAmp / comp.origAmp;
+                        real[comp.origBin] *= scale; imag[comp.origBin] *= scale;
+                    }
+                    for (let i = fftSize / 2 + 1; i < fftSize; i++) { real[i] = real[fftSize - i]; imag[i] = -imag[fftSize - i]; }
+                    simpleFFT(real, imag, true);
+                    for (let i = 0; i < fftSize; i++) {
+                        const idx = start + i;
+                        if (idx < length) { result[idx] += real[i] * window[i]; weights[idx] += window[i] * window[i]; }
+                    }
+                    await new Promise(r => setTimeout(r, 0));
+                }
+                const outData = outputBuffer.getChannelData(ch);
+                for (let i = 0; i < length; i++) outData[i] = weights[i] > 0 ? result[i] / weights[i] : channelData[i];
+            }
+            return outputBuffer;
+        }
+        
+        function updatePhiboButtonState() {
+            if (phiboActive) {
+                phiboBtn.style.background = '#6a9eff';
+                phiboBtn.style.color = 'white';
+                phiboBtn.style.border = '2px solid #ffd700';
+                phiboBtn.style.boxShadow = '0 0 10px rgba(106, 158, 255, 0.5)';
+                if (!document.getElementById('phiboIndicator')) {
+                    const indicator = document.createElement('div');
+                    indicator.id = 'phiboIndicator';
+                    indicator.className = 'phibo-indicator';
+                    indicator.innerHTML = '<i class="fas fa-gold"></i> Фрактальный эффект активен (φ = 1.618)';
+                    phaseInfo.parentNode.insertBefore(indicator, phaseInfo.nextSibling);
+                }
+            } else {
+                phiboBtn.style.background = '';
+                phiboBtn.style.color = '';
+                phiboBtn.style.border = '';
+                phiboBtn.style.boxShadow = '';
+                const indicator = document.getElementById('phiboIndicator');
+                if (indicator) indicator.remove();
+            }
+        }
+        
+        function updateQualityIndicator() {
+            if (!isPlaying || !leftAnalyser || !rightAnalyser) {
+                if (qualityIndicator) qualityIndicator.style.background = '#888888';
+                return;
+            }
+            
+            const bufferLength = leftAnalyser.fftSize;
+            const leftData = new Uint8Array(bufferLength);
+            const rightData = new Uint8Array(bufferLength);
+            leftAnalyser.getByteTimeDomainData(leftData);
+            rightAnalyser.getByteTimeDomainData(rightData);
+            
+            const quality = analyzePhaseQuality(leftData, rightData, 500);
+            if (quality < 0.15) qualityIndicator.style.background = '#44ff44';
+            else if (quality < 0.35) qualityIndicator.style.background = '#ffaa44';
+            else qualityIndicator.style.background = '#ff4444';
+            qualityIndicator.title = `Качество сдвига: ${(quality * 100).toFixed(1)}% (0% = идеально)`;
+        }
+        
         function initSettings() {
-            // Установка значений по умолчанию
             minFreqSlider.value = config.hilbertMinFreq;
             minFreqInput.value = config.hilbertMinFreq;
             minFreqValue.textContent = config.hilbertMinFreq;
-            
             maxFreqSlider.value = config.hilbertMaxFreq;
             maxFreqInput.value = config.hilbertMaxFreq;
             maxFreqValue.textContent = config.hilbertMaxFreq;
-            
             numFiltersSlider.value = config.hilbertNumFilters;
             numFiltersInput.value = config.hilbertNumFilters;
             numFiltersValue.textContent = config.hilbertNumFilters;
-            
             qSlider.value = config.hilbertQ;
             qInput.value = config.hilbertQ;
             qValue.textContent = config.hilbertQ;
-            
             delaySlider.value = config.delayCompensation * 1000;
             delayInput.value = config.delayCompensation * 1000;
-            delayValue.textContent = config.delayCompensation * 1000;
-            
+            delayValue.textContent = (config.delayCompensation * 1000).toFixed(1);
             samplesSlider.value = config.visibleSamples;
             samplesInput.value = config.visibleSamples;
             samplesValue.textContent = config.visibleSamples;
-            
             amplitudeSlider.value = config.amplitudeScale;
             amplitudeInput.value = config.amplitudeScale;
             amplitudeValue.textContent = config.amplitudeScale;
-            
             leftColorPicker.value = config.leftChannelColor;
             rightColorPicker.value = config.rightChannelColor;
-            
             lineWidthSlider.value = config.lineWidth;
             lineWidthInput.value = config.lineWidth;
             lineWidthValue.textContent = config.lineWidth;
         }
         
-        // Обработчики событий
         uploadArea.addEventListener('click', () => fileInput.click());
         fileInput.addEventListener('change', handleFileSelect);
         playBtn.addEventListener('click', togglePlayPause);
-        phaseBtn.addEventListener('click', togglePhaseShift);
         stopBtn.addEventListener('click', stopAudio);
         clearPlaylist.addEventListener('click', clearPlaylistHandler);
         saveBtn.addEventListener('click', saveProcessedAudio);
         
-        // Обработчики для модальных окон
+// Обработчик кнопки фазового сдвига (исправленный)
+phaseBtn.addEventListener('click', async () => {
+    // Если файл не загружен, выходим
+    if (!audioBuffer) return;
+
+    // 1. Временный анализ качества (без применения сдвига)
+    // Создаём временный анализатор, чтобы не трогать текущее воспроизведение
+    console.log("Анализ исходного файла перед включением сдвига...");
+    showProcessingOverlay("Анализ исходного файла...");
+    
+    let originalQuality = 0;
+    try {
+        // Используем offline контекст для теста (0 мс, без Hilbert)
+        const analysisDuration = Math.min(20, audioBuffer.duration);
+        const analysisSamples = Math.floor(audioBuffer.sampleRate * analysisDuration);
+        const offlineCtx = new OfflineAudioContext(2, analysisSamples, audioBuffer.sampleRate);
+        const source = offlineCtx.createBufferSource();
+        source.buffer = audioBuffer;
+        
+        const splitter = offlineCtx.createChannelSplitter(audioBuffer.numberOfChannels);
+        source.connect(splitter);
+        const merger = offlineCtx.createChannelMerger(2);
+        
+        // Просто копируем сигнал без Hilbert (как будет при testDelay=0 в нашей функции)
+        if (audioBuffer.numberOfChannels === 1) {
+            splitter.connect(merger, 0, 0);
+            splitter.connect(merger, 0, 1);
+        } else {
+            splitter.connect(merger, 0, 0);
+            splitter.connect(merger, 1, 1);
+        }
+        
+        merger.connect(offlineCtx.destination);
+        source.start(0);
+        
+        const renderedBuffer = await offlineCtx.startRendering();
+        const leftData = renderedBuffer.getChannelData(0);
+        const rightData = renderedBuffer.getChannelData(1);
+        
+        // Вычисляем корреляцию (качество)
+        let sumXY = 0, sumX2 = 0, sumY2 = 0;
+        let sumX = 0, sumY = 0;
+        const sampleLen = Math.min(leftData.length, 50000);
+        for (let i = 0; i < sampleLen; i++) {
+            const x = leftData[i];
+            const y = rightData[i];
+            sumXY += x * y;
+            sumX2 += x * x;
+            sumY2 += y * y;
+            sumX += x;
+            sumY += y;
+        }
+        const meanX = sumX / sampleLen;
+        const meanY = sumY / sampleLen;
+        let cov = 0, varX = 0, varY = 0;
+        for (let i = 0; i < sampleLen; i++) {
+            const x = leftData[i] - meanX;
+            const y = rightData[i] - meanY;
+            cov += x * y;
+            varX += x * x;
+            varY += y * y;
+        }
+        const correlation = Math.abs(cov / Math.sqrt(varX * varY));
+        originalQuality = (1 - correlation) * 100;
+        console.log(`Качество исходного файла: ${originalQuality.toFixed(1)}%`);
+        
+    } catch(e) {
+        console.error("Ошибка при анализе", e);
+        originalQuality = 0;
+    }
+    hideProcessingOverlay();
+
+    // 2. Принимаем решение на основе качества
+    if (originalQuality > 90) {
+        // Исходный файл уже идеален -> запрещаем включение сдвига
+        if (phaseShiftActive) {
+            // Если сдвиг был включен, выключаем его и предупреждаем
+            phaseShiftActive = false;
+            phaseInfo.style.display = 'none';
+            phaseBtn.textContent = 'Применить сдвиг';
+            if (isPlaying) {
+                pauseAudio();
+                playAudio();
+            }
+            showToast("Оптимальное смещение фазы уже есть, сдвиг не требуется");
+        } else {
+            // Просто показываем сообщение, что включать не нужно
+            showToast("Оптимальное смещение фазы уже есть");
+        }
+        return; // Выходим, не меняя состояние и не запуская автоподстройку
+    }
+
+    // 3. Если качество плохое -> запускаем автоподстройку (как было раньше)
+    const wasActive = phaseShiftActive;
+    phaseShiftActive = !phaseShiftActive;
+    phaseInfo.style.display = phaseShiftActive ? 'inline-block' : 'none';
+    phaseBtn.textContent = phaseShiftActive ? 'Убрать сдвиг' : 'Применить сдвиг';
+    
+    if (phaseShiftActive && audioBuffer) {
+        // Если включили сдвиг (а он был выключен), запускаем подстройку
+        await autoTuneDelay();
+        if (isPlaying) {
+            pauseAudio();
+            playAudio();
+        }
+    } else if (!phaseShiftActive && wasActive && isPlaying) {
+        // Если выключили сдвиг
+        pauseAudio();
+        playAudio();
+    }
+});
+        
+        phiboBtn.addEventListener('click', async () => {
+            if (currentTrackIndex === -1 || !playlistData[currentTrackIndex]?.buffer) {
+                showToast('Сначала загрузите аудиофайл', true);
+                return;
+            }
+            
+            phiboActive = !phiboActive;
+            
+            if (phiboActive) {
+                phiboBtn.style.background = '#6a9eff';
+                phiboBtn.style.color = 'white';
+                phiboBtn.style.border = '2px solid #ffd700';
+                phiboBtn.style.boxShadow = '0 0 10px rgba(106, 158, 255, 0.5)';
+                
+                if (!document.getElementById('phiboIndicator')) {
+                    const indicator = document.createElement('div');
+                    indicator.id = 'phiboIndicator';
+                    indicator.className = 'phibo-indicator';
+                    indicator.innerHTML = '<i class="fas fa-gold"></i> Фрактальный эффект активен (φ = 1.618) — создание гармоник по золотому сечению';
+                    phaseInfo.parentNode.insertBefore(indicator, phaseInfo.nextSibling);
+                }
+            } else {
+                phiboBtn.style.background = '';
+                phiboBtn.style.color = '';
+                phiboBtn.style.border = '';
+                phiboBtn.style.boxShadow = '';
+                
+                const indicator = document.getElementById('phiboIndicator');
+                if (indicator) indicator.remove();
+            }
+            
+            const track = playlistData[currentTrackIndex];
+            if (!track.originalBuffer) track.originalBuffer = track.buffer;
+            
+            if (phiboActive) {
+                showProcessingOverlay('Применение фрактального эффекта...');
+                try {
+                    const processedBuffer = await applyPhiboEffect(track.originalBuffer);
+                    track.buffer = processedBuffer;
+                    audioBuffer = processedBuffer;
+                    totalTime.textContent = formatTime(processedBuffer.duration);
+                    console.log('Эффект "Ф" применён успешно');
+                } catch (error) {
+                    console.error('Ошибка эффекта "Ф":', error);
+                    alert('Ошибка применения эффекта');
+                    phiboActive = false;
+                    phiboBtn.style.background = '';
+                    track.buffer = track.originalBuffer;
+                    audioBuffer = track.originalBuffer;
+                } finally {
+                    hideProcessingOverlay();
+                }
+            } else {
+                track.buffer = track.originalBuffer;
+                audioBuffer = track.originalBuffer;
+                totalTime.textContent = formatTime(audioBuffer.duration);
+            }
+            
+            if (isPlaying) {
+                pauseAudio();
+                playAudio();
+            }
+        });
+        
         settingsBtn.addEventListener('click', () => settingsModal.style.display = 'flex');
         infoBtn.addEventListener('click', () => infoModal.style.display = 'flex');
         closeSettings.addEventListener('click', () => settingsModal.style.display = 'none');
@@ -1118,316 +1809,136 @@
         applySettingsBtn.addEventListener('click', applySettings);
         resetSettingsBtn.addEventListener('click', resetSettings);
         
-        // Закрытие модальных окон по клику вне области
         window.addEventListener('click', (e) => {
             if (e.target === settingsModal) settingsModal.style.display = 'none';
             if (e.target === infoModal) infoModal.style.display = 'none';
         });
         
-        // Связывание элементов настроек
-        minFreqSlider.addEventListener('input', function() {
-            minFreqInput.value = this.value;
-            minFreqValue.textContent = this.value;
-        });
+        minFreqSlider.addEventListener('input', function() { minFreqInput.value = this.value; minFreqValue.textContent = this.value; });
+        minFreqInput.addEventListener('input', function() { minFreqSlider.value = this.value; minFreqValue.textContent = this.value; });
+        maxFreqSlider.addEventListener('input', function() { maxFreqInput.value = this.value; maxFreqValue.textContent = this.value; });
+        maxFreqInput.addEventListener('input', function() { maxFreqSlider.value = this.value; maxFreqValue.textContent = this.value; });
+        numFiltersSlider.addEventListener('input', function() { numFiltersInput.value = this.value; numFiltersValue.textContent = this.value; });
+        numFiltersInput.addEventListener('input', function() { numFiltersSlider.value = this.value; numFiltersValue.textContent = this.value; });
+        qSlider.addEventListener('input', function() { qInput.value = this.value; qValue.textContent = this.value; });
+        qInput.addEventListener('input', function() { qSlider.value = this.value; qValue.textContent = this.value; });
+        delaySlider.addEventListener('input', function() { delayInput.value = this.value; delayValue.textContent = this.value; config.delayCompensation = this.value / 1000; if (phaseShiftActive && isPlaying) { pauseAudio(); playAudio(); } });
+        delayInput.addEventListener('input', function() { delaySlider.value = this.value; delayValue.textContent = this.value; config.delayCompensation = this.value / 1000; if (phaseShiftActive && isPlaying) { pauseAudio(); playAudio(); } });
+        samplesSlider.addEventListener('input', function() { samplesInput.value = this.value; samplesValue.textContent = this.value; config.visibleSamples = this.value; });
+        samplesInput.addEventListener('input', function() { samplesSlider.value = this.value; samplesValue.textContent = this.value; config.visibleSamples = this.value; });
+        amplitudeSlider.addEventListener('input', function() { amplitudeInput.value = this.value; amplitudeValue.textContent = this.value; config.amplitudeScale = this.value; });
+        amplitudeInput.addEventListener('input', function() { amplitudeSlider.value = this.value; amplitudeValue.textContent = this.value; config.amplitudeScale = this.value; });
+        lineWidthSlider.addEventListener('input', function() { lineWidthInput.value = this.value; lineWidthValue.textContent = this.value; config.lineWidth = this.value; });
+        lineWidthInput.addEventListener('input', function() { lineWidthSlider.value = this.value; lineWidthValue.textContent = this.value; config.lineWidth = this.value; });
+        leftColorPicker.addEventListener('input', function() { config.leftChannelColor = this.value; });
+        rightColorPicker.addEventListener('input', function() { config.rightChannelColor = this.value; });
         
-        minFreqInput.addEventListener('input', function() {
-            minFreqSlider.value = this.value;
-            minFreqValue.textContent = this.value;
-        });
-        
-        maxFreqSlider.addEventListener('input', function() {
-            maxFreqInput.value = this.value;
-            maxFreqValue.textContent = this.value;
-        });
-        
-        maxFreqInput.addEventListener('input', function() {
-            maxFreqSlider.value = this.value;
-            maxFreqValue.textContent = this.value;
-        });
-        
-        numFiltersSlider.addEventListener('input', function() {
-            numFiltersInput.value = this.value;
-            numFiltersValue.textContent = this.value;
-        });
-        
-        numFiltersInput.addEventListener('input', function() {
-            numFiltersSlider.value = this.value;
-            numFiltersValue.textContent = this.value;
-        });
-        
-        qSlider.addEventListener('input', function() {
-            qInput.value = this.value;
-            qValue.textContent = this.value;
-        });
-        
-        qInput.addEventListener('input', function() {
-            qSlider.value = this.value;
-            qValue.textContent = this.value;
-        });
-        
-        delaySlider.addEventListener('input', function() {
-            delayInput.value = this.value;
-            delayValue.textContent = this.value;
-        });
-        
-        delayInput.addEventListener('input', function() {
-            delaySlider.value = this.value;
-            delayValue.textContent = this.value;
-        });
-        
-        samplesSlider.addEventListener('input', function() {
-            samplesInput.value = this.value;
-            samplesValue.textContent = this.value;
-        });
-        
-        samplesInput.addEventListener('input', function() {
-            samplesSlider.value = this.value;
-            samplesValue.textContent = this.value;
-        });
-        
-        amplitudeSlider.addEventListener('input', function() {
-            amplitudeInput.value = this.value;
-            amplitudeValue.textContent = this.value;
-        });
-        
-        amplitudeInput.addEventListener('input', function() {
-            amplitudeSlider.value = this.value;
-            amplitudeValue.textContent = this.value;
-        });
-        
-        lineWidthSlider.addEventListener('input', function() {
-            lineWidthInput.value = this.value;
-            lineWidthValue.textContent = this.value;
-        });
-        
-        lineWidthInput.addEventListener('input', function() {
-            lineWidthSlider.value = this.value;
-            lineWidthValue.textContent = this.value;
-        });
-        
-        // Выбор файла
         function handleFileSelect(e) {
             const files = e.target.files;
             if (!files || files.length === 0) return;
-            
-            // Добавляем файлы в плейлист
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
-                
-                // Проверка типа файла
-                if (!file.type.match('audio.*')) {
-                    alert(`Файл "${file.name}" не является аудиофайлом и будет пропущен`);
-                    continue;
-                }
-                
-                // Добавляем файл в плейлист
-                playlistData.push({
-                    file: file,
-                    analyzed: false,
-                    buffer: null
-                });
+                if (!file.type.match('audio.*')) { alert(`Файл "${file.name}" не является аудиофайлом и будет пропущен`); continue; }
+                playlistData.push({ file: file, analyzed: false, buffer: null, originalBuffer: null, phiboApplied: false });
             }
-            
-            // Показываем плейлист
             playlist.style.display = 'block';
-            
-            // Обновляем отображение плейлиста
             updatePlaylist();
-            
-            // Автоматически выбираем первый файл, если ничего не выбрано
-            if (currentTrackIndex === -1) {
-                selectTrack(0);
-            }
+            if (currentTrackIndex === -1) selectTrack(0);
         }
         
-        // Обновление плейлиста
         function updatePlaylist() {
             playlistItems.innerHTML = '';
-            
             playlistData.forEach((track, index) => {
                 const item = document.createElement('div');
                 item.className = `playlist-item ${index === currentTrackIndex ? 'active' : ''}`;
                 item.innerHTML = `
                     <div class="playlist-item-info">
-                        <div class="playlist-item-name">${track.file.name}</div>
+                        <div class="playlist-item-name">${escapeHtml(track.file.name)}</div>
                         <div class="playlist-item-size">${formatFileSize(track.file.size)}</div>
                     </div>
                     ${track.analyzed ? '<div class="playlist-item-status"><i class="fas fa-check"></i></div>' : ''}
+                    ${track.phiboApplied ? '<div class="playlist-item-status" style="color:#ffd700"><i class="fas fa-gold"></i></div>' : ''}
                     <button class="remove-btn" data-index="${index}">
                         <i class="fas fa-times"></i>
                     </button>
                 `;
-                
                 item.addEventListener('click', () => selectTrack(index));
-                
                 const removeBtn = item.querySelector('.remove-btn');
-                removeBtn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    removeTrack(index);
-                });
-                
+                removeBtn.addEventListener('click', (e) => { e.stopPropagation(); removeTrack(index); });
                 playlistItems.appendChild(item);
             });
         }
         
-        // Выбор трека
+        function escapeHtml(str) {
+            return str.replace(/[&<>]/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[m]));
+        }
+        
         function selectTrack(index) {
             if (index < 0 || index >= playlistData.length) return;
-            
-            // Останавливаем текущее воспроизведение
             stopAudio();
-            
-            // Обновляем текущий трек
             currentTrackIndex = index;
             const track = playlistData[index];
-            
-            // Обновляем область загрузки
             uploadArea.innerHTML = `
                 <i>🎵</i>
-                <h3>${track.file.name}</h3>
+                <h3>${escapeHtml(track.file.name)}</h3>
                 <p>${formatFileSize(track.file.size)}</p>
                 ${track.analyzed ? generateFileInfoHTML(track.buffer) : '<p id="analysisStatus">Анализ файла...</p>'}
                 <button id="addFilesBtn" class="secondary-btn" style="margin-top: 10px;">Добавить файлы</button>
             `;
-            
-            // Обработчик для кнопки добавления файлов
-            document.getElementById('addFilesBtn').addEventListener('click', () => {
-                fileInput.click();
-            });
-            
-            // Если трек еще не анализировался - анализируем
-            if (!track.analyzed) {
-                analyzeTrack(index);
-            } else {
-                // Если уже анализирован - активируем кнопки
-                playBtn.disabled = false;
-                phaseBtn.disabled = false;
-                stopBtn.disabled = false;
-                saveBtn.disabled = false;
-                
-                // Показываем элементы
-                visualizer.style.display = 'block';
-                progressContainer.style.display = 'block';
-                initVisualizer();
-                
-                // Обновляем общее время
+            const addBtn = document.getElementById('addFilesBtn');
+            if (addBtn) addBtn.addEventListener('click', () => fileInput.click());
+            if (!track.analyzed) analyzeTrack(index);
+            else {
+                playBtn.disabled = false; phaseBtn.disabled = false; phiboBtn.disabled = false; stopBtn.disabled = false; saveBtn.disabled = false;
+                visualizer.style.display = 'block'; progressContainer.style.display = 'block'; initVisualizer();
                 totalTime.textContent = formatTime(track.buffer.duration);
+                phiboActive = track.phiboApplied || false;
+                updatePhiboButtonState();
             }
-            
-            // Обновляем плейлист
             updatePlaylist();
         }
         
-        // Анализ трека
         function analyzeTrack(index) {
             const track = playlistData[index];
             const reader = new FileReader();
-            
             reader.onload = function(e) {
-                const arrayBuffer = e.target.result;
-                
-                // Создаем AudioContext при первом использовании
-                if (!audioContext) {
-                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                }
-                
-                // Декодируем аудиоданные
-                audioContext.decodeAudioData(arrayBuffer)
-                    .then(buffer => {
-                        // Сохраняем буфер в треке
-                        track.buffer = buffer;
-                        track.analyzed = true;
-                        
-                        // Обновляем интерфейс
-                        uploadArea.innerHTML = `
-                            <i>🎵</i>
-                            <h3>${track.file.name}</h3>
-                            <p>${formatFileSize(track.file.size)}</p>
-                            ${generateFileInfoHTML(buffer)}
-                            <button id="addFilesBtn" class="secondary-btn" style="margin-top: 10px;">Добавить файлы</button>
-                        `;
-                        
-                        // Обработчик для кнопки добавления файлов
-                        document.getElementById('addFilesBtn').addEventListener('click', () => {
-                            fileInput.click();
-                        });
-                        
-                        // Активируем кнопки
-                        playBtn.disabled = false;
-                        phaseBtn.disabled = false;
-                        stopBtn.disabled = false;
-                        saveBtn.disabled = false;
-                        
-                        // Показываем элементы
-                        visualizer.style.display = 'block';
-                        progressContainer.style.display = 'block';
-                        initVisualizer();
-                        
-                        // Обновляем общее время
-                        totalTime.textContent = formatTime(buffer.duration);
-                        
-                        // Обновляем плейлист
-                        updatePlaylist();
-                        
-                        // Автовоспроизведение, если был запущен плейлист
-                        if (autoPlayNext) {
-                            playAudio();
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Ошибка декодирования аудио:', error);
-                        
-                        // Обновляем статус
-                        const statusElement = document.getElementById('analysisStatus');
-                        if (statusElement) {
-                            statusElement.textContent = 'Ошибка анализа файла';
-                            statusElement.style.color = '#ff6b6b';
-                        }
-                    });
+                if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                audioContext.decodeAudioData(e.target.result).then(buffer => {
+                    track.buffer = buffer; track.analyzed = true; track.phiboApplied = false; track.originalBuffer = null;
+                    uploadArea.innerHTML = `
+                        <i>🎵</i>
+                        <h3>${escapeHtml(track.file.name)}</h3>
+                        <p>${formatFileSize(track.file.size)}</p>
+                        ${generateFileInfoHTML(buffer)}
+                        <button id="addFilesBtn" class="secondary-btn" style="margin-top: 10px;">Добавить файлы</button>
+                    `;
+                    const addBtn = document.getElementById('addFilesBtn');
+                    if (addBtn) addBtn.addEventListener('click', () => fileInput.click());
+                    playBtn.disabled = false; phaseBtn.disabled = false; phiboBtn.disabled = false; stopBtn.disabled = false; saveBtn.disabled = false;
+                    visualizer.style.display = 'block'; progressContainer.style.display = 'block'; initVisualizer();
+                    totalTime.textContent = formatTime(buffer.duration);
+                    updatePlaylist();
+                    if (autoPlayNext) playAudio();
+                }).catch(err => { console.error(err); const statusEl = document.getElementById('analysisStatus'); if (statusEl) { statusEl.textContent = 'Ошибка анализа файла'; statusEl.style.color = '#ff6b6b'; } });
             };
-            
             reader.readAsArrayBuffer(track.file);
         }
         
-        // Удаление трека
         function removeTrack(index) {
-            // Если удаляем текущий трек - останавливаем воспроизведение
-            if (index === currentTrackIndex) {
-                stopAudio();
-                resetUploadArea();
-            }
-            
-            // Удаляем трек из плейлиста
+            if (index === currentTrackIndex) { stopAudio(); resetUploadArea(); }
             playlistData.splice(index, 1);
-            
-            // Обновляем текущий индекс
             if (index === currentTrackIndex) {
-                if (playlistData.length > 0) {
-                    currentTrackIndex = Math.min(index, playlistData.length - 1);
-                    selectTrack(currentTrackIndex);
-                } else {
-                    currentTrackIndex = -1;
-                    resetUploadArea();
-                    playlist.style.display = 'none';
-                }
-            } else if (index < currentTrackIndex) {
-                currentTrackIndex--;
-            }
-            
-            // Обновляем плейлист
+                if (playlistData.length > 0) { currentTrackIndex = Math.min(index, playlistData.length - 1); selectTrack(currentTrackIndex); }
+                else { currentTrackIndex = -1; resetUploadArea(); playlist.style.display = 'none'; visualizer.style.display = 'none'; progressContainer.style.display = 'none'; phiboActive = false; updatePhiboButtonState(); }
+            } else if (index < currentTrackIndex) currentTrackIndex--;
             updatePlaylist();
         }
         
-        // Очистка плейлиста
         function clearPlaylistHandler() {
-            playlistData = [];
-            currentTrackIndex = -1;
-            playlist.style.display = 'none';
-            stopAudio();
-            resetUploadArea();
+            playlistData = []; currentTrackIndex = -1; playlist.style.display = 'none'; stopAudio(); resetUploadArea();
+            visualizer.style.display = 'none'; progressContainer.style.display = 'none'; phiboActive = false; updatePhiboButtonState();
         }
         
-        // Сброс области загрузки
         function resetUploadArea() {
             uploadArea.innerHTML = `
                 <i>🎵</i>
@@ -1435,532 +1946,244 @@
                 <p>Поддерживаются MP3 и WAV файлы</p>
                 <input type="file" id="fileInput" accept="audio/*" style="display:none" multiple>
             `;
-            // Перепривязываем обработчик
-            document.getElementById('fileInput').addEventListener('change', handleFileSelect);
+            const newFileInput = document.getElementById('fileInput');
+            if (newFileInput) newFileInput.addEventListener('change', handleFileSelect);
         }
         
-        // Генерация информации о файе
         function generateFileInfoHTML(buffer) {
             const track = playlistData[currentTrackIndex];
             if (!track) return '';
-            
-            const channels = buffer.numberOfChannels;
-            const duration = buffer.duration;
-            const sampleRate = buffer.sampleRate;
-            const bitDepth = 32;
-            const bitrate = (track.file.size * 8) / duration;
-            
+            const bitrate = (track.file.size * 8) / buffer.duration;
             return `
                 <div class="file-info-in-upload">
-                    <div class="info-item">
-                        <span class="info-label">Длительность:</span>
-                        <span class="info-value">${formatTime(duration)}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Каналы:</span>
-                        <span class="info-value">${channels === 1 ? 'Моно' : 'Стерео'}</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Частота дискретизации:</span>
-                        <span class="info-value">${sampleRate.toLocaleString()} Гц</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Битрейт:</span>
-                        <span class="info-value">${Math.round(bitrate / 1000)} кбит/с</span>
-                    </div>
-                    <div class="info-item">
-                        <span class="info-label">Битовая глубина:</span>
-                        <span class="info-value">${bitDepth}-бит</span>
-                    </div>
+                    <div class="info-item"><span class="info-label">Длительность:</span><span class="info-value">${formatTime(buffer.duration)}</span></div>
+                    <div class="info-item"><span class="info-label">Каналы:</span><span class="info-value">${buffer.numberOfChannels === 1 ? 'Моно' : 'Стерео'}</span></div>
+                    <div class="info-item"><span class="info-label">Частота дискретизации:</span><span class="info-value">${buffer.sampleRate.toLocaleString()} Гц</span></div>
+                    <div class="info-item"><span class="info-label">Битрейт:</span><span class="info-value">${Math.round(bitrate / 1000)} кбит/с</span></div>
+                    <div class="info-item"><span class="info-label">Битовая глубина:</span><span class="info-value">32-бит</span></div>
                 </div>
             `;
         }
         
-        // функция переключения состояний
-        function togglePlayPause() {
-            if (isPlaying) {
-                pauseAudio();
-            } else {
-                playAudio();
-            }
-        }
+        function togglePlayPause() { if (isPlaying) pauseAudio(); else playAudio(); }
         
-        // Воспроизведение аудио
         function playAudio() {
-            if (currentTrackIndex === -1 || !playlistData[currentTrackIndex]?.buffer || !audioContext) return;        
-               
-            const track = playlistData[currentTrackIndex];
-            audioBuffer = track.buffer;
-            
-            // Если трек на паузе - возобновляем
-            if (isPaused) {
-                startPlayback();
-                return;
-            }
-            
-            // Если не играеи и не на паузе - начинаем заново
-            if (audioContext.state === 'suspended') {
-                audioContext.resume().then(startPlayback);
-            } else {
-                startPlayback();
-            }
+            if (currentTrackIndex === -1 || !playlistData[currentTrackIndex]?.buffer || !audioContext) return;
+            audioBuffer = playlistData[currentTrackIndex].buffer;
+            if (isPaused) { startPlayback(); return; }
+            if (audioContext.state === 'suspended') audioContext.resume().then(startPlayback);
+            else startPlayback();
         }
         
-        // Переключение фазового сдвига
-        function togglePhaseShift() {
-            phaseShiftActive = !phaseShiftActive;
-            phaseInfo.style.display = phaseShiftActive ? 'inline-block' : 'none';
-            phaseBtn.textContent = phaseShiftActive ? 'Убрать сдвиг' : 'Применить сдвиг';
-            
-            if (isPlaying) {
-                // Перезапускаем воспроизведение с новыми параметрами
-                pauseAudio();
-                playAudio();
-            }
-        }
-        
-        // Запуск воспроизведения
         function startPlayback() {
-            // Останавливаем предыдущее воспроизведение
-            if (audioSource) {
-                audioSource.onended = null;
-                audioSource.stop();
-                audioSource = null;
-            }
-        
-            // Создаем новый источник
+            if (audioSource) { audioSource.onended = null; audioSource.stop(); audioSource = null; }
             audioSource = audioContext.createBufferSource();
             audioSource.buffer = playlistData[currentTrackIndex].buffer;
-        
-            // Рассчитываем время начала с учетом паузы
             const startOffset = isPaused ? pausedTime : 0;
-        
-            // Настройка обработчика окончания трека
-            audioSource.onended = () => {
-                // Упрощаем проверку - полагаемся на сам факт окончания
-                if (isPlaying) {
-                    handleTrackEnded();
-                }
-            };
-            
+            audioSource.onended = () => { if (isPlaying) handleTrackEnded(); };
             isEnded = false;
-        
-            // Создаем анализаторы для визуализации
-            leftAnalyser = audioContext.createAnalyser();
-            leftAnalyser.fftSize = 2048;
-            leftAnalyser.smoothingTimeConstant = 0.8;
-            
-            rightAnalyser = audioContext.createAnalyser();
-            rightAnalyser.fftSize = 2048;
-            rightAnalyser.smoothingTimeConstant = 0.8;
-            
-            // Создаем мерджер для объединения каналов
+            leftAnalyser = audioContext.createAnalyser(); leftAnalyser.fftSize = 2048; leftAnalyser.smoothingTimeConstant = 0.8;
+            rightAnalyser = audioContext.createAnalyser(); rightAnalyser.fftSize = 2048; rightAnalyser.smoothingTimeConstant = 0.8;
             const merger = audioContext.createChannelMerger(2);
-            
-            // Подключаем эффекты в зависимости от состояния фазового сдвига
-            if (phaseShiftActive) {
-                applyHilbertTransform(audioSource, merger);
-            } else {
-                const numChannels = audioSource.buffer.numberOfChannels;
-                const splitter = audioContext.createChannelSplitter(numChannels);
+            if (phaseShiftActive) applyHilbertTransform(audioSource, merger);
+            else {
+                const splitter = audioContext.createChannelSplitter(audioSource.buffer.numberOfChannels);
                 audioSource.connect(splitter);
-                
-                if (numChannels === 1) {
-                    // Моно в стерео
-                    splitter.connect(merger, 0, 0);
-                    splitter.connect(merger, 0, 1);
-                    splitter.connect(leftAnalyser, 0);
-                    splitter.connect(rightAnalyser, 0);
+                if (audioSource.buffer.numberOfChannels === 1) {
+                    splitter.connect(merger, 0, 0); splitter.connect(merger, 0, 1);
+                    splitter.connect(leftAnalyser, 0); splitter.connect(rightAnalyser, 0);
                 } else {
-                    // Стерео
-                    splitter.connect(merger, 0, 0);
-                    splitter.connect(merger, 1, 1);
-                    splitter.connect(leftAnalyser, 0);
-                    splitter.connect(rightAnalyser, 1);
+                    splitter.connect(merger, 0, 0); splitter.connect(merger, 1, 1);
+                    splitter.connect(leftAnalyser, 0); splitter.connect(rightAnalyser, 1);
                 }
             }
-            
-            // Подключаем к выходу
             merger.connect(audioContext.destination);
-            
-            // Устанавливаем время начала с учетом паузы
             startTime = audioContext.currentTime - startOffset;
-            
-            // Запускаем воспроизведение
             audioSource.start(0, startOffset);
-            
-            // Обновляем состояние
-            isPlaying = true;
-            isPaused = false;
-        
-            // Обновляем UI
-            playBtn.innerHTML = '<i class="fas fa-pause"></i>';
-            playBtn.classList.add('playing');
-            stopBtn.disabled = false;
-            phaseBtn.disabled = false;
-        
-            // Запускаем обновление прогресса и визуализацию
-            updateProgress();
-            drawVisualizer();
+            isPlaying = true; isPaused = false;
+            playBtn.innerHTML = '<i class="fas fa-pause"></i>'; playBtn.classList.add('playing');
+            stopBtn.disabled = false; phaseBtn.disabled = false;
+            updateProgress(); drawVisualizer();
         }
         
-        // Обработка окончания трека
-        function handleTrackEnded() {
-            // Помечаем, что трек закончился естественным образом
-            isEnded = true;
-            
-            // Останавливаем аудио
-            stopAudio();
-            
-            // Запускаем следующий трек, если есть
-            if (playlistData.length > 0) {
-                playNextTrack();
-            }
-        }
+        function handleTrackEnded() { isEnded = true; stopAudio(); if (playlistData.length > 0) playNextTrack(); }
         
-        // Воспроизведение следующего трека
         function playNextTrack() {
             if (playlistData.length === 0) return;
-            
             const nextIndex = (currentTrackIndex + 1) % playlistData.length;
-            currentTrackIndex = nextIndex;
-            
-            const nextTrack = playlistData[nextIndex];
-            
-            // Обновляем UI
             selectTrack(nextIndex);
-            
-            // Если трек уже проанализирован - запускаем воспроизведение
-            if (nextTrack.analyzed) {
-                autoPlayNext = true;
-                playAudio();
-            } else {
-                // Если не проанализирован - установим флаг для автозапуска после анализа
-                autoPlayNext = true;
-                analyzeTrack(nextIndex);
-            }
+            autoPlayNext = true; playAudio();
         }
         
-        // Пауза аудио
         function pauseAudio() {
             if (!isPlaying) return;
-            
-            // Сохраняем текущую позицию
             pausedTime = audioContext.currentTime - startTime;
-            isPlaying = false;
-            isPaused = true;
-            
-            // Останавливаем источник
-            if (audioSource) {
-                audioSource.stop(0);
-                audioSource = null;
-            }
-            
-            // Отменяем анимации
-            cancelAnimationFrame(visualizerAnimationId);
-            cancelAnimationFrame(progressAnimationId);
-            
-            // Обновляем UI
-            playBtn.innerHTML = '<i class="fas fa-play"></i>';
-            playBtn.classList.remove('playing');
+            isPlaying = false; isPaused = true;
+            if (audioSource) audioSource.stop();
+            cancelAnimationFrame(visualizerAnimationId); cancelAnimationFrame(progressAnimationId);
+            playBtn.innerHTML = '<i class="fas fa-play"></i>'; playBtn.classList.remove('playing');
         }
         
-        // Остановка воспроизведения
         function stopAudio() {
-            if (audioSource) {
-                audioSource.onended = null; // Удаляем обработчик
-                audioSource.stop();
-                audioSource = null;
-            }
-            
-            cancelAnimationFrame(visualizerAnimationId);
-            cancelAnimationFrame(progressAnimationId);
-            
-            isPlaying = false;
-            isPaused = false;
-            pausedTime = 0;
-            
-            // Сбрасываем флаг автопроигрывания, если трек не закончился естественно
-            if (!isEnded) {
-                autoPlayNext = false;
-            }
-            
-            playBtn.innerHTML = '<i class="fas fa-play"></i>';
-            playBtn.classList.remove('playing');
-            progressBar.style.width = '0%';
-            currentTime.textContent = '0:00';
+            if (audioSource) { audioSource.onended = null; audioSource.stop(); }
+            cancelAnimationFrame(visualizerAnimationId); cancelAnimationFrame(progressAnimationId);
+            isPlaying = false; isPaused = false; pausedTime = 0;
+            if (!isEnded) autoPlayNext = false;
+            playBtn.innerHTML = '<i class="fas fa-play"></i>'; playBtn.classList.remove('playing');
+            progressBar.style.width = '0%'; currentTime.textContent = '0:00';
         }
         
-        // Применение преобразования Гильберта для 90° сдвига
         function applyHilbertTransform(source, merger) {
-            const numChannels = audioBuffer.numberOfChannels;
-            const splitter = audioContext.createChannelSplitter(numChannels);
+            const splitter = audioContext.createChannelSplitter(audioBuffer.numberOfChannels);
             source.connect(splitter);
-            
-            // Для моно: создаем два канала с фазовым сдвига
-            if (numChannels === 1) {
-                // Прямой канал с компенсацией задержки
-                const delayCompensation = createDelayCompensation(audioContext);
-                splitter.connect(delayCompensation.input, 0);
-                
-                // Преобразование Гильберта для правого канала
+            if (audioBuffer.numberOfChannels === 1) {
+                const delayComp = createDelayCompensation(audioContext);
                 const hilbert = createHilbertTransformer(audioContext);
-                splitter.connect(hilbert.input, 0);
-                
-                // Подключаем каналы к мерджеру
-                delayCompensation.output.connect(merger, 0, 0); // Левый канал (0°)
-                hilbert.output.connect(merger, 0, 1); // Правый канал (90°)
-                
-                // Подключаем к анализаторам
-                delayCompensation.output.connect(leftAnalyser);
-                hilbert.output.connect(rightAnalyser);
-            } 
-            // Для стерео
-            else {
-                // Левый канал: прямой сигнал с компенсацией задержки
-                const delayCompensation = createDelayCompensation(audioContext);
-                splitter.connect(delayCompensation.input, 0);
-                
-                // Правый канал: преобразование Гильберта
+                splitter.connect(delayComp.input, 0); splitter.connect(hilbert.input, 0);
+                delayComp.output.connect(merger, 0, 0); hilbert.output.connect(merger, 0, 1);
+                delayComp.output.connect(leftAnalyser); hilbert.output.connect(rightAnalyser);
+            } else {
+                const delayComp = createDelayCompensation(audioContext);
                 const hilbert = createHilbertTransformer(audioContext);
-                splitter.connect(hilbert.input, 1);
-                
-                // Подключаем каналы к мерджеру
-                delayCompensation.output.connect(merger, 0, 0); // Левый канал (0°)
-                hilbert.output.connect(merger, 0, 1); // Правый канал (90°)
-                
-                // Подключаем к анализаторам
-                delayCompensation.output.connect(leftAnalyser);
-                hilbert.output.connect(rightAnalyser);
+                splitter.connect(delayComp.input, 0); splitter.connect(hilbert.input, 1);
+                delayComp.output.connect(merger, 0, 0); hilbert.output.connect(merger, 0, 1);
+                delayComp.output.connect(leftAnalyser); hilbert.output.connect(rightAnalyser);
             }
         }
         
-        // Создание цепи преобразования Гильберта для точного 90° сдвига
         function createHilbertTransformer(context) {
-            const minFreq = config.hilbertMinFreq;
-            const maxFreq = config.hilbertMaxFreq;
-            const numFilters = config.hilbertNumFilters;
-            
+            const minFreq = config.hilbertMinFreq, maxFreq = config.hilbertMaxFreq, numFilters = config.hilbertNumFilters;
             const filters = [];
-            
-            // Создаем последовательность фильтров
             for (let i = 0; i < numFilters; i++) {
-                // Логарифмическое распределение частот
                 const freq = minFreq * Math.pow(maxFreq / minFreq, i / (numFilters - 1));
-                
                 const filter = context.createBiquadFilter();
-                filter.type = "allpass";
-                filter.frequency.value = freq;
-                filter.Q.value = config.hilbertQ;
-                
+                filter.type = "allpass"; filter.frequency.value = freq; filter.Q.value = config.hilbertQ;
                 filters.push(filter);
-                
-                if (i > 0) {
-                    filters[i-1].connect(filter);
-                }
+                if (i > 0) filters[i-1].connect(filter);
             }
-            
-            // Возвращаем только цепь фильтров без дополнительной задержки
-            return {
-                input: filters[0],
-                output: filters[filters.length-1]
-            };
+            return { input: filters[0], output: filters[filters.length-1] };
         }
         
-        // Создание компенсации задержки для прямого канала
         function createDelayCompensation(context) {
             const delay = context.createDelay();
             delay.delayTime.value = config.delayCompensation;
-            
-            return {
-                input: delay,
-                output: delay
-            };
+            return { input: delay, output: delay };
         }
         
-        // Инициализация визуализатора
         function initVisualizer() {
             oscilloscopeCanvas = document.getElementById('oscilloscopeCanvas');
             lissajousCanvas = document.getElementById('lissajousCanvas');
             oscilloscopeCtx = oscilloscopeCanvas.getContext('2d');
             lissajousCtx = lissajousCanvas.getContext('2d');
-            
-            oscilloscopeCanvas.width = oscilloscopeCanvas.offsetWidth;
-            oscilloscopeCanvas.height = oscilloscopeCanvas.offsetHeight;
-            
-            lissajousCanvas.width = lissajousCanvas.offsetWidth;
-            lissajousCanvas.height = lissajousCanvas.offsetHeight;
+            const container = document.getElementById('visualizer');
+            if (container) {
+                oscilloscopeCanvas.width = container.clientWidth;
+                oscilloscopeCanvas.height = container.clientHeight / 2;
+                lissajousCanvas.width = container.clientWidth;
+                lissajousCanvas.height = container.clientHeight / 2;
+            }
         }
         
-        // Отрисовка визуализатора с двумя каналаи
         function drawVisualizer() {
-        if (!isPlaying || !leftAnalyser || !rightAnalyser) return;
-        
-        const oscWidth = oscilloscopeCanvas.width;
-        const oscHeight = oscilloscopeCanvas.height;
-        const lissWidth = lissajousCanvas.width;
-        const lissHeight = lissajousCanvas.height;
-        
-        // Очищаем оба canvas
-        oscilloscopeCtx.clearRect(0, 0, oscWidth, oscHeight);
-        lissajousCtx.clearRect(0, 0, lissWidth, lissHeight);
-        
-        // Получаем данные для левого и правого каналов
-        const bufferLength = leftAnalyser.fftSize;
-        const leftData = new Uint8Array(bufferLength);
-        const rightData = new Uint8Array(bufferLength);
-        
-        leftAnalyser.getByteTimeDomainData(leftData);
-        rightAnalyser.getByteTimeDomainData(rightData);
-        
-        // Автоматическое масштабирование по оси X
-        const visibleSamples = Math.min(bufferLength, config.visibleSamples);
-        const startIndex = Math.max(0, Math.floor(bufferLength / 2 - visibleSamples / 2));
-        const sliceWidth = oscWidth / visibleSamples;
-        
-        // Рисуем осциллограмму на нижнем canvas
-        oscilloscopeCtx.beginPath();
-        oscilloscopeCtx.strokeStyle = config.leftChannelColor;
-        oscilloscopeCtx.lineWidth = config.lineWidth;
-        oscilloscopeCtx.lineCap = 'round';
-        oscilloscopeCtx.lineJoin = 'round';
-        
-        let x = 0;
-        for (let i = 0; i < visibleSamples; i++) {
-        const index = startIndex + i;
-        const amplitude = (leftData[index] - 128) / 128;
-        const y = oscHeight / 2 + amplitude * (oscHeight / 2 * config.amplitudeScale);
-        
-        if (i === 0) {
-        oscilloscopeCtx.moveTo(x, y);
-        } else {
-        oscilloscopeCtx.lineTo(x, y);
+            if (!isPlaying || !leftAnalyser || !rightAnalyser) { visualizerAnimationId = requestAnimationFrame(drawVisualizer); return; }
+            
+            updateQualityIndicator();
+            
+            const oscW = oscilloscopeCanvas.width, oscH = oscilloscopeCanvas.height, lissW = lissajousCanvas.width, lissH = lissajousCanvas.height;
+            if (oscW === 0 || oscH === 0 || lissW === 0 || lissH === 0) { visualizerAnimationId = requestAnimationFrame(drawVisualizer); return; }
+            oscilloscopeCtx.clearRect(0, 0, oscW, oscH);
+            lissajousCtx.clearRect(0, 0, lissW, lissH);
+            const bufLen = leftAnalyser.fftSize;
+            const leftData = new Uint8Array(bufLen), rightData = new Uint8Array(bufLen);
+            leftAnalyser.getByteTimeDomainData(leftData);
+            rightAnalyser.getByteTimeDomainData(rightData);
+            
+            const visibleSamples = Math.min(bufLen, config.visibleSamples);
+            const startIndex = Math.max(0, Math.floor(bufLen / 2 - visibleSamples / 2));
+            const sliceWidth = oscW / visibleSamples;
+            
+            oscilloscopeCtx.beginPath();
+            oscilloscopeCtx.strokeStyle = config.leftChannelColor;
+            oscilloscopeCtx.lineWidth = config.lineWidth;
+            let x = 0;
+            for (let i = 0; i < visibleSamples; i++) {
+                const amp = (leftData[startIndex + i] - 128) / 128;
+                const y = oscH / 2 + amp * (oscH / 2 * config.amplitudeScale);
+                if (i === 0) oscilloscopeCtx.moveTo(x, y);
+                else oscilloscopeCtx.lineTo(x, y);
+                x += sliceWidth;
+            }
+            oscilloscopeCtx.stroke();
+            
+            oscilloscopeCtx.beginPath();
+            oscilloscopeCtx.strokeStyle = config.rightChannelColor;
+            oscilloscopeCtx.lineWidth = config.lineWidth;
+            x = 0;
+            for (let i = 0; i < visibleSamples; i++) {
+                const amp = (rightData[startIndex + i] - 128) / 128;
+                const y = oscH / 2 + amp * (oscH / 2 * config.amplitudeScale);
+                if (i === 0) oscilloscopeCtx.moveTo(x, y);
+                else oscilloscopeCtx.lineTo(x, y);
+                x += sliceWidth;
+            }
+            oscilloscopeCtx.stroke();
+            
+            oscilloscopeCtx.beginPath();
+            oscilloscopeCtx.strokeStyle = 'rgba(255,255,255,0.3)';
+            oscilloscopeCtx.lineWidth = 1;
+            oscilloscopeCtx.moveTo(0, oscH/2); oscilloscopeCtx.lineTo(oscW, oscH/2);
+            oscilloscopeCtx.stroke();
+            
+            const squareSize = Math.min(lissW, lissH) * 0.8;
+            const centerX = lissW / 2, centerY = lissH / 2;
+            lissajousCtx.beginPath();
+            lissajousCtx.strokeStyle = '#FF00FF';
+            lissajousCtx.lineWidth = 1.5;
+            for (let i = 0; i < visibleSamples; i++) {
+                const xAmp = (leftData[startIndex + i] - 128) / 128;
+                const yAmp = (rightData[startIndex + i] - 128) / 128;
+                const xPos = centerX + xAmp * squareSize / 2;
+                const yPos = centerY + yAmp * squareSize / 2;
+                if (i === 0) lissajousCtx.moveTo(xPos, yPos);
+                else lissajousCtx.lineTo(xPos, yPos);
+            }
+            lissajousCtx.stroke();
+            
+            lissajousCtx.beginPath();
+            lissajousCtx.strokeStyle = 'rgba(255,255,255,0.3)';
+            lissajousCtx.lineWidth = 1;
+            lissajousCtx.moveTo(centerX, centerY - squareSize/2);
+            lissajousCtx.lineTo(centerX, centerY + squareSize/2);
+            lissajousCtx.moveTo(centerX - squareSize/2, centerY);
+            lissajousCtx.lineTo(centerX + squareSize/2, centerY);
+            lissajousCtx.stroke();
+            
+            visualizerAnimationId = requestAnimationFrame(drawVisualizer);
         }
         
-        x += sliceWidth;
-        }
-        oscilloscopeCtx.stroke();
-        
-        // Рисуем правый канал
-        oscilloscopeCtx.beginPath();
-        oscilloscopeCtx.strokeStyle = config.rightChannelColor;
-        oscilloscopeCtx.lineWidth = config.lineWidth;
-        oscilloscopeCtx.lineCap = 'round';
-        oscilloscopeCtx.lineJoin = 'round';
-        
-        x = 0;
-        for (let i = 0; i < visibleSamples; i++) {
-        const index = startIndex + i;
-        const amplitude = (rightData[index] - 128) / 128;
-        const y = oscHeight / 2 + amplitude * (oscHeight / 2 * config.amplitudeScale);
-        
-        if (i === 0) {
-        oscilloscopeCtx.moveTo(x, y);
-        } else {
-        oscilloscopeCtx.lineTo(x, y);
-        }
-        
-        x += sliceWidth;
-        }
-        oscilloscopeCtx.stroke();
-        
-        // Рисуем центральную линию
-        oscilloscopeCtx.beginPath();
-        oscilloscopeCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-        oscilloscopeCtx.lineWidth = 1;
-        oscilloscopeCtx.moveTo(0, oscHeight / 2);
-        oscilloscopeCtx.lineTo(oscWidth, oscHeight / 2);
-        oscilloscopeCtx.stroke();
-        
-        // Рисуем фигуру Лиссажу на верхнем canvas
-        lissajousCtx.beginPath();
-        lissajousCtx.strokeStyle = '#FF00FF';
-        lissajousCtx.lineWidth = 1;
-        lissajousCtx.lineCap = 'round';
-        lissajousCtx.lineJoin = 'round';
-        
-        // Используем минимальное измерение для создания квадратной области
-        const squareSize = Math.min(lissWidth, lissHeight) * 0.8;
-        const centerX = lissWidth / 2;
-        const centerY = lissHeight / 2;
-        
-        for (let i = 0; i < visibleSamples; i++) {
-        const index = startIndex + i;
-        const xAmplitude = (leftData[index] - 128) / 128;
-        const yAmplitude = (rightData[index] - 128) / 128;
-        
-        // Используем одинаковый масштаб для обеих осей
-        const x = centerX + xAmplitude * squareSize / 2;
-        const y = centerY + yAmplitude * squareSize / 2;
-        
-        if (i === 0) {
-        lissajousCtx.moveTo(x, y);
-        } else {
-        lissajousCtx.lineTo(x, y);
-        }
-        }
-        
-        lissajousCtx.stroke();
-        
-        // Рисуем перекрестие в центре фигуры Лиссажу
-        lissajousCtx.beginPath();
-        lissajousCtx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-        lissajousCtx.lineWidth = 1;
-        
-        // Вертикальная линия
-        lissajousCtx.moveTo(centerX, centerY - squareSize/2);
-        lissajousCtx.lineTo(centerX, centerY + squareSize/2);
-        
-        // Горизонтальная линия
-        lissajousCtx.moveTo(centerX - squareSize/2, centerY);
-        lissajousCtx.lineTo(centerX + squareSize/2, centerY);
-        
-        lissajousCtx.stroke();
-        
-        // Запускаем анимацию
-        visualizerAnimationId = requestAnimationFrame(drawVisualizer);
-        }
-        
-        // Обновление прогресс-бара
         function updateProgress() {
             if (!isPlaying || !audioBuffer || !audioContext) return;
-            
-            // Рассчитываем текущую позицию с учетом паузы
             const currentTimeValue = isPaused ? pausedTime : audioContext.currentTime - startTime;
             const progress = Math.min(1, currentTimeValue / audioBuffer.duration);
-            
-            // Обновляем прогресс-бар
             progressBar.style.width = `${progress * 100}%`;
             currentTime.textContent = formatTime(currentTimeValue);
-            
-            // Если трек закончился - обрабатываем окончание
-            if (progress >= 0.999 && !isPaused) {
-                handleTrackEnded();
-                return;
-            }
-            
-            if (isPlaying) {
-                progressAnimationId = requestAnimationFrame(updateProgress);
-            }
+            if (progress >= 0.999 && !isPaused) handleTrackEnded();
+            else if (isPlaying) progressAnimationId = requestAnimationFrame(updateProgress);
         }
         
-        // Форматирование размера файла
         function formatFileSize(bytes) {
             if (bytes < 1024) return bytes + ' байт';
-            else if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' КБ';
-            else return (bytes / 1048576).toFixed(1) + ' МБ';
+            if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' КБ';
+            return (bytes / 1048576).toFixed(1) + ' МБ';
         }
         
-        // Форматирование времени
         function formatTime(seconds) {
             const min = Math.floor(seconds / 60);
             const sec = Math.floor(seconds % 60);
             return `${min}:${sec < 10 ? '0' : ''}${sec}`;
         }
         
-        // Применение настроек
         function applySettings() {
-            // Обновление конфигурации
             config.hilbertMinFreq = parseInt(minFreqInput.value);
             config.hilbertMaxFreq = parseInt(maxFreqInput.value);
             config.hilbertNumFilters = parseInt(numFiltersInput.value);
@@ -1971,199 +2194,128 @@
             config.leftChannelColor = leftColorPicker.value;
             config.rightChannelColor = rightColorPicker.value;
             config.lineWidth = parseFloat(lineWidthInput.value);
-            
-            // Перезапуск воспроизведения, если оно активно
-            if (isPlaying) {
-                pauseAudio();
-                playAudio();
-            }
-            
-            // Скрываем панель настроек
+            if (isPlaying) { pauseAudio(); playAudio(); }
             settingsModal.style.display = 'none';
         }
         
-        // Сброс настроек
         function resetSettings() {
-            // Восстановление значений по умолчанию
             config = {
-                hilbertMinFreq: 100,
-                hilbertMaxFreq: 10000,
-                hilbertNumFilters: 9,
-                hilbertQ: 1.0,
-                delayCompensation: 0.008,
-                visibleSamples: 1024,
-                amplitudeScale: 1.0,
-                leftChannelColor: '#FFFF00',
-                rightChannelColor: '#00FF00',
-                lineWidth: 1
+                hilbertMinFreq: 100, hilbertMaxFreq: 10000, hilbertNumFilters: 9, hilbertQ: 1.0,
+                delayCompensation: 0.008, visibleSamples: 1024, amplitudeScale: 1.0,
+                leftChannelColor: '#FFFF00', rightChannelColor: '#00FF00', lineWidth: 2
             };
-            
-            // Обновление UI
             initSettings();
-            
-            // Перезапуск воспроизведения, если оно активно
-            if (isPlaying) {
-                pauseAudio();
-                playAudio();
-            }
+            if (isPlaying) { pauseAudio(); playAudio(); }
         }
         
-        // Функция для сохранения обработанного аудио
         async function saveProcessedAudio() {
-            
             if (currentTrackIndex === -1 || !playlistData[currentTrackIndex]?.buffer) return;
             
-            // Активируем фазовый сдвиг, если он не активен
-            if (!phaseShiftActive) {
-                phaseShiftActive = true;
-                phaseInfo.style.display = 'inline-block';
-                phaseBtn.textContent = 'Убрать сдвиг';
-                
-                // Показываем уведомление о автоматической активации
-                const originalStatus = saveStatus.innerHTML;
-                saveStatus.innerHTML = '<i class="fas fa-info-circle"></i> Фазовый сдвиг автоматически активирован';
-                saveStatus.style.display = 'block';
-                
-                // Через 2 секунды возвращаем обычный статус
-                setTimeout(() => {
-                    saveStatus.innerHTML = originalStatus;
-                }, 2000);
+            const track = playlistData[currentTrackIndex];
+            let bufferForEffects = track.buffer;
+            
+            const effectName = [];
+            if (phaseShiftActive) effectName.push('фазовый сдвиг');
+            if (phiboActive) effectName.push('фрактальный эффект');
+            const effectText = effectName.length > 0 ? effectName.join(' + ') : 'без эффектов';
+            saveBtn.innerHTML = `<i class="fas fa-download"></i> Сохранить WAV (${effectText})`;
+            
+            if (phiboActive) {
+                showProcessingOverlay('Применение фрактального эффекта для сохранения...');
+                try {
+                    bufferForEffects = await applyPhiboEffect(track.originalBuffer || track.buffer);
+                } catch (err) {
+                    console.error('Ошибка эффекта "Ф" при сохранении:', err);
+                    bufferForEffects = track.buffer;
+                } finally {
+                    hideProcessingOverlay();
+                }
             }
             
-            const track = playlistData[currentTrackIndex];
-            const originalBuffer = track.buffer;
+            const offlineContext = new OfflineAudioContext(2, bufferForEffects.length, bufferForEffects.sampleRate);
+            const source = offlineContext.createBufferSource();
+            source.buffer = bufferForEffects;
+            const merger = offlineContext.createChannelMerger(2);
             
-            // Блокируем кнопку и показываем статус
+            if (phaseShiftActive) {
+                const numChannels = bufferForEffects.numberOfChannels;
+                const splitter = offlineContext.createChannelSplitter(numChannels);
+                source.connect(splitter);
+                
+                if (numChannels === 1) {
+                    const delayCompensation = createDelayCompensation(offlineContext);
+                    const hilbert = createHilbertTransformer(offlineContext);
+                    splitter.connect(delayCompensation.input, 0);
+                    splitter.connect(hilbert.input, 0);
+                    delayCompensation.output.connect(merger, 0, 0);
+                    hilbert.output.connect(merger, 0, 1);
+                } else {
+                    const delayCompensation = createDelayCompensation(offlineContext);
+                    const hilbert = createHilbertTransformer(offlineContext);
+                    splitter.connect(delayCompensation.input, 0);
+                    splitter.connect(hilbert.input, 1);
+                    delayCompensation.output.connect(merger, 0, 0);
+                    hilbert.output.connect(merger, 0, 1);
+                }
+            } else {
+                const numChannels = bufferForEffects.numberOfChannels;
+                const splitter = offlineContext.createChannelSplitter(numChannels);
+                source.connect(splitter);
+                if (numChannels === 1) {
+                    splitter.connect(merger, 0, 0);
+                    splitter.connect(merger, 0, 1);
+                } else {
+                    splitter.connect(merger, 0, 0);
+                    splitter.connect(merger, 1, 1);
+                }
+            }
+            
+            merger.connect(offlineContext.destination);
+            source.start(0);
+            
             saveBtn.disabled = true;
             saveStatus.style.display = 'block';
             saveStatus.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Идёт обработка...';
             
             try {
-                // Создаем оффлайн-контекст для рендеринга
-                const offlineContext = new OfflineAudioContext(
-                    2, // 2 канала (стерео)
-                    originalBuffer.length, 
-                    originalBuffer.sampleRate
-                );
-                
-                // Создаем источник из оригинального буфера
-                const source = offlineContext.createBufferSource();
-                source.buffer = originalBuffer;
-                
-                // Создаем мерджер для объединения каналов
-                const merger = offlineContext.createChannelMerger(2);
-                
-                // Применяем эффекты в зависимости от состояния фазового сдвига
-                if (phaseShiftActive) {
-                    // Применяем фазовый сдвиг
-                    const numChannels = originalBuffer.numberOfChannels;
-                    const splitter = offlineContext.createChannelSplitter(numChannels);
-                    source.connect(splitter);
-                    
-                    if (numChannels === 1) {
-                        // Моно в стерео с эффектом
-                        const delayCompensation = createDelayCompensation(offlineContext);
-                        splitter.connect(delayCompensation.input, 0);
-                        
-                        const hilbert = createHilbertTransformer(offlineContext);
-                        splitter.connect(hilbert.input, 0);
-                        
-                        // Подключаем каналы к мерджеру
-                        delayCompensation.output.connect(merger, 0, 0); // Левый канал (0°)
-                        hilbert.output.connect(merger, 0, 1); // Правый канал (90°)
-                    } else {
-                        // Стерео с эффектом
-                        const delayCompensation = createDelayCompensation(offlineContext);
-                        splitter.connect(delayCompensation.input, 0);
-                        
-                        const hilbert = createHilbertTransformer(offlineContext);
-                        splitter.connect(hilbert.input, 1);
-                        
-                        // Подключаем каналы к мерджеру
-                        delayCompensation.output.connect(merger, 0, 0); // Левый канал (0°)
-                        hilbert.output.connect(merger, 0, 1); // Правый канал (90°)
-                    }
-                } else {
-                    // Без фазового сдвига - просто копируем каналы
-                    const numChannels = originalBuffer.numberOfChannels;
-                    const splitter = offlineContext.createChannelSplitter(numChannels);
-                    source.connect(splitter);
-                    
-                    if (numChannels === 1) {
-                        // Моно в стерео
-                        splitter.connect(merger, 0, 0);
-                        splitter.connect(merger, 0, 1);
-                    } else {
-                        // Стерео
-                        splitter.connect(merger, 0, 0);
-                        splitter.connect(merger, 1, 1);
-                    }
-                }
-                
-                // Подключаем к выходу оффлайн-контекста
-                merger.connect(offlineContext.destination);
-                
-                // Запускаем рендеринг
-                source.start(0);
                 const renderedBuffer = await offlineContext.startRendering();
-                
-                // Конвертируем в WAV и скачиваем
                 const wavData = bufferToWav(renderedBuffer);
                 const blob = new Blob([new Uint8Array(wavData)], { type: 'audio/wav' });
-                
-                // Создаем ссылку для скачивания
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `${phaseShiftActive ? 'with_ph_sh' : 'original'}_${track.file.name.replace(/\.[^/.]+$/, '')}.wav`;
+                let filename = '';
+                if (phaseShiftActive) filename += 'phase_';
+                if (phiboActive) filename += 'phibo_';
+                filename += track.file.name.replace(/\.[^/.]+$/, '') + '.wav';
+                a.download = filename;
                 document.body.appendChild(a);
                 a.click();
-                
-                // Очищаем
-                setTimeout(() => {
-                    document.body.removeChild(a);
-                    URL.revokeObjectURL(url);
-                }, 100);
-                
-                // Успешное завершение
+                setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
                 saveStatus.innerHTML = '<i class="fas fa-check"></i> Файл успешно сохранён!';
-                setTimeout(() => {
-                    saveStatus.style.display = 'none';
-                }, 3000);
-                
+                setTimeout(() => { saveStatus.style.display = 'none'; }, 3000);
             } catch (error) {
                 console.error('Ошибка при сохранении файла:', error);
                 saveStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Ошибка при сохранении';
             } finally {
                 saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-download"></i> Сохранить WAV';
             }
         }
         
-        // Функция для конвертации AudioBuffer в WAV
         function bufferToWav(buffer) {
             const numOfChannels = buffer.numberOfChannels;
-            const length = buffer.length * numOfChannels * 2; // 2 bytes per sample
+            const length = buffer.length * numOfChannels * 2;
             const sampleRate = buffer.sampleRate;
-            
             const arrayBuffer = new ArrayBuffer(44 + length);
             const view = new DataView(arrayBuffer);
-            
-            // Записываем заголовок WAV
-            writeString(view, 0, 'RIFF');
-            view.setUint32(4, 36 + length, true);
-            writeString(view, 8, 'WAVE');
-            writeString(view, 12, 'fmt ');
-            view.setUint32(16, 16, true);
-            view.setUint16(20, 1, true);
-            view.setUint16(22, numOfChannels, true);
-            view.setUint32(24, sampleRate, true);
-            view.setUint32(28, sampleRate * numOfChannels * 2, true);
-            view.setUint16(32, numOfChannels * 2, true);
-            view.setUint16(34, 16, true);
-            writeString(view, 36, 'data');
-            view.setUint32(40, length, true);
-            
-            // Записываем PCM данные
+            const writeString = (offset, str) => { for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); };
+            writeString(0, 'RIFF'); view.setUint32(4, 36 + length, true);
+            writeString(8, 'WAVE'); writeString(12, 'fmt ');
+            view.setUint32(16, 16, true); view.setUint16(20, 1, true); view.setUint16(22, numOfChannels, true);
+            view.setUint32(24, sampleRate, true); view.setUint32(28, sampleRate * numOfChannels * 2, true);
+            view.setUint16(32, numOfChannels * 2, true); view.setUint16(34, 16, true);
+            writeString(36, 'data'); view.setUint32(40, length, true);
             let offset = 44;
             for (let i = 0; i < buffer.length; i++) {
                 for (let channel = 0; channel < numOfChannels; channel++) {
@@ -2173,39 +2325,23 @@
                     offset += 2;
                 }
             }
-            
             return arrayBuffer;
         }
         
-        // Вспомогательная функция для записи строк в DataView
-        function writeString(view, offset, string) {
-            for (let i = 0; i < string.length; i++) {
-                view.setUint8(offset + i, string.charCodeAt(i));
-            }
-        }
-        
-        // Адаптация под размер экрана
-        window.addEventListener('resize', function() {
+        window.addEventListener('resize', () => {
             if (oscilloscopeCanvas && lissajousCanvas) {
-                oscilloscopeCanvas.width = oscilloscopeCanvas.offsetWidth;
-                oscilloscopeCanvas.height = oscilloscopeCanvas.offsetHeight;
-                
-                lissajousCanvas.width = lissajousCanvas.offsetWidth;
-                lissajousCanvas.height = lissajousCanvas.offsetHeight;
-                
-                // Перерисовываем, если играет аудио
-                if (isPlaying) {
-                    drawVisualizer();
+                const container = document.getElementById('visualizer');
+                if (container) {
+                    oscilloscopeCanvas.width = container.clientWidth;
+                    oscilloscopeCanvas.height = container.clientHeight / 2;
+                    lissajousCanvas.width = container.clientWidth;
+                    lissajousCanvas.height = container.clientHeight / 2;
                 }
+                if (isPlaying) drawVisualizer();
             }
         });
         
-        // Инициализация при загрузке
-        window.addEventListener('load', function() {
-            initSettings();
-            // Разрешаем выбор нескольких файлов
-            fileInput.multiple = true;
-        });
+        window.addEventListener('load', () => { initSettings(); fileInput.multiple = true; });
     </script>
 </body>
 </html>
