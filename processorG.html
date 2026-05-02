@@ -98,6 +98,7 @@
             font-size: 18px;
             font-weight: 500;
             margin-bottom: 5px;
+            color: #DBD09A;
         }
         
         .upload-area p {
@@ -321,7 +322,7 @@
         }
         
         .settings-group-title {
-            color: #a0a0b0;
+            color: #DBD09A;
             margin-bottom: 15px;
             font-size: 16px;
             text-transform: uppercase;
@@ -857,6 +858,29 @@
                 </div>
                 
                 <div class="settings-group">
+                    <h3 class="settings-group-title">Параметры эффекта "Ф"</h3>
+                    
+                    <div class="setting-item">
+                        <div class="setting-label">
+                            <span>Порядок гармоник (n, где φ=1.618, f - частота, А - её амплитуда)</span>
+                            <span class="setting-value" id="phiboOrderValue">3</span>
+                        </div>
+                        <div class="setting-control">
+                            <input type="range" id="phiboOrderSlider" min="1" max="6" step="1" value="3">
+                            <input type="number" id="phiboOrderInput" min="1" max="6" step="1" value="3">
+                        </div>
+                    </div>
+                    <div class="param-description" style="margin-top: 8px; font-size: 12px; text-align: center;">
+                        n=1: f×φ, A/φ &emsp;
+                        n=2: f×φ², A/φ²<br>
+                        n=3: f×φ³, A/φ³ &emsp;
+                        n=4: f×φ⁴, A/φ⁴<br>
+                        n=5: f×φ⁵, A/φ⁵ &emsp;
+                        n=6: f×φ⁶, A/φ⁶
+                    </div>
+                </div>                
+                
+                <div class="settings-group">
                     <h3 class="settings-group-title">Параметры визуализации</h3>
                     
                     <div class="setting-item">
@@ -1071,7 +1095,8 @@
             amplitudeScale: 1.0,
             leftChannelColor: '#FFFF00',
             rightChannelColor: '#00FF00',
-            lineWidth: 2
+            lineWidth: 2,
+            phiboOrder: 3 //Порядок эффекта Ф
         };
         
         let oscilloscopeCanvas, lissajousCanvas;
@@ -1134,6 +1159,9 @@
         const lineWidthSlider = document.getElementById('lineWidthSlider');
         const lineWidthInput = document.getElementById('lineWidthInput');
         const lineWidthValue = document.getElementById('lineWidthValue');
+        const phiboOrderSlider = document.getElementById('phiboOrderSlider');
+        const phiboOrderInput = document.getElementById('phiboOrderInput');
+        const phiboOrderValue = document.getElementById('phiboOrderValue');
         
         // Аудио переменные
         let audioContext;
@@ -1425,23 +1453,23 @@ async function autoTuneDelay() {
         }
         
         // Кастомное всплывающее сообщение
-function showToast(message, isError = false) {
-    const existingToast = document.querySelector('.custom-toast');
-    if (existingToast) existingToast.remove();
-    
-    const toast = document.createElement('div');
-    toast.className = 'custom-toast';
-    toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}" style="margin-right: 8px;"></i> ${message}`;
-    if (isError) {
-        toast.style.borderColor = '#ff6b6b';
-        toast.style.color = '#ff6b6b';
-    }
-    document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        if (toast && toast.remove) toast.remove();
-    }, 3000);
-}
+        function showToast(message, isError = false) {
+            const existingToast = document.querySelector('.custom-toast');
+            if (existingToast) existingToast.remove();
+            
+            const toast = document.createElement('div');
+            toast.className = 'custom-toast';
+            toast.innerHTML = `<i class="fas ${isError ? 'fa-exclamation-triangle' : 'fa-check-circle'}" style="margin-right: 8px;"></i> ${message}`;
+            if (isError) {
+                toast.style.borderColor = '#ff6b6b';
+                toast.style.color = '#ff6b6b';
+            }
+            document.body.appendChild(toast);
+            
+            setTimeout(() => {
+                if (toast && toast.remove) toast.remove();
+            }, 3000);
+        }
         
         function hideProcessingOverlay() {
             if (processingOverlay) {
@@ -1498,55 +1526,100 @@ function showToast(message, isError = false) {
             }
         }
         
+//Применение фрактального эффекта "Ф" (золотое сечение)
         async function applyPhiboEffect(inputBuffer) {
-            const sampleRate = inputBuffer.sampleRate, length = inputBuffer.length, channels = inputBuffer.numberOfChannels;
-            const outputBuffer = new AudioBuffer({ numberOfChannels: channels, length: length, sampleRate: sampleRate });
-            const fftSize = 4096, hopSize = fftSize / 2;
-            const window = new Float32Array(fftSize);
-            for (let i = 0; i < fftSize; i++) window[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / fftSize));
+    const sampleRate = inputBuffer.sampleRate, length = inputBuffer.length, channels = inputBuffer.numberOfChannels;
+    const outputBuffer = new AudioBuffer({ numberOfChannels: channels, length: length, sampleRate: sampleRate });
+    const fftSize = 8192, hopSize = fftSize / 2;
+    const window = new Float32Array(fftSize);
+    for (let i = 0; i < fftSize; i++) window[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / fftSize));
+    
+    const order = config.phiboOrder;
+    
+    // totalFactor = 1 + Σ(1/φⁿ)
+    let totalFactor = 1;
+    for (let n = 1; n <= order; n++) {
+        totalFactor += 1 / Math.pow(PHI, n);
+    }
+    
+    for (let ch = 0; ch < channels; ch++) {
+        const channelData = inputBuffer.getChannelData(ch);
+        const result = new Float32Array(length), weights = new Float32Array(length);
+        
+        for (let start = 0; start + fftSize <= length; start += hopSize) {
+            const real = new Float32Array(fftSize), imag = new Float32Array(fftSize);
+            for (let i = 0; i < fftSize; i++) { real[i] = channelData[start + i] * window[i]; imag[i] = 0; }
+            simpleFFT(real, imag, false);
             
-            for (let ch = 0; ch < channels; ch++) {
-                const channelData = inputBuffer.getChannelData(ch);
-                const result = new Float32Array(length), weights = new Float32Array(length);
+            const nyquist = sampleRate / 2, freqRes = sampleRate / fftSize;
+            const allComponents = [];
+            
+            // Сначала нормализуем оригинал: A0_new = A0 / totalFactor
+            const normFactor = 1 / totalFactor;
+            
+            // Для каждого порядка создаём гармоники от НОВОЙ амплитуды оригинала
+            for (let n = 1; n <= order; n++) {
+                const freqMult = Math.pow(PHI, n);      // φⁿ
+                const ampMult = 1 / Math.pow(PHI, n);    // 1/φⁿ
                 
-                for (let start = 0; start + fftSize <= length; start += hopSize) {
-                    const real = new Float32Array(fftSize), imag = new Float32Array(fftSize);
-                    for (let i = 0; i < fftSize; i++) { real[i] = channelData[start + i] * window[i]; imag[i] = 0; }
-                    simpleFFT(real, imag, false);
+                for (let i = 1; i < fftSize / 2; i++) {
+                    const freq = i * freqRes;
+                    const harmonicFreq = freq * freqMult;
+                    if (harmonicFreq >= nyquist) continue;
                     
-                    const nyquist = sampleRate / 2, freqRes = sampleRate / fftSize;
-                    const newComponents = [];
-                    for (let i = 1; i < fftSize / 2; i++) {
-                        const freq = i * freqRes, phiFreq = freq * PHI;
-                        if (phiFreq >= nyquist) continue;
-                        const targetBin = Math.round(phiFreq / freqRes);
-                        if (targetBin <= 0 || targetBin >= fftSize / 2) continue;
-                        const amp = Math.sqrt(real[i] * real[i] + imag[i] * imag[i]);
-                        if (amp < 0.0001) continue;
-                        const phase = Math.atan2(imag[i], real[i]);
-                        const newAmp = amp / (PHI * PHI);
-                        newComponents.push({ bin: targetBin, real: Math.cos(phase) * newAmp, imag: Math.sin(phase) * newAmp, origBin: i, origAmp: amp, newAmp: newAmp });
-                    }
-                    for (const comp of newComponents) {
-                        real[comp.bin] += comp.real; imag[comp.bin] += comp.imag;
-                        const totalAmp = comp.origAmp + comp.newAmp;
-                        const newOrigAmp = (comp.origAmp * comp.origAmp) / totalAmp;
-                        const scale = newOrigAmp / comp.origAmp;
-                        real[comp.origBin] *= scale; imag[comp.origBin] *= scale;
-                    }
-                    for (let i = fftSize / 2 + 1; i < fftSize; i++) { real[i] = real[fftSize - i]; imag[i] = -imag[fftSize - i]; }
-                    simpleFFT(real, imag, true);
-                    for (let i = 0; i < fftSize; i++) {
-                        const idx = start + i;
-                        if (idx < length) { result[idx] += real[i] * window[i]; weights[idx] += window[i] * window[i]; }
-                    }
-                    await new Promise(r => setTimeout(r, 0));
+                    const targetBin = Math.round(harmonicFreq / freqRes);
+                    if (targetBin <= 0 || targetBin >= fftSize / 2) continue;
+                    
+                    const amp = Math.sqrt(real[i] * real[i] + imag[i] * imag[i]);
+                    if (amp < 0.0001) continue;
+                    
+                    const phase = Math.atan2(imag[i], real[i]);
+                    
+                    // An = A0_new / φⁿ = (A0 / totalFactor) / φⁿ
+                    const newAmp = amp * normFactor * ampMult;
+                    
+                    allComponents.push({
+                        bin: targetBin,
+                        real: Math.cos(phase) * newAmp,
+                        imag: Math.sin(phase) * newAmp,
+                        origBin: i
+                    });
                 }
-                const outData = outputBuffer.getChannelData(ch);
-                for (let i = 0; i < length; i++) outData[i] = weights[i] > 0 ? result[i] / weights[i] : channelData[i];
             }
-            return outputBuffer;
+            
+            // Добавляем гармоники
+            for (const comp of allComponents) {
+                real[comp.bin] += comp.real;
+                imag[comp.bin] += comp.imag;
+            }
+            
+            // Нормализуем оригинал: A0_new = A0 / totalFactor
+            for (let i = 1; i < fftSize / 2; i++) {
+                real[i] *= normFactor;
+                imag[i] *= normFactor;
+            }
+            
+            for (let i = fftSize / 2 + 1; i < fftSize; i++) {
+                real[i] = real[fftSize - i];
+                imag[i] = -imag[fftSize - i];
+            }
+            
+            simpleFFT(real, imag, true);
+            
+            for (let i = 0; i < fftSize; i++) {
+                const idx = start + i;
+                if (idx < length) {
+                    result[idx] += real[i] * window[i];
+                    weights[idx] += window[i] * window[i];
+                }
+            }
+            await new Promise(r => setTimeout(r, 0));
         }
+        const outData = outputBuffer.getChannelData(ch);
+        for (let i = 0; i < length; i++) outData[i] = weights[i] > 0 ? result[i] / weights[i] : channelData[i];
+    }
+    return outputBuffer;
+}
         
         function updatePhiboButtonState() {
             if (phiboActive) {
@@ -1617,6 +1690,9 @@ function showToast(message, isError = false) {
             lineWidthSlider.value = config.lineWidth;
             lineWidthInput.value = config.lineWidth;
             lineWidthValue.textContent = config.lineWidth;
+            phiboOrderSlider.value = config.phiboOrder;
+            phiboOrderInput.value = config.phiboOrder;
+            phiboOrderValue.textContent = config.phiboOrder;
         }
         
         uploadArea.addEventListener('click', () => fileInput.click());
@@ -1857,6 +1933,17 @@ phaseBtn.addEventListener('click', async () => {
         lineWidthInput.addEventListener('input', function() { lineWidthSlider.value = this.value; lineWidthValue.textContent = this.value; config.lineWidth = this.value; });
         leftColorPicker.addEventListener('input', function() { config.leftChannelColor = this.value; });
         rightColorPicker.addEventListener('input', function() { config.rightChannelColor = this.value; });
+        phiboOrderSlider.addEventListener('input', function() {
+                phiboOrderInput.value = this.value;
+                phiboOrderValue.textContent = this.value;
+                config.phiboOrder = parseInt(this.value);
+            });
+            
+            phiboOrderInput.addEventListener('input', function() {
+                phiboOrderSlider.value = this.value;
+                phiboOrderValue.textContent = this.value;
+                config.phiboOrder = parseInt(this.value);
+            });
         
         function handleFileSelect(e) {
             const files = e.target.files;
@@ -2228,18 +2315,32 @@ phaseBtn.addEventListener('click', async () => {
             config.leftChannelColor = leftColorPicker.value;
             config.rightChannelColor = rightColorPicker.value;
             config.lineWidth = parseFloat(lineWidthInput.value);
-            if (isPlaying) { pauseAudio(); playAudio(); }
+            config.phiboOrder = parseInt(phiboOrderInput.value); // <-- ДОБАВИТЬ
+            
+            if (isPlaying) {
+                pauseAudio();
+                playAudio();
+            }
+            
             settingsModal.style.display = 'none';
-        }
+}
         
         function resetSettings() {
             config = {
-                hilbertMinFreq: 100, hilbertMaxFreq: 10000, hilbertNumFilters: 9, hilbertQ: 1.0,
-                delayCompensation: 0.008, visibleSamples: 1024, amplitudeScale: 1.0,
-                leftChannelColor: '#FFFF00', rightChannelColor: '#00FF00', lineWidth: 2
+                hilbertMinFreq: 100,
+                hilbertMaxFreq: 10000, 
+                hilbertNumFilters: 9, 
+                hilbertQ: 1.0,
+                delayCompensation: 0.008, 
+                visibleSamples: 1024, 
+                amplitudeScale: 1.0,
+                leftChannelColor: '#FFFF00', 
+                rightChannelColor: '#00FF00', 
+                lineWidth: 2,
+                phiboOrder: 3
             };
             initSettings();
-            if (isPlaying) { pauseAudio(); playAudio(); }
+            if (!isPlaying) { pauseAudio(); playAudio(); }
         }
         
         async function saveProcessedAudio() {
