@@ -15,16 +15,6 @@
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
-
-    Лицензировано под Apache License, Version 2.0 (далее "Лицензия");
-  вы не можете использовать этот файл кроме как в соответствии с Лицензией.
-  Вы можете получить копию Лицензии по адреcu:
-
-      http://www.apache.org/licenses/LICENSE-2.0
-
-  Если это не требуется по применимому законодательству или не согласовано в письменной форме,
-  программное обеспечение, распространяемое по Лицензии, распространяется на условиях "КАК ЕСТЬ",
-  БЕЗ каких-либо гарантий или условий явных или подразумеваемых.
 -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -606,17 +596,6 @@
             display: none;
         }
         
-        .phibo-indicator {
-            text-align: center;
-            margin: 10px 0;
-            padding: 8px 15px;
-            background: rgba(106, 158, 255, 0.15);
-            border-radius: 50px;
-            font-size: 14px;
-            color: #ffd700;
-            border: 1px solid rgba(255, 215, 0, 0.3);
-        }
-        
         .quality-indicator {
             position: absolute;
             bottom: 10px;
@@ -689,32 +668,32 @@
                 height: 350px;
             }
         }
-        /* Кастомное всплывающее сообщение (toast) */
-.custom-toast {
-    position: fixed;
-    bottom: 30px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #1a1a24;
-    border: 1px solid #6a9eff;
-    border-radius: 50px;
-    padding: 12px 24px;
-    color: #6a9eff;
-    font-size: 14px;
-    font-weight: 500;
-    z-index: 3000;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(8px);
-    animation: toastFadeInOut 3s ease-in-out forwards;
-    pointer-events: none;
-}
+        
+        .custom-toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #1a1a24;
+            border: 1px solid #6a9eff;
+            border-radius: 50px;
+            padding: 12px 24px;
+            color: #6a9eff;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 3000;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+            animation: toastFadeInOut 3s ease-in-out forwards;
+            pointer-events: none;
+        }
 
-@keyframes toastFadeInOut {
-    0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
-    15% { opacity: 1; transform: translateX(-50%) translateY(0); }
-    85% { opacity: 1; transform: translateX(-50%) translateY(0); }
-    100% { opacity: 0; transform: translateX(-50%) translateY(-20px); visibility: hidden; }
-}
+        @keyframes toastFadeInOut {
+            0% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            15% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            85% { opacity: 1; transform: translateX(-50%) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) translateY(-20px); visibility: hidden; }
+        }
     </style>
 </head>
 <body>
@@ -740,9 +719,6 @@
                 <i class="fas fa-stop"></i>
             </button>
             <button id="phaseBtn" class="secondary-btn" disabled>Применить сдвиг</button>
-            <button id="phiboBtn" class="control-btn" disabled title="Фрактальный эффект (Золотое сечение)">
-                <span style="font-family: serif; font-weight: bold;">Ф</span>
-            </button>
             <button id="settingsBtn" class="control-btn" title="Настройки">
                 <i class="fas fa-cog"></i>
             </button>
@@ -856,29 +832,6 @@
                         </div>
                     </div>
                 </div>
-                
-                <div class="settings-group">
-                    <h3 class="settings-group-title">Параметры эффекта "Ф"</h3>
-                    
-                    <div class="setting-item">
-                        <div class="setting-label">
-                            <span>Порядок гармоник (n, где φ=1.618, f - частота, А - её амплитуда)</span>
-                            <span class="setting-value" id="phiboOrderValue">3</span>
-                        </div>
-                        <div class="setting-control">
-                            <input type="range" id="phiboOrderSlider" min="1" max="6" step="1" value="3">
-                            <input type="number" id="phiboOrderInput" min="1" max="6" step="1" value="3">
-                        </div>
-                    </div>
-                    <div class="param-description" style="margin-top: 8px; font-size: 12px; text-align: center;">
-                        n=1: f×φ, A/φ &emsp;
-                        n=2: f×φ², A/φ²<br>
-                        n=3: f×φ³, A/φ³ &emsp;
-                        n=4: f×φ⁴, A/φ⁴<br>
-                        n=5: f×φ⁵, A/φ⁵ &emsp;
-                        n=6: f×φ⁶, A/φ⁶
-                    </div>
-                </div>                
                 
                 <div class="settings-group">
                     <h3 class="settings-group-title">Параметры визуализации</h3>
@@ -1064,14 +1017,6 @@
                             <p>Взаимодействие фазово-сдвинутых волн создаёт области усиления/ослабления звука, формируя акустический вихрь. Экспериментируя с настройками, можно управлять плотностью этого вихря - от мягкого вращения до интенсивной турбулентности.</p>
                         </div>
                     </div>
-                    
-                    <div class="info-section">
-                        <h3 class="section-title">Эффект "Ф" (Золотое сечение)</h3>
-                        <div class="description">
-                            <p>Кнопка "Ф" активирует фрактальный эффект, основанный на золотом сечении (φ = 1.61803398875). Для каждой частоты f создаётся дополнительная гармоника на частоте f × φ с амплитудой A / φ². Производится нормализация для сохранения исходной громкости.</p>
-                            <p>Это создаёт богатый, "фрактальный" звук, обогащая спектр гармониками по закону золотого сечения. Эффект может использоваться как отдельно, так и вместе с фазовым сдвигом.</p>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -1095,8 +1040,7 @@
             amplitudeScale: 1.0,
             leftChannelColor: '#FFFF00',
             rightChannelColor: '#00FF00',
-            lineWidth: 2,
-            phiboOrder: 3 //Порядок эффекта Ф
+            lineWidth: 2
         };
         
         let oscilloscopeCanvas, lissajousCanvas;
@@ -1107,7 +1051,6 @@
         const fileInput = document.getElementById('fileInput');
         const playBtn = document.getElementById('playBtn');
         const phaseBtn = document.getElementById('phaseBtn');
-        const phiboBtn = document.getElementById('phiboBtn');
         const stopBtn = document.getElementById('stopBtn');
         const visualizer = document.getElementById('visualizer');
         
@@ -1159,9 +1102,6 @@
         const lineWidthSlider = document.getElementById('lineWidthSlider');
         const lineWidthInput = document.getElementById('lineWidthInput');
         const lineWidthValue = document.getElementById('lineWidthValue');
-        const phiboOrderSlider = document.getElementById('phiboOrderSlider');
-        const phiboOrderInput = document.getElementById('phiboOrderInput');
-        const phiboOrderValue = document.getElementById('phiboOrderValue');
         
         // Аудио переменные
         let audioContext;
@@ -1175,11 +1115,6 @@
         let progressAnimationId;
         let visualizerAnimationId;
         let leftAnalyser, rightAnalyser;
-        
-        // Переменные для эффекта "Ф"
-        let phiboActive = false;
-        const PHI = 1.61803398875;
-        let processingOverlay = null;
         
         // Плейлист
         let playlistData = [];
@@ -1220,178 +1155,171 @@
             }
         }
         
-// ===== ФУНКЦИЯ АВТОПОДСТРОЙКИ ЗАДЕРЖКИ (полностью исправленная) =====
-async function autoTuneDelay() {
-    if (!phaseShiftActive || !audioBuffer) {
-        console.log('Автоподстройка: условия не выполнены');
-        return null;
-    }
-    
-    console.log('Автоподстройка задержки началась...');
-    showProcessingOverlay('Автоподстройка задержки...');
-    
-    const wasPlaying = isPlaying;
-    const savedPausedTime = pausedTime;
-    
-    if (wasPlaying) pauseAudio();
-    
-    // Вспомогательная функция для тестирования задержки
-    async function testDelayQuality(testDelay) {
-        const analysisDuration = Math.min(20, audioBuffer.duration);
-        const analysisSamples = Math.floor(audioBuffer.sampleRate * analysisDuration);
-        
-        const offlineCtx = new OfflineAudioContext(2, analysisSamples, audioBuffer.sampleRate);
-        const source = offlineCtx.createBufferSource();
-        source.buffer = audioBuffer;
-        
-        const splitter = offlineCtx.createChannelSplitter(audioBuffer.numberOfChannels);
-        source.connect(splitter);
-        const merger = offlineCtx.createChannelMerger(2);
-        
-        const numChannels = audioBuffer.numberOfChannels;
-        
-        if (numChannels === 1) {
-            if (testDelay === 0) {
-                // Без Hilbert - просто копируем в стерео
-                splitter.connect(merger, 0, 0);
-                splitter.connect(merger, 0, 1);
+        // ===== ФУНКЦИЯ АВТОПОДСТРОЙКИ ЗАДЕРЖКИ =====
+        async function autoTuneDelay() {
+            if (!phaseShiftActive || !audioBuffer) {
+                console.log('Автоподстройка: условия не выполнены');
+                return null;
+            }
+            
+            console.log('Автоподстройка задержки началась...');
+            showProcessingOverlay('Автоподстройка задержки...');
+            
+            const wasPlaying = isPlaying;
+            const savedPausedTime = pausedTime;
+            
+            if (wasPlaying) pauseAudio();
+            
+            async function testDelayQuality(testDelay) {
+                const analysisDuration = Math.min(20, audioBuffer.duration);
+                const analysisSamples = Math.floor(audioBuffer.sampleRate * analysisDuration);
+                
+                const offlineCtx = new OfflineAudioContext(2, analysisSamples, audioBuffer.sampleRate);
+                const source = offlineCtx.createBufferSource();
+                source.buffer = audioBuffer;
+                
+                const splitter = offlineCtx.createChannelSplitter(audioBuffer.numberOfChannels);
+                source.connect(splitter);
+                const merger = offlineCtx.createChannelMerger(2);
+                
+                const numChannels = audioBuffer.numberOfChannels;
+                
+                if (numChannels === 1) {
+                    if (testDelay === 0) {
+                        splitter.connect(merger, 0, 0);
+                        splitter.connect(merger, 0, 1);
+                    } else {
+                        const delayNode = offlineCtx.createDelay();
+                        delayNode.delayTime.value = testDelay;
+                        const hilbert = createHilbertTransformerStatic(offlineCtx);
+                        splitter.connect(delayNode, 0);
+                        splitter.connect(hilbert.input, 0);
+                        delayNode.connect(merger, 0, 0);
+                        hilbert.output.connect(merger, 0, 1);
+                    }
+                } else {
+                    if (testDelay === 0) {
+                        splitter.connect(merger, 0, 0);
+                        splitter.connect(merger, 1, 1);
+                    } else {
+                        const delayNode = offlineCtx.createDelay();
+                        delayNode.delayTime.value = testDelay;
+                        const hilbert = createHilbertTransformerStatic(offlineCtx);
+                        splitter.connect(delayNode, 0);
+                        splitter.connect(hilbert.input, 1);
+                        delayNode.connect(merger, 0, 0);
+                        hilbert.output.connect(merger, 0, 1);
+                    }
+                }
+                
+                merger.connect(offlineCtx.destination);
+                source.start(0);
+                
+                try {
+                    const renderedBuffer = await offlineCtx.startRendering();
+                    const leftData = renderedBuffer.getChannelData(0);
+                    const rightData = renderedBuffer.getChannelData(1);
+                    
+                    let sumXY = 0, sumX2 = 0, sumY2 = 0;
+                    let sumX = 0, sumY = 0;
+                    const sampleLen = Math.min(leftData.length, 50000);
+                    
+                    for (let i = 0; i < sampleLen; i++) {
+                        const x = leftData[i];
+                        const y = rightData[i];
+                        sumXY += x * y;
+                        sumX2 += x * x;
+                        sumY2 += y * y;
+                        sumX += x;
+                        sumY += y;
+                    }
+                    
+                    if (sumX2 === 0 || sumY2 === 0) return 1;
+                    
+                    const meanX = sumX / sampleLen;
+                    const meanY = sumY / sampleLen;
+                    
+                    let cov = 0, varX = 0, varY = 0;
+                    for (let i = 0; i < sampleLen; i++) {
+                        const x = leftData[i] - meanX;
+                        const y = rightData[i] - meanY;
+                        cov += x * y;
+                        varX += x * x;
+                        varY += y * y;
+                    }
+                    
+                    if (varX === 0 || varY === 0) return 1;
+                    const correlation = Math.abs(cov / Math.sqrt(varX * varY));
+                    return Math.min(1, correlation);
+                } catch(e) {
+                    console.error('Ошибка при тестировании задержки', testDelay, e);
+                    return 1;
+                }
+            }
+            
+            console.log('📊 Тестирование исходного качества (задержка 0 мс)...');
+            const zeroDelayQuality = await testDelayQuality(0);
+            const zeroDelayQualityPercent = ((1 - zeroDelayQuality) * 100).toFixed(1);
+            console.log(`📊 Исходное качество: ${zeroDelayQualityPercent}% (корреляция: ${zeroDelayQuality.toFixed(4)})`);
+            
+            if (zeroDelayQuality < 0.08) {
+                console.log(`✅ Исходный файл имеет отличный 90° сдвиг (качество ${zeroDelayQualityPercent}%), задержка 0 мс`);
+                config.delayCompensation = 0;
+                delaySlider.value = 0;
+                delayInput.value = 0;
+                delayValue.textContent = '0';
+                showTuneMessage('0', zeroDelayQualityPercent);
+                
+                if (wasPlaying) {
+                    pausedTime = savedPausedTime;
+                    startPlayback();
+                }
+                
+                hideProcessingOverlay();
+                return 0;
+            }
+            
+            console.log(`🔍 Качество ${zeroDelayQualityPercent}% < 92%, поиск оптимальной задержки...`);
+            
+            const results = [{ delay: 0, quality: zeroDelayQuality }];
+            
+            for (let d = 0.2; d <= 20; d += 0.2) {
+                const testDelay = d / 1000;
+                const quality = await testDelayQuality(testDelay);
+                results.push({ delay: testDelay, quality: quality });
+                console.log(`   Задержка ${d.toFixed(1)}мс: качество ${((1-quality)*100).toFixed(1)}% (корр: ${quality.toFixed(4)})`);
+            }
+            
+            let best = results[0];
+            for (let i = 1; i < results.length; i++) {
+                if (results[i].quality < best.quality) best = results[i];
+            }
+            
+            const bestDelayMs = (best.delay * 1000).toFixed(1);
+            const bestQualityPercent = ((1 - best.quality) * 100).toFixed(1);
+            
+            config.delayCompensation = best.delay;
+            delaySlider.value = best.delay * 1000;
+            delayInput.value = best.delay * 1000;
+            delayValue.textContent = bestDelayMs;
+            
+            console.log(`✅ Результат: задержка ${bestDelayMs} мс (качество ${bestQualityPercent}%)`);
+            if (best.delay === 0) {
+                console.log(`   (исходный файл оказался лучшим)`);
             } else {
-                const delayNode = offlineCtx.createDelay();
-                delayNode.delayTime.value = testDelay;
-                const hilbert = createHilbertTransformerStatic(offlineCtx);
-                splitter.connect(delayNode, 0);
-                splitter.connect(hilbert.input, 0);
-                delayNode.connect(merger, 0, 0);
-                hilbert.output.connect(merger, 0, 1);
+                console.log(`   Улучшение с ${zeroDelayQualityPercent}% до ${bestQualityPercent}%`);
             }
-        } else {
-            if (testDelay === 0) {
-                // Без Hilbert - просто копируем каналы
-                splitter.connect(merger, 0, 0);
-                splitter.connect(merger, 1, 1);
-            } else {
-                const delayNode = offlineCtx.createDelay();
-                delayNode.delayTime.value = testDelay;
-                const hilbert = createHilbertTransformerStatic(offlineCtx);
-                splitter.connect(delayNode, 0);
-                splitter.connect(hilbert.input, 1);
-                delayNode.connect(merger, 0, 0);
-                hilbert.output.connect(merger, 0, 1);
+            
+            showTuneMessage(bestDelayMs, bestQualityPercent);
+            
+            if (wasPlaying) {
+                pausedTime = savedPausedTime;
+                startPlayback();
             }
+            
+            hideProcessingOverlay();
+            return best.delay;
         }
-        
-        merger.connect(offlineCtx.destination);
-        source.start(0);
-        
-        try {
-            const renderedBuffer = await offlineCtx.startRendering();
-            const leftData = renderedBuffer.getChannelData(0);
-            const rightData = renderedBuffer.getChannelData(1);
-            
-            let sumXY = 0, sumX2 = 0, sumY2 = 0;
-            let sumX = 0, sumY = 0;
-            const sampleLen = Math.min(leftData.length, 50000);
-            
-            for (let i = 0; i < sampleLen; i++) {
-                const x = leftData[i];
-                const y = rightData[i];
-                sumXY += x * y;
-                sumX2 += x * x;
-                sumY2 += y * y;
-                sumX += x;
-                sumY += y;
-            }
-            
-            if (sumX2 === 0 || sumY2 === 0) return 1;
-            
-            const meanX = sumX / sampleLen;
-            const meanY = sumY / sampleLen;
-            
-            let cov = 0, varX = 0, varY = 0;
-            for (let i = 0; i < sampleLen; i++) {
-                const x = leftData[i] - meanX;
-                const y = rightData[i] - meanY;
-                cov += x * y;
-                varX += x * x;
-                varY += y * y;
-            }
-            
-            if (varX === 0 || varY === 0) return 1;
-            const correlation = Math.abs(cov / Math.sqrt(varX * varY));
-            return Math.min(1, correlation);
-        } catch(e) {
-            console.error('Ошибка при тестировании задержки', testDelay, e);
-            return 1;
-        }
-    }
-    
-    // ШАГ 1: Тестируем исходный файл БЕЗ Hilbert
-    console.log('📊 Тестирование исходного качества (задержка 0 мс, без Hilbert)...');
-    const zeroDelayQuality = await testDelayQuality(0);
-    const zeroDelayQualityPercent = ((1 - zeroDelayQuality) * 100).toFixed(1);
-    console.log(`📊 Исходное качество: ${zeroDelayQualityPercent}% (корреляция: ${zeroDelayQuality.toFixed(4)})`);
-    
-    // Для идеального 90° сдвига корреляция должна быть < 0.05
-    if (zeroDelayQuality < 0.08) {
-        console.log(`✅ Исходный файл имеет отличный 90° сдвиг (качество ${zeroDelayQualityPercent}%), задержка 0 мс`);
-        config.delayCompensation = 0;
-        delaySlider.value = 0;
-        delayInput.value = 0;
-        delayValue.textContent = '0';
-        showTuneMessage('0', zeroDelayQualityPercent);
-        
-        if (wasPlaying) {
-            pausedTime = savedPausedTime;
-            startPlayback();
-        }
-        
-        hideProcessingOverlay();
-        return 0;
-    }
-    
-    // ШАГ 2: Перебираем задержки С Hilbert
-    console.log(`🔍 Качество ${zeroDelayQualityPercent}% < 92%, поиск оптимальной задержки...`);
-    
-    const results = [{ delay: 0, quality: zeroDelayQuality }];
-    
-    for (let d = 0.2; d <= 20; d += 0.2) {
-        const testDelay = d / 1000;
-        const quality = await testDelayQuality(testDelay);
-        results.push({ delay: testDelay, quality: quality });
-        console.log(`   Задержка ${d.toFixed(1)}мс: качество ${((1-quality)*100).toFixed(1)}% (корр: ${quality.toFixed(4)})`);
-    }
-    
-    // Выбираем лучшую
-    let best = results[0];
-    for (let i = 1; i < results.length; i++) {
-        if (results[i].quality < best.quality) best = results[i];
-    }
-    
-    const bestDelayMs = (best.delay * 1000).toFixed(1);
-    const bestQualityPercent = ((1 - best.quality) * 100).toFixed(1);
-    
-    config.delayCompensation = best.delay;
-    delaySlider.value = best.delay * 1000;
-    delayInput.value = best.delay * 1000;
-    delayValue.textContent = bestDelayMs;
-    
-    console.log(`✅ Результат: задержка ${bestDelayMs} мс (качество ${bestQualityPercent}%)`);
-    if (best.delay === 0) {
-        console.log(`   (исходный файл оказался лучшим)`);
-    } else {
-        console.log(`   Улучшение с ${zeroDelayQualityPercent}% до ${bestQualityPercent}%`);
-    }
-    
-    showTuneMessage(bestDelayMs, bestQualityPercent);
-    
-    if (wasPlaying) {
-        pausedTime = savedPausedTime;
-        startPlayback();
-    }
-    
-    hideProcessingOverlay();
-    return best.delay;
-}
         
         function createHilbertTransformerStatic(context) {
             const minFreq = config.hilbertMinFreq;
@@ -1411,8 +1339,7 @@ async function autoTuneDelay() {
             return { input: filters[0], output: filters[filters.length-1] };
         }
         
-        // ===== ФУНКЦИИ ЭФФЕКТА "Ф" =====
-        
+        // ===== ФУНКЦИИ ДЛЯ ОВЕРЛЕЯ =====
         function showProcessingOverlay(message) {
             if (processingOverlay) return;
             
@@ -1452,7 +1379,15 @@ async function autoTuneDelay() {
             document.body.appendChild(processingOverlay);
         }
         
-        // Кастомное всплывающее сообщение
+        let processingOverlay = null;
+        
+        function hideProcessingOverlay() {
+            if (processingOverlay) {
+                processingOverlay.remove();
+                processingOverlay = null;
+            }
+        }
+        
         function showToast(message, isError = false) {
             const existingToast = document.querySelector('.custom-toast');
             if (existingToast) existingToast.remove();
@@ -1469,179 +1404,6 @@ async function autoTuneDelay() {
             setTimeout(() => {
                 if (toast && toast.remove) toast.remove();
             }, 3000);
-        }
-        
-        function hideProcessingOverlay() {
-            if (processingOverlay) {
-                processingOverlay.remove();
-                processingOverlay = null;
-            }
-        }
-        
-        function simpleFFT(real, imag, inverse) {
-            const n = real.length;
-            let bits = 0;
-            while ((1 << bits) < n) bits++;
-            
-            for (let i = 0; i < n; i++) {
-                let rev = 0;
-                for (let j = 0; j < bits; j++) rev = (rev << 1) | ((i >> j) & 1);
-                if (i < rev) {
-                    [real[i], real[rev]] = [real[rev], real[i]];
-                    [imag[i], imag[rev]] = [imag[rev], imag[i]];
-                }
-            }
-            
-            for (let len = 2; len <= n; len <<= 1) {
-                const half = len >> 1;
-                const angle = (inverse ? 2 : -2) * Math.PI / len;
-                const wlenR = Math.cos(angle);
-                const wlenI = Math.sin(angle);
-                
-                for (let i = 0; i < n; i += len) {
-                    let wr = 1, wi = 0;
-                    for (let j = 0; j < half; j++) {
-                        const uR = real[i + j], uI = imag[i + j];
-                        const vR = real[i + j + half] * wr - imag[i + j + half] * wi;
-                        const vI = real[i + j + half] * wi + imag[i + j + half] * wr;
-                        
-                        real[i + j] = uR + vR;
-                        imag[i + j] = uI + vI;
-                        real[i + j + half] = uR - vR;
-                        imag[i + j + half] = uI - vI;
-                        
-                        const nextWR = wr * wlenR - wi * wlenI;
-                        const nextWI = wr * wlenI + wi * wlenR;
-                        wr = nextWR;
-                        wi = nextWI;
-                    }
-                }
-            }
-            
-            if (inverse) {
-                for (let i = 0; i < n; i++) {
-                    real[i] /= n;
-                    imag[i] /= n;
-                }
-            }
-        }
-        
-//Применение фрактального эффекта "Ф" (золотое сечение)
-        async function applyPhiboEffect(inputBuffer) {
-    const sampleRate = inputBuffer.sampleRate, length = inputBuffer.length, channels = inputBuffer.numberOfChannels;
-    const outputBuffer = new AudioBuffer({ numberOfChannels: channels, length: length, sampleRate: sampleRate });
-    const fftSize = 8192, hopSize = fftSize / 2;
-    const window = new Float32Array(fftSize);
-    for (let i = 0; i < fftSize; i++) window[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / fftSize));
-    
-    const order = config.phiboOrder;
-    
-    // totalFactor = 1 + Σ(1/φⁿ)
-    let totalFactor = 1;
-    for (let n = 1; n <= order; n++) {
-        totalFactor += 1 / Math.pow(PHI, n);
-    }
-    
-    for (let ch = 0; ch < channels; ch++) {
-        const channelData = inputBuffer.getChannelData(ch);
-        const result = new Float32Array(length), weights = new Float32Array(length);
-        
-        for (let start = 0; start + fftSize <= length; start += hopSize) {
-            const real = new Float32Array(fftSize), imag = new Float32Array(fftSize);
-            for (let i = 0; i < fftSize; i++) { real[i] = channelData[start + i] * window[i]; imag[i] = 0; }
-            simpleFFT(real, imag, false);
-            
-            const nyquist = sampleRate / 2, freqRes = sampleRate / fftSize;
-            const allComponents = [];
-            
-            // Сначала нормализуем оригинал: A0_new = A0 / totalFactor
-            const normFactor = 1 / totalFactor;
-            
-            // Для каждого порядка создаём гармоники от НОВОЙ амплитуды оригинала
-            for (let n = 1; n <= order; n++) {
-                const freqMult = Math.pow(PHI, n);      // φⁿ
-                const ampMult = 1 / Math.pow(PHI, n);    // 1/φⁿ
-                
-                for (let i = 1; i < fftSize / 2; i++) {
-                    const freq = i * freqRes;
-                    const harmonicFreq = freq * freqMult;
-                    if (harmonicFreq >= nyquist) continue;
-                    
-                    const targetBin = Math.round(harmonicFreq / freqRes);
-                    if (targetBin <= 0 || targetBin >= fftSize / 2) continue;
-                    
-                    const amp = Math.sqrt(real[i] * real[i] + imag[i] * imag[i]);
-                    if (amp < 0.0001) continue;
-                    
-                    const phase = Math.atan2(imag[i], real[i]);
-                    
-                    // An = A0_new / φⁿ = (A0 / totalFactor) / φⁿ
-                    const newAmp = amp * normFactor * ampMult;
-                    
-                    allComponents.push({
-                        bin: targetBin,
-                        real: Math.cos(phase) * newAmp,
-                        imag: Math.sin(phase) * newAmp,
-                        origBin: i
-                    });
-                }
-            }
-            
-            // Добавляем гармоники
-            for (const comp of allComponents) {
-                real[comp.bin] += comp.real;
-                imag[comp.bin] += comp.imag;
-            }
-            
-            // Нормализуем оригинал: A0_new = A0 / totalFactor
-            for (let i = 1; i < fftSize / 2; i++) {
-                real[i] *= normFactor;
-                imag[i] *= normFactor;
-            }
-            
-            for (let i = fftSize / 2 + 1; i < fftSize; i++) {
-                real[i] = real[fftSize - i];
-                imag[i] = -imag[fftSize - i];
-            }
-            
-            simpleFFT(real, imag, true);
-            
-            for (let i = 0; i < fftSize; i++) {
-                const idx = start + i;
-                if (idx < length) {
-                    result[idx] += real[i] * window[i];
-                    weights[idx] += window[i] * window[i];
-                }
-            }
-            await new Promise(r => setTimeout(r, 0));
-        }
-        const outData = outputBuffer.getChannelData(ch);
-        for (let i = 0; i < length; i++) outData[i] = weights[i] > 0 ? result[i] / weights[i] : channelData[i];
-    }
-    return outputBuffer;
-}
-        
-        function updatePhiboButtonState() {
-            if (phiboActive) {
-                phiboBtn.style.background = '#6a9eff';
-                phiboBtn.style.color = 'white';
-                phiboBtn.style.border = '2px solid #ffd700';
-                phiboBtn.style.boxShadow = '0 0 10px rgba(106, 158, 255, 0.5)';
-                if (!document.getElementById('phiboIndicator')) {
-                    const indicator = document.createElement('div');
-                    indicator.id = 'phiboIndicator';
-                    indicator.className = 'phibo-indicator';
-                    indicator.innerHTML = '<i class="fas fa-gold"></i> Фрактальный эффект активен (φ = 1.618)';
-                    phaseInfo.parentNode.insertBefore(indicator, phaseInfo.nextSibling);
-                }
-            } else {
-                phiboBtn.style.background = '';
-                phiboBtn.style.color = '';
-                phiboBtn.style.border = '';
-                phiboBtn.style.boxShadow = '';
-                const indicator = document.getElementById('phiboIndicator');
-                if (indicator) indicator.remove();
-            }
         }
         
         function updateQualityIndicator() {
@@ -1690,9 +1452,6 @@ async function autoTuneDelay() {
             lineWidthSlider.value = config.lineWidth;
             lineWidthInput.value = config.lineWidth;
             lineWidthValue.textContent = config.lineWidth;
-            phiboOrderSlider.value = config.phiboOrder;
-            phiboOrderInput.value = config.phiboOrder;
-            phiboOrderValue.textContent = config.phiboOrder;
         }
         
         uploadArea.addEventListener('click', () => fileInput.click());
@@ -1702,202 +1461,112 @@ async function autoTuneDelay() {
         clearPlaylist.addEventListener('click', clearPlaylistHandler);
         saveBtn.addEventListener('click', saveProcessedAudio);
         
-// Обработчик кнопки фазового сдвига (исправленный)
-phaseBtn.addEventListener('click', async () => {
-    // Если файл не загружен, выходим
-    if (!audioBuffer) return;
-
-    // 1. Временный анализ качества (без применения сдвига)
-    console.log("Анализ исходного файла перед включением сдвига...");
-    showProcessingOverlay("Анализ исходного файла...");
-    
-    let originalQuality = 0;
-    try {
-        const analysisDuration = Math.min(20, audioBuffer.duration);
-        const analysisSamples = Math.floor(audioBuffer.sampleRate * analysisDuration);
-        const offlineCtx = new OfflineAudioContext(2, analysisSamples, audioBuffer.sampleRate);
-        const source = offlineCtx.createBufferSource();
-        source.buffer = audioBuffer;
-        
-        const splitter = offlineCtx.createChannelSplitter(audioBuffer.numberOfChannels);
-        source.connect(splitter);
-        const merger = offlineCtx.createChannelMerger(2);
-        
-        if (audioBuffer.numberOfChannels === 1) {
-            splitter.connect(merger, 0, 0);
-            splitter.connect(merger, 0, 1);
-        } else {
-            splitter.connect(merger, 0, 0);
-            splitter.connect(merger, 1, 1);
-        }
-        
-        merger.connect(offlineCtx.destination);
-        source.start(0);
-        
-        const renderedBuffer = await offlineCtx.startRendering();
-        const leftData = renderedBuffer.getChannelData(0);
-        const rightData = renderedBuffer.getChannelData(1);
-        
-        let sumXY = 0, sumX2 = 0, sumY2 = 0;
-        let sumX = 0, sumY = 0;
-        const sampleLen = Math.min(leftData.length, 50000);
-        for (let i = 0; i < sampleLen; i++) {
-            const x = leftData[i];
-            const y = rightData[i];
-            sumXY += x * y;
-            sumX2 += x * x;
-            sumY2 += y * y;
-            sumX += x;
-            sumY += y;
-        }
-        const meanX = sumX / sampleLen;
-        const meanY = sumY / sampleLen;
-        let cov = 0, varX = 0, varY = 0;
-        for (let i = 0; i < sampleLen; i++) {
-            const x = leftData[i] - meanX;
-            const y = rightData[i] - meanY;
-            cov += x * y;
-            varX += x * x;
-            varY += y * y;
-        }
-        const correlation = Math.abs(cov / Math.sqrt(varX * varY));
-        originalQuality = (1 - correlation) * 100;
-        console.log(`Качество исходного файла: ${originalQuality.toFixed(1)}%`);
-        
-    } catch(e) {
-        console.error("Ошибка при анализе", e);
-        originalQuality = 0;
-    }
-    hideProcessingOverlay();
-
-    // 2. Принимаем решение на основе качества
-    if (originalQuality > 90) {
-        if (phaseShiftActive) {
-            phaseShiftActive = false;
-            phaseInfo.style.display = 'none';
-            phaseBtn.textContent = 'Применить сдвиг';
-            if (isPlaying) {
-                pauseAudio();
-                playAudio();
+        phaseBtn.addEventListener('click', async () => {
+            if (!audioBuffer) return;
+            
+            console.log("Анализ исходного файла перед включением сдвига...");
+            showProcessingOverlay("Анализ исходного файла...");
+            
+            let originalQuality = 0;
+            try {
+                const analysisDuration = Math.min(20, audioBuffer.duration);
+                const analysisSamples = Math.floor(audioBuffer.sampleRate * analysisDuration);
+                const offlineCtx = new OfflineAudioContext(2, analysisSamples, audioBuffer.sampleRate);
+                const source = offlineCtx.createBufferSource();
+                source.buffer = audioBuffer;
+                
+                const splitter = offlineCtx.createChannelSplitter(audioBuffer.numberOfChannels);
+                source.connect(splitter);
+                const merger = offlineCtx.createChannelMerger(2);
+                
+                if (audioBuffer.numberOfChannels === 1) {
+                    splitter.connect(merger, 0, 0);
+                    splitter.connect(merger, 0, 1);
+                } else {
+                    splitter.connect(merger, 0, 0);
+                    splitter.connect(merger, 1, 1);
+                }
+                
+                merger.connect(offlineCtx.destination);
+                source.start(0);
+                
+                const renderedBuffer = await offlineCtx.startRendering();
+                const leftData = renderedBuffer.getChannelData(0);
+                const rightData = renderedBuffer.getChannelData(1);
+                
+                let sumXY = 0, sumX2 = 0, sumY2 = 0;
+                let sumX = 0, sumY = 0;
+                const sampleLen = Math.min(leftData.length, 50000);
+                for (let i = 0; i < sampleLen; i++) {
+                    const x = leftData[i];
+                    const y = rightData[i];
+                    sumXY += x * y;
+                    sumX2 += x * x;
+                    sumY2 += y * y;
+                    sumX += x;
+                    sumY += y;
+                }
+                const meanX = sumX / sampleLen;
+                const meanY = sumY / sampleLen;
+                let cov = 0, varX = 0, varY = 0;
+                for (let i = 0; i < sampleLen; i++) {
+                    const x = leftData[i] - meanX;
+                    const y = rightData[i] - meanY;
+                    cov += x * y;
+                    varX += x * x;
+                    varY += y * y;
+                }
+                const correlation = Math.abs(cov / Math.sqrt(varX * varY));
+                originalQuality = (1 - correlation) * 100;
+                console.log(`Качество исходного файла: ${originalQuality.toFixed(1)}%`);
+                
+            } catch(e) {
+                console.error("Ошибка при анализе", e);
+                originalQuality = 0;
             }
-            showToast("Оптимальное смещение фазы уже есть, сдвиг отключён");
-        } else {
-            showToast("Оптимальное смещение фазы уже есть");
-        }
-        return;
-    }
-
-    // 3. Если качество плохое -> запускаем автоподстройку
-    const wasActive = phaseShiftActive;
-    phaseShiftActive = !phaseShiftActive;
-    phaseInfo.style.display = phaseShiftActive ? 'inline-block' : 'none';
-    phaseBtn.textContent = phaseShiftActive ? 'Убрать сдвиг' : 'Применить сдвиг';
-    
-    if (phaseShiftActive && audioBuffer) {
-        // Если для этого файла уже есть сохранённая оптимальная задержка - используем её
-        if (currentTrackIndex !== -1 && playlistData[currentTrackIndex]?.optimizedDelay !== null && playlistData[currentTrackIndex]?.optimizedDelay !== undefined) {
-            const savedDelay = playlistData[currentTrackIndex].optimizedDelay;
-            config.delayCompensation = savedDelay;
-            delaySlider.value = savedDelay * 1000;
-            delayInput.value = savedDelay * 1000;
-            delayValue.textContent = (savedDelay * 1000).toFixed(1);
-            console.log(`Используем сохранённую задержку: ${(savedDelay * 1000).toFixed(1)} мс`);
-        } else {
-            await autoTuneDelay();
-            // Сохраняем найденную задержку для текущего трека
-            if (currentTrackIndex !== -1 && playlistData[currentTrackIndex]) {
-                playlistData[currentTrackIndex].optimizedDelay = config.delayCompensation;
-                console.log(`Сохранена задержка для файла: ${(config.delayCompensation * 1000).toFixed(1)} мс`);
-            }
-        }
-        if (isPlaying) {
-            pauseAudio();
-            playAudio();
-        }
-    } else if (!phaseShiftActive && wasActive && isPlaying) {
-        pauseAudio();
-        playAudio();
-    }
-});
-        
-        phiboBtn.addEventListener('click', async () => {
-            if (currentTrackIndex === -1 || !playlistData[currentTrackIndex]?.buffer) {
-                showToast('Сначала загрузите аудиофайл', true);
+            hideProcessingOverlay();
+            
+            if (originalQuality > 90) {
+                if (phaseShiftActive) {
+                    phaseShiftActive = false;
+                    phaseInfo.style.display = 'none';
+                    phaseBtn.textContent = 'Применить сдвиг';
+                    if (isPlaying) {
+                        pauseAudio();
+                        playAudio();
+                    }
+                    showToast("Оптимальное смещение фазы уже есть, сдвиг отключён");
+                } else {
+                    showToast("Оптимальное смещение фазы уже есть");
+                }
                 return;
             }
             
-            const track = playlistData[currentTrackIndex];
-            const wasPhiboApplied = track.phiboApplied; // Сохраняем состояние до изменения
-            const isPhaseActive = phaseShiftActive; // Запоминаем, активен ли сдвиг
+            const wasActive = phaseShiftActive;
+            phaseShiftActive = !phaseShiftActive;
+            phaseInfo.style.display = phaseShiftActive ? 'inline-block' : 'none';
+            phaseBtn.textContent = phaseShiftActive ? 'Убрать сдвиг' : 'Применить сдвиг';
             
-            // Сохраняем оригинал при первом включении (ещё не применяли эффект)
-            if (!track.originalBuffer && !track.phiboApplied) {
-                track.originalBuffer = track.buffer;
-            }
-            
-            if (!track.phiboApplied) {
-                // === ВКЛЮЧАЕМ ЭФФЕКТ "Ф" ===
-                showProcessingOverlay('Применение фрактального эффекта...');
-                try {
-                    const processedBuffer = await applyPhiboEffect(track.originalBuffer || track.buffer);
-                    track.buffer = processedBuffer;
-                    audioBuffer = processedBuffer;
-                    totalTime.textContent = formatTime(processedBuffer.duration);
-                    track.phiboApplied = true;
-                    phiboActive = true;
-                    console.log('Эффект "Ф" применён успешно');
-                } catch (error) {
-                    console.error('Ошибка эффекта "Ф":', error);
-                    showToast('Ошибка применения эффекта', true);
-                    track.phiboApplied = false;
-                    phiboActive = false;
-                } finally {
-                    hideProcessingOverlay();
-                }
-            } else {
-                // === ВЫКЛЮЧАЕМ ЭФФЕКТ "Ф" ===
-                if (track.originalBuffer) {
-                    track.buffer = track.originalBuffer;
-                    audioBuffer = track.originalBuffer;
-                    totalTime.textContent = formatTime(audioBuffer.duration);
-                    track.phiboApplied = false;
-                    phiboActive = false;
-                    console.log('Эффект "Ф" отключён, восстановлен оригинал');
-                }
-            }
-            
-            // Обновляем внешний вид кнопки
-            updatePhiboButtonState();
-            
-            // Обновляем плейлист (чтобы отобразить/скрыть иконку золота)
-            updatePlaylist();
-            
-            // ===== ПЕРЕСЧЁТ ЗАДЕРЖКИ ЕСЛИ НУЖНО =====
-            // Условие: сдвиг активен И состояние эффекта "Ф" изменилось
-            if (isPhaseActive && (wasPhiboApplied !== track.phiboApplied)) {
-                const action = track.phiboApplied ? 'включения' : 'отключения';
-                showToast(`После ${action} эффекта "Ф" выполняется пересчёт задержки...`);
-                showProcessingOverlay(`Пересчёт оптимальной задержки после ${action} эффекта "Ф"...`);
-                
-                // Сбрасываем сохранённую задержку для этого трека
-                track.optimizedDelay = null;
-                
-                try {
+            if (phaseShiftActive && audioBuffer) {
+                if (currentTrackIndex !== -1 && playlistData[currentTrackIndex]?.optimizedDelay !== null && playlistData[currentTrackIndex]?.optimizedDelay !== undefined) {
+                    const savedDelay = playlistData[currentTrackIndex].optimizedDelay;
+                    config.delayCompensation = savedDelay;
+                    delaySlider.value = savedDelay * 1000;
+                    delayInput.value = savedDelay * 1000;
+                    delayValue.textContent = (savedDelay * 1000).toFixed(1);
+                    console.log(`Используем сохранённую задержку: ${(savedDelay * 1000).toFixed(1)} мс`);
+                } else {
                     await autoTuneDelay();
-                    // Сохраняем новую задержку
-                    track.optimizedDelay = config.delayCompensation;
-                    console.log(`Новая оптимальная задержка после ${action} эффекта "Ф": ${(config.delayCompensation * 1000).toFixed(1)} мс`);
-                    showToast(`Новая оптимальная задержка: ${(config.delayCompensation * 1000).toFixed(1)} мс`);
-                } catch (e) {
-                    console.error('Ошибка пересчёта задержки:', e);
-                    showToast('Ошибка пересчёта задержки', true);
-                } finally {
-                    hideProcessingOverlay();
+                    if (currentTrackIndex !== -1 && playlistData[currentTrackIndex]) {
+                        playlistData[currentTrackIndex].optimizedDelay = config.delayCompensation;
+                        console.log(`Сохранена задержка для файла: ${(config.delayCompensation * 1000).toFixed(1)} мс`);
+                    }
                 }
-            }
-            
-            // Перезапускаем воспроизведение если активно
-            if (isPlaying) {
+                if (isPlaying) {
+                    pauseAudio();
+                    playAudio();
+                }
+            } else if (!phaseShiftActive && wasActive && isPlaying) {
                 pauseAudio();
                 playAudio();
             }
@@ -1933,17 +1602,6 @@ phaseBtn.addEventListener('click', async () => {
         lineWidthInput.addEventListener('input', function() { lineWidthSlider.value = this.value; lineWidthValue.textContent = this.value; config.lineWidth = this.value; });
         leftColorPicker.addEventListener('input', function() { config.leftChannelColor = this.value; });
         rightColorPicker.addEventListener('input', function() { config.rightChannelColor = this.value; });
-        phiboOrderSlider.addEventListener('input', function() {
-                phiboOrderInput.value = this.value;
-                phiboOrderValue.textContent = this.value;
-                config.phiboOrder = parseInt(this.value);
-            });
-            
-            phiboOrderInput.addEventListener('input', function() {
-                phiboOrderSlider.value = this.value;
-                phiboOrderValue.textContent = this.value;
-                config.phiboOrder = parseInt(this.value);
-            });
         
         function handleFileSelect(e) {
             const files = e.target.files;
@@ -1951,7 +1609,7 @@ phaseBtn.addEventListener('click', async () => {
             for (let i = 0; i < files.length; i++) {
                 const file = files[i];
                 if (!file.type.match('audio.*')) { alert(`Файл "${file.name}" не является аудиофайлом и будет пропущен`); continue; }
-                playlistData.push({ file: file, analyzed: false, buffer: null, originalBuffer: null, phiboApplied: false, optimizedDelay: null });
+                playlistData.push({ file: file, analyzed: false, buffer: null, optimizedDelay: null });
             }
             playlist.style.display = 'block';
             updatePlaylist();
@@ -1969,7 +1627,6 @@ phaseBtn.addEventListener('click', async () => {
                         <div class="playlist-item-size">${formatFileSize(track.file.size)}</div>
                     </div>
                     ${track.analyzed ? '<div class="playlist-item-status"><i class="fas fa-check"></i></div>' : ''}
-                    ${track.phiboApplied ? '<div class="playlist-item-status" style="color:#ffd700"><i class="fas fa-gold"></i></div>' : ''}
                     <button class="remove-btn" data-index="${index}">
                         <i class="fas fa-times"></i>
                     </button>
@@ -2001,13 +1658,10 @@ phaseBtn.addEventListener('click', async () => {
             if (addBtn) addBtn.addEventListener('click', () => fileInput.click());
             if (!track.analyzed) analyzeTrack(index);
             else {
-                playBtn.disabled = false; phaseBtn.disabled = false; phiboBtn.disabled = false; stopBtn.disabled = false; saveBtn.disabled = false;
+                playBtn.disabled = false; phaseBtn.disabled = false; stopBtn.disabled = false; saveBtn.disabled = false;
                 visualizer.style.display = 'block'; progressContainer.style.display = 'block'; initVisualizer();
                 totalTime.textContent = formatTime(track.buffer.duration);
-                phiboActive = track.phiboApplied || false;
-                updatePhiboButtonState();
                 
-                // Восстанавливаем оптимизированную задержку для этого трека
                 if (track.optimizedDelay !== null && track.optimizedDelay !== undefined) {
                     config.delayCompensation = track.optimizedDelay;
                     delaySlider.value = track.optimizedDelay * 1000;
@@ -2025,7 +1679,7 @@ phaseBtn.addEventListener('click', async () => {
             reader.onload = function(e) {
                 if (!audioContext) audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 audioContext.decodeAudioData(e.target.result).then(buffer => {
-                    track.buffer = buffer; track.analyzed = true; track.phiboApplied = false; track.originalBuffer = null; track.optimizedDelay = null;
+                    track.buffer = buffer; track.analyzed = true; track.optimizedDelay = null;
                     uploadArea.innerHTML = `
                         <i>🎵</i>
                         <h3>${escapeHtml(track.file.name)}</h3>
@@ -2035,7 +1689,7 @@ phaseBtn.addEventListener('click', async () => {
                     `;
                     const addBtn = document.getElementById('addFilesBtn');
                     if (addBtn) addBtn.addEventListener('click', () => fileInput.click());
-                    playBtn.disabled = false; phaseBtn.disabled = false; phiboBtn.disabled = false; stopBtn.disabled = false; saveBtn.disabled = false;
+                    playBtn.disabled = false; phaseBtn.disabled = false; stopBtn.disabled = false; saveBtn.disabled = false;
                     visualizer.style.display = 'block'; progressContainer.style.display = 'block'; initVisualizer();
                     totalTime.textContent = formatTime(buffer.duration);
                     updatePlaylist();
@@ -2050,14 +1704,14 @@ phaseBtn.addEventListener('click', async () => {
             playlistData.splice(index, 1);
             if (index === currentTrackIndex) {
                 if (playlistData.length > 0) { currentTrackIndex = Math.min(index, playlistData.length - 1); selectTrack(currentTrackIndex); }
-                else { currentTrackIndex = -1; resetUploadArea(); playlist.style.display = 'none'; visualizer.style.display = 'none'; progressContainer.style.display = 'none'; phiboActive = false; updatePhiboButtonState(); }
+                else { currentTrackIndex = -1; resetUploadArea(); playlist.style.display = 'none'; visualizer.style.display = 'none'; progressContainer.style.display = 'none'; }
             } else if (index < currentTrackIndex) currentTrackIndex--;
             updatePlaylist();
         }
         
         function clearPlaylistHandler() {
             playlistData = []; currentTrackIndex = -1; playlist.style.display = 'none'; stopAudio(); resetUploadArea();
-            visualizer.style.display = 'none'; progressContainer.style.display = 'none'; phiboActive = false; updatePhiboButtonState();
+            visualizer.style.display = 'none'; progressContainer.style.display = 'none';
         }
         
         function resetUploadArea() {
@@ -2315,7 +1969,6 @@ phaseBtn.addEventListener('click', async () => {
             config.leftChannelColor = leftColorPicker.value;
             config.rightChannelColor = rightColorPicker.value;
             config.lineWidth = parseFloat(lineWidthInput.value);
-            config.phiboOrder = parseInt(phiboOrderInput.value); // <-- ДОБАВИТЬ
             
             if (isPlaying) {
                 pauseAudio();
@@ -2323,7 +1976,7 @@ phaseBtn.addEventListener('click', async () => {
             }
             
             settingsModal.style.display = 'none';
-}
+        }
         
         function resetSettings() {
             config = {
@@ -2336,11 +1989,10 @@ phaseBtn.addEventListener('click', async () => {
                 amplitudeScale: 1.0,
                 leftChannelColor: '#FFFF00', 
                 rightChannelColor: '#00FF00', 
-                lineWidth: 2,
-                phiboOrder: 3
+                lineWidth: 2
             };
             initSettings();
-            if (!isPlaying) { pauseAudio(); playAudio(); }
+            if (isPlaying) { pauseAudio(); playAudio(); }
         }
         
         async function saveProcessedAudio() {
@@ -2349,23 +2001,9 @@ phaseBtn.addEventListener('click', async () => {
             const track = playlistData[currentTrackIndex];
             let bufferForEffects = track.buffer;
             
-            const effectName = [];
-            if (phaseShiftActive) effectName.push('фазовый сдвиг');
-            if (phiboActive) effectName.push('фрактальный эффект');
-            const effectText = effectName.length > 0 ? effectName.join(' + ') : 'без эффектов';
-            saveBtn.innerHTML = `<i class="fas fa-download"></i> Сохранить WAV (${effectText})`;
-            
-            if (phiboActive) {
-                showProcessingOverlay('Применение фрактального эффекта для сохранения...');
-                try {
-                    bufferForEffects = await applyPhiboEffect(track.originalBuffer || track.buffer);
-                } catch (err) {
-                    console.error('Ошибка эффекта "Ф" при сохранении:', err);
-                    bufferForEffects = track.buffer;
-                } finally {
-                    hideProcessingOverlay();
-                }
-            }
+            const effectName = phaseShiftActive ? 'фазовый сдвиг' : '';
+            const effectText = phaseShiftActive ? '(фазовый сдвиг)' : 'без эффектов';
+            saveBtn.innerHTML = `<i class="fas fa-download"></i> Сохранить WAV ${effectText}`;
             
             const offlineContext = new OfflineAudioContext(2, bufferForEffects.length, bufferForEffects.sampleRate);
             const source = offlineContext.createBufferSource();
@@ -2421,7 +2059,6 @@ phaseBtn.addEventListener('click', async () => {
                 a.href = url;
                 let filename = '';
                 if (phaseShiftActive) filename += 'phase_';
-                if (phiboActive) filename += 'phibo_';
                 filename += track.file.name.replace(/\.[^/.]+$/, '') + '.wav';
                 a.download = filename;
                 document.body.appendChild(a);
