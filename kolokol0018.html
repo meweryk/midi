@@ -337,7 +337,7 @@
       </div>
       <div class="mb-2">
       	<label class="form-label mb-1"><b>Основная частота (Гц):</b></label>
-      	<input type="number" class="form-control form-control-sm" id="freq" value="174">
+      	<input type="number" class="form-control form-control-sm" id="freq" value="528">
       </div>
       
       <div class="input-group-custom mb-2">
@@ -351,18 +351,18 @@
       	</div>
       	<div>
       		<label class="form-label mb-1"><small>Затухание (с)</small></label>
-      		<input type="number" class="form-control form-control-sm" id="release" value="3.5" min="0.001" step="0.1">
+      		<input type="number" class="form-control form-control-sm" id="release" value="7.5" min="0.001" step="0.1">
       	</div>
       </div>
 
       <div class="mb-2">
         <label class="form-label mb-1"><b>Обертона (множитель:амплитуда):</b></label>
-        <textarea class="form-control form-control-sm" id="partials" rows="1" style="resize: none; overflow-y: hidden;" oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px'">1:0.4, 2:1.0, 2.4:0.6, 3:0.3, 4:0.2, 6:0.1, 8:0.05</textarea>
+        <textarea class="form-control form-control-sm" id="partials" rows="1" style="resize: none; overflow-y: hidden;" oninput="this.style.height='auto'; this.style.height=this.scrollHeight+'px'">0.5:20, 1:40, 1.1852:15, 1.5:10, 2:5, 4:3</textarea>
       </div>
 
       <div class="mb-2">
         <label class="form-label mb-1"><b>Набор частот (Гц, через запятую):</b></label>
-        <input class="form-control form-control-sm" id="setFrequencies" placeholder="500, 625, 750" value="96; 216; 256; 336; 576">
+        <input class="form-control form-control-sm" id="setFrequencies" placeholder="500, 625, 750" value="273.375;546.75; 136.688; 273.37; 729; 364.5; 729; 182.25; 243; 486; 243; 972; 486; 384">
       </div>
 
       <div class="mb-2 form-check form-switch">
@@ -373,7 +373,7 @@
       <div class="input-group-custom mb-2">
         <div>
           <label class="form-label mb-1"><small>Пауза между ударами (мс)</small></label>
-          <input type="number" class="form-control form-control-sm" id="hitDelay" value="1000">
+          <input type="number" class="form-control form-control-sm" id="hitDelay" value="100">
         </div>
         <div>
           <label class="form-label mb-1"><small>Пауза между циклами (мс)</small></label>
@@ -408,10 +408,11 @@
     <p class="info-text">Частоты звуков церковных колоколов могут варьироваться в широких пределах, но обычно они лежат в диапазоне от 60 Гц до 2000 Гц.<br> 
     Звучание колокола зависит от его размера, формы, толщины стенок, материала и, конечно же, от того, как его ударяют.</p>
     <p class="info-text">Частота основного тона может быть от 60 Гц до 200 Гц. Например, колокол "Сысой" (2000 пудов) имеет частоту 131 Гц, а колокол "Лебедь" (500 пудов) - 196 Гц.</p>
-    <p class="info-text"><b>Совет:</b> Подбирайте установки инструмента и самостоятельно задавайте значения в поле ввода, чтоб добиться идеального звука. Сумма коэффициентов амплитуд (громкости) обертонов задаются относительными чистами и в сумме программно приводятся к 100% , учитывая долю интенсивности каждого обертона<br>
+    <p class="info-text"><b>Совет:</b> Подбирайте установки инструмента и самостоятельно задавайте значения в поле ввода, чтоб добиться идеального звука. Сумма коэффициентов амплитуд (громкости) обертонов задаются относительными числами и в сумме программно приводятся к 100% , учитывая долю интенсивности каждого обертона<br>
     Файл сохраняется в формате .wav и сохранение занимает длительное время,зависящее от длительности звучания.<br>
     <b>Пример обертонов для колокола:</b></p>
     <ul>
+    <li><a href="#" class="preset-link">Колокол</a>: 1:0.4, 2:1.0, 2.4:0.6, 3:0.3, 4:0.2, 6:0.1, 8:0.05</li>
     <li><a href="#" class="preset-link">Колокол с низкой тональностью</a>: 1.0:1.0, 1.5:0.7, 2.4:0.4, 2.9:0.2, 3.8:0.1</li>
     <li><a href="#" class="preset-link">
         Била</a>
@@ -743,14 +744,15 @@
   const VOLUME_MULTIPLIER = 0.9; // Постоянный множитель громкости
   
   const instrumentPresets = {
-  bell: '1:0.4, 2:1.0, 2.4:0.6, 3:0.3, 4:0.2, 6:0.1, 8:0.05',
+  bell: '0.5:20, 1:40, 1.1852:15, 1.5:10, 2:5, 4:3',
   bowl: '0.6:0.4, 1:1.1, 2.03:0.3, 2.87:0.25, 5.37:0.1, 8.57:0.08, 11.95:0.05, 21.24:0.02',
   smallbell: '1:1.0, 2:0.6, 3:0.3, 4:0.1',
   };
   
   const presetValues = {
+  "Колокол": "1:0.4, 2:1.0, 2.4:0.6, 3:0.3, 4:0.2, 6:0.1, 8:0.05",  
   "Колокол с низкой тональностью": "1.0:1.0, 1.5:0.7, 2.4:0.4, 2.9:0.2, 3.8:0.1",
-  "Била": "0.5:20, 1:40, 1.1852:15, 1.5:10, 2:5, 4:3"
+  "Била": "0.5:20, 1:40, 1.1852:15, 1.5:10, 2:5, 4:3",
   "Церковный колокол": "1.0:0.9, 1.33:1.0, 1.8:0.6, 2.1:0.3, 2.8:0.15",
   "фландрийский": "1.00:1.0, 1.20:0.8, 1.51:0.5, 2.05:0.3, 2.55:0.2, 3.05:0.1",
   "азиатский, тонкий бронзовый": "1.00:1.0, 1.25:0.9, 1.68:0.6, 2.30:0.3, 3.00:0.1",

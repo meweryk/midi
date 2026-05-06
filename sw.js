@@ -1,4 +1,4 @@
-const CACHE_NAME = 'midi-bells-v12.7';
+const CACHE_NAME = 'midi-bells-v12.8';
 const DYNAMIC_CACHE = 'dynamic-cache-v12.5';
 const FALLBACK_HTML = '/midi/index.html';
 const FALLBACK_IMAGE = '/midi/icon-192.png';
