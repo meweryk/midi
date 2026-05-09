@@ -741,7 +741,7 @@
   const MAX_PARTIALS = 15;
   const MAX_REPEATS = 20;
   const MAX_DURATION = 600;
-  const VOLUME_MULTIPLIER = 0.9; // Постоянный множитель громкости
+  let VOLUME_MULTIPLIER = 0.8; // Постоянный множитель громкости
   
   const instrumentPresets = {
   bell: '0.5:20, 1:40, 1.1852:15, 1.5:10, 2:5, 4:3',
@@ -1002,6 +1002,35 @@
   console.log(`Нормализация: RMS=${rms.toFixed(4)}, Сумма амплитуд=${sumAmplitudes.toFixed(4)}`);
   
   return normalized;
+  }
+  
+  function updateVolumeMultiplier() {
+    const attack = parseFloat(document.getElementById('attack').value);
+    const sustain = parseFloat(document.getElementById('long').value);
+    const release = parseFloat(document.getElementById('release').value);
+    const hitDelay = parseInt(document.getElementById('hitDelay').value);
+    const baseKoef = 0.8;
+    
+    if (hitDelay >= 0) {
+      VOLUME_MULTIPLIER = baseKoef;
+      console.log(`🎚️ Нет наложения, VOLUME_MULTIPLIER = ${VOLUME_MULTIPLIER}`);
+      return;
+    }
+    
+    const duration = attack + sustain + release;
+    const hitDelaySec = Math.abs(hitDelay) / 1000;
+    const kn = duration / (duration - hitDelaySec);
+    
+    if (kn <= 2) {
+      VOLUME_MULTIPLIER = baseKoef / Math.sqrt(2);
+      console.log(`🎚️ Наложение 2 звуков (kn=${kn.toFixed(2)}), VOLUME_MULTIPLIER = ${VOLUME_MULTIPLIER}`);
+    } else if (kn < 3) {
+      VOLUME_MULTIPLIER = baseKoef / Math.sqrt(3);
+      console.log(`🎚️ Наложение 3 звуков (kn=${kn.toFixed(2)}), VOLUME_MULTIPLIER = ${VOLUME_MULTIPLIER}`);
+    } else {
+      VOLUME_MULTIPLIER = baseKoef / Math.sqrt(4);
+      console.log(`🎚️ Наложение 4+ звуков (kn=${kn.toFixed(2)}), VOLUME_MULTIPLIER = ${VOLUME_MULTIPLIER}`);
+    }
   }
   
   function parsePartials(inputText) {
@@ -1513,133 +1542,134 @@
   
   // ОБНОВЛЕННАЯ функция сохранения WAV с прогресс-баром
   saveBtn.onclick = async () => {
-  let freqs = setFreqsInput.value.split(/[,;]+/)
-  .map(v => parseFloat(v.trim()))
-  .filter(v => !isNaN(v));
-  
-  if (freqs.length === 0) {
-  alert("Набор частот пуст. Добавьте частоты.");
-  return;
-  }
-  
-  if (freqs.length > MAX_FREQUENCIES) {
-  alert(`Превышено максимальное количество частот: ${MAX_FREQUENCIES}`);
-  return;
-  }
-  
-  const repeats = prompt("Введите количество повторов набора частот:", "1");
-  if (!repeats || isNaN(repeats) || parseInt(repeats) <= 0) {
-  return;
-  }
-  const repeatCount = parseInt(repeats);
-  
-  if (repeatCount > MAX_REPEATS) {
-  alert(`Превышено максимальное количество повторов: ${MAX_REPEATS}`);
-  return;
-  }
-  
-  let filenamePrefix = "";
-  switch (instrumentSelect.value) {
-  case "bell": filenamePrefix = "Колокол"; break;
-  case "bowl": filenamePrefix = "Чаша"; break;
-  case "smallbell": filenamePrefix = "Колокольчики"; break;
-  default: filenamePrefix = "Звук";
-  }
-  
-  const additionalName = prompt("Введите дополнительное название для файла:", "");
-  const filename = (filenamePrefix ? filenamePrefix + "-" : "") + 
-  (additionalName || "звук") + ".wav";
-  
-  const partials = parsePartials(partialsInput.value);
-  if (partials.length === 0) {
-  alert("Ошибка: не заданы обертона.");
-  return;
-  }
-  
-  const hitDelay = parseInt(hitDelayInput.value) || 0;
-  const cycleDelay = parseInt(cycleDelayInput.value) || 0;
-  
-  const attackTime = parseFloat(document.getElementById('attack').value) || 0.01;
-  const sustainTime = parseFloat(document.getElementById('long').value) || 0;
-  const releaseTime = parseFloat(document.getElementById('release').value) || 3.5;
-  const bellDuration = attackTime + sustainTime + releaseTime + 1.1;
-  
-  const hitDelayInSeconds = hitDelay / 1000;
-  const cycleDelayInSeconds = cycleDelay / 1000;
-  
-  const cycleDuration = freqs.length * bellDuration + 
-  (freqs.length - 1) * hitDelayInSeconds + 
-  cycleDelayInSeconds;
-  const totalDuration = cycleDuration * repeatCount;
-  
-  if (totalDuration > MAX_DURATION) {
-  alert(`Превышена максимальная длительность (${MAX_DURATION} сек). Уменьшите количество частот или повторов.`);
-  return;
-  }
-  
-  if (totalDuration < 0.1) {
-  alert("Длительность слишком мала для генерации файла.");
-  return;
-  }
-  
-  // Показываем прогресс-бар
-  updateProgress(0, "Подготовка к генерации...");
-  progressModal.show();
-  
-  try {
-  const sampleRate = 44100;
-  const totalSamples = Math.ceil(totalDuration * sampleRate);
-  
-  console.log(`Генерация аудио: ${totalDuration.toFixed(2)} сек, ${totalSamples} сэмплов`);
-  
-  // ИСПРАВЛЕНИЕ: Возвращаем старый синтаксис который работал
-  const offlineCtx = new OfflineAudioContext(2, totalSamples, sampleRate);
-  
-  updateProgress(10, "Создание импульсного ответа...");
-  
-  const convolverBuffer = createImpulseResponse(offlineCtx);
-  
-  updateProgress(20, "Генерация звуков...");
-  
-  // Генерация всех звуков
-  for (let repeat = 0; repeat < repeatCount; repeat++) {
-  const cycleStartTime = repeat * cycleDuration;
-  
-  for (let i = 0; i < freqs.length; i++) {
-  const bellStartTime = cycleStartTime + i * (bellDuration + hitDelayInSeconds);
-  const progress = 20 + (repeat * freqs.length + i) / (repeatCount * freqs.length) * 70;
-  updateProgress(progress, `Генерация ${repeat * freqs.length + i + 1} из ${repeatCount * freqs.length} звуков...`);
-  
-  generateBellForOffline(offlineCtx, bellStartTime, freqs[i], partials, convolverBuffer);
-  }
-  }
-  
-  updateProgress(90, "Финальный рендеринг...");
-  
-  // Рендеринг аудио
-  const renderedBuffer = await offlineCtx.startRendering();
-  
-  updateProgress(95, "Создание WAV файла...");
-  
-  // Создание WAV файла
-  const wavBlob = bufferToWav(renderedBuffer);
-  
-  updateProgress(100, "Сохранение файла...");
-  
-  // Скачивание файла
-  downloadWav(wavBlob, filename);
-  
-  setTimeout(() => {
-  progressModal.hide();
-  alert(`Файл "${filename}" успешно создан! Длительность: ${totalDuration.toFixed(1)} сек.`);
-  }, 500);
-  
-  } catch (error) {
-  console.error("Ошибка генерации:", error);
-  progressModal.hide();
-  alert("Ошибка при создании файла: " + error.message);
-  }
-  };
+    updateVolumeMultiplier();
+    let freqs = setFreqsInput.value.split(/[,;]+/)
+    .map(v => parseFloat(v.trim()))
+    .filter(v => !isNaN(v));
+    
+    if (freqs.length === 0) {
+    alert("Набор частот пуст. Добавьте частоты.");
+    return;
+    }
+    
+    if (freqs.length > MAX_FREQUENCIES) {
+    alert(`Превышено максимальное количество частот: ${MAX_FREQUENCIES}`);
+    return;
+    }
+    
+    const repeats = prompt("Введите количество повторов набора частот:", "1");
+    if (!repeats || isNaN(repeats) || parseInt(repeats) <= 0) {
+    return;
+    }
+    const repeatCount = parseInt(repeats);
+    
+    if (repeatCount > MAX_REPEATS) {
+    alert(`Превышено максимальное количество повторов: ${MAX_REPEATS}`);
+    return;
+    }
+    
+    let filenamePrefix = "";
+    switch (instrumentSelect.value) {
+    case "bell": filenamePrefix = "Колокол"; break;
+    case "bowl": filenamePrefix = "Чаша"; break;
+    case "smallbell": filenamePrefix = "Колокольчики"; break;
+    default: filenamePrefix = "Звук";
+    }
+    
+    const additionalName = prompt("Введите дополнительное название для файла:", "");
+    const filename = (filenamePrefix ? filenamePrefix + "-" : "") + 
+    (additionalName || "звук") + ".wav";
+    
+    const partials = parsePartials(partialsInput.value);
+    if (partials.length === 0) {
+    alert("Ошибка: не заданы обертона.");
+    return;
+    }
+    
+    const hitDelay = parseInt(hitDelayInput.value) || 0;
+    const cycleDelay = parseInt(cycleDelayInput.value) || 0;
+    
+    const attackTime = parseFloat(document.getElementById('attack').value) || 0.01;
+    const sustainTime = parseFloat(document.getElementById('long').value) || 0;
+    const releaseTime = parseFloat(document.getElementById('release').value) || 3.5;
+    const bellDuration = attackTime + sustainTime + releaseTime + 1.1;
+    
+    const hitDelayInSeconds = hitDelay / 1000;
+    const cycleDelayInSeconds = cycleDelay / 1000;
+    
+    const cycleDuration = freqs.length * bellDuration + 
+    (freqs.length - 1) * hitDelayInSeconds + 
+    cycleDelayInSeconds;
+    const totalDuration = cycleDuration * repeatCount;
+    
+    if (totalDuration > MAX_DURATION) {
+    alert(`Превышена максимальная длительность (${MAX_DURATION} сек). Уменьшите количество частот или повторов.`);
+    return;
+    }
+    
+    if (totalDuration < 0.1) {
+    alert("Длительность слишком мала для генерации файла.");
+    return;
+    }
+    
+    // Показываем прогресс-бар
+    updateProgress(0, "Подготовка к генерации...");
+    progressModal.show();
+    
+    try {
+    const sampleRate = 44100;
+    const totalSamples = Math.ceil(totalDuration * sampleRate);
+    
+    console.log(`Генерация аудио: ${totalDuration.toFixed(2)} сек, ${totalSamples} сэмплов`);
+    
+    // ИСПРАВЛЕНИЕ: Возвращаем старый синтаксис который работал
+    const offlineCtx = new OfflineAudioContext(2, totalSamples, sampleRate);
+    
+    updateProgress(10, "Создание импульсного ответа...");
+    
+    const convolverBuffer = createImpulseResponse(offlineCtx);
+    
+    updateProgress(20, "Генерация звуков...");
+    
+    // Генерация всех звуков
+    for (let repeat = 0; repeat < repeatCount; repeat++) {
+    const cycleStartTime = repeat * cycleDuration;
+    
+    for (let i = 0; i < freqs.length; i++) {
+    const bellStartTime = cycleStartTime + i * (bellDuration + hitDelayInSeconds);
+    const progress = 20 + (repeat * freqs.length + i) / (repeatCount * freqs.length) * 70;
+    updateProgress(progress, `Генерация ${repeat * freqs.length + i + 1} из ${repeatCount * freqs.length} звуков...`);
+    
+    generateBellForOffline(offlineCtx, bellStartTime, freqs[i], partials, convolverBuffer);
+    }
+    }
+    
+    updateProgress(90, "Финальный рендеринг...");
+    
+    // Рендеринг аудио
+    const renderedBuffer = await offlineCtx.startRendering();
+    
+    updateProgress(95, "Создание WAV файла...");
+    
+    // Создание WAV файла
+    const wavBlob = bufferToWav(renderedBuffer);
+    
+    updateProgress(100, "Сохранение файла...");
+    
+    // Скачивание файла
+    downloadWav(wavBlob, filename);
+    
+    setTimeout(() => {
+    progressModal.hide();
+    alert(`Файл "${filename}" успешно создан! Длительность: ${totalDuration.toFixed(1)} сек.`);
+    }, 500);
+    
+    } catch (error) {
+    console.error("Ошибка генерации:", error);
+    progressModal.hide();
+    alert("Ошибка при создании файла: " + error.message);
+    }
+    };
   
   // Обработчики кнопок с улучшенной обработкой ошибок
   toggleBtn.onclick = () => {
@@ -1668,71 +1698,72 @@
   };
   
   playSetBtn.onclick = async () => {
-  if (isPlayingSet) {
-  isPlayingSet = false;
-  playSetBtn.textContent = '🔔 Проиграть набор';
-  playSetBtn.classList.remove('btn-danger');
-  playSetBtn.classList.add('btn-primary');
-  return;
-  }
-  
-  if (!oscilloscopeSvg || oscilloscopeSvg.children.length === 0) {
-  initOscilloscope();
-  }
-  
-  isPlayingSet = true;
-  playSetBtn.textContent = '⏹ Остановить';
-  playSetBtn.classList.remove('btn-primary');
-  playSetBtn.classList.add('btn-danger');
-  
-  let freqs = setFreqsInput.value
-  .split(/[,;]+/)
-  .map(v => parseFloat(v.trim()))
-  .filter(v => !isNaN(v))
-  .filter(v => v >= 80 && v <= 10000);
-  
-  if (freqs.length === 0) {
-  isPlayingSet = false;
-  playSetBtn.textContent = '🔔 Проиграть набор';
-  playSetBtn.classList.remove('btn-danger');
-  playSetBtn.classList.add('btn-primary');
-  return;
-  }
-  
-  const partials = parsePartials(partialsInput.value);
-  if (partials.length === 0) {
-  isPlayingSet = false;
-  playSetBtn.textContent = '🔔 Проиграть набор';
-  playSetBtn.classList.remove('btn-danger');
-  playSetBtn.classList.add('btn-primary');
-  return;
-  }
-  
-  const hitDelay = parseInt(hitDelayInput.value) || 0;
-  const cycleDelay = parseInt(cycleDelayInput.value) || 0;
-  
-  try {
-  do {
-  for (const freq of freqs) {
-  if (!isPlayingSet) break;
-  await startBell(freq, partials);
-  if (!isPlayingSet) break;
-  await new Promise(resolve => setTimeout(resolve, hitDelay));
-  }
-  if (!isPlayingSet) break;
-  if (!loopCheckbox.checked) break;
-  await new Promise(resolve => setTimeout(resolve, cycleDelay));
-  } while (isPlayingSet && loopCheckbox.checked);
-  } catch (error) {
-  console.error('Ошибка воспроизведения набора:', error);
-  alert('Ошибка при воспроизведении набора: ' + error.message);
-  } finally {
-  isPlayingSet = false;
-  playSetBtn.textContent = '🔔 Проиграть набор';
-  playSetBtn.classList.remove('btn-danger');
-  playSetBtn.classList.add('btn-primary');
-  }
-  };
+    updateVolumeMultiplier(); 
+    if (isPlayingSet) {
+    isPlayingSet = false;
+    playSetBtn.textContent = '🔔 Проиграть набор';
+    playSetBtn.classList.remove('btn-danger');
+    playSetBtn.classList.add('btn-primary');
+    return;
+    }
+    
+    if (!oscilloscopeSvg || oscilloscopeSvg.children.length === 0) {
+    initOscilloscope();
+    }
+    
+    isPlayingSet = true;
+    playSetBtn.textContent = '⏹ Остановить';
+    playSetBtn.classList.remove('btn-primary');
+    playSetBtn.classList.add('btn-danger');
+    
+    let freqs = setFreqsInput.value
+    .split(/[,;]+/)
+    .map(v => parseFloat(v.trim()))
+    .filter(v => !isNaN(v))
+    .filter(v => v >= 80 && v <= 10000);
+    
+    if (freqs.length === 0) {
+    isPlayingSet = false;
+    playSetBtn.textContent = '🔔 Проиграть набор';
+    playSetBtn.classList.remove('btn-danger');
+    playSetBtn.classList.add('btn-primary');
+    return;
+    }
+    
+    const partials = parsePartials(partialsInput.value);
+    if (partials.length === 0) {
+    isPlayingSet = false;
+    playSetBtn.textContent = '🔔 Проиграть набор';
+    playSetBtn.classList.remove('btn-danger');
+    playSetBtn.classList.add('btn-primary');
+    return;
+    }
+    
+    const hitDelay = parseInt(hitDelayInput.value) || 0;
+    const cycleDelay = parseInt(cycleDelayInput.value) || 0;
+    
+    try {
+    do {
+    for (const freq of freqs) {
+    if (!isPlayingSet) break;
+    await startBell(freq, partials);
+    if (!isPlayingSet) break;
+    await new Promise(resolve => setTimeout(resolve, hitDelay));
+    }
+    if (!isPlayingSet) break;
+    if (!loopCheckbox.checked) break;
+    await new Promise(resolve => setTimeout(resolve, cycleDelay));
+    } while (isPlayingSet && loopCheckbox.checked);
+    } catch (error) {
+    console.error('Ошибка воспроизведения набора:', error);
+    alert('Ошибка при воспроизведении набора: ' + error.message);
+    } finally {
+    isPlayingSet = false;
+    playSetBtn.textContent = '🔔 Проиграть набор';
+    playSetBtn.classList.remove('btn-danger');
+    playSetBtn.classList.add('btn-primary');
+    }
+    };
   
   // Инициализация
   document.addEventListener('DOMContentLoaded', function() {
