@@ -695,15 +695,19 @@
                 <div class="offcanvas-body">
                     <!-- Ссылки пользователя в виде кнопок для удобства -->
                     <div class="d-grid gap-2">
+                        <a href="./processorG.html" class="btn btn-outline-light">Аудиоплеер с осциллографом</a>
                         <a href="./kolokol0018.html" class="btn btn-outline-light">Генератор колокольного звона</a>
                         <a href="./OrganicStudioFinal.html" class="btn btn-outline-light">Pifagor Organic Studio</a>
                         <a href="./calc_music.html" class="btn btn-outline-light">Анализ музыкального строя с оптимизацией</a>
-                        <a href="./processorG.html" class="btn btn-outline-light">Аудиоплеер фазовращатель</a>
+                        <hr class="text-white-50">
                         <a href="./Raman-ir-uv.html" class="btn btn-outline-light">Конвертер спектров в звук</a>
-                        <a href="./Eyler.html" class="btn btn-outline-light">Генератор числовых рядов</a>
+                        <a href="./converter-A.html" class="btn btn-outline-light">Конвертер длин волн</a>
+                        <a href="./sound_color_frequency.html" class="btn btn-outline-light">Конвертер частот и цветов спектра</a>
+                        <a href="./Eyler.html" class="btn btn-outline-light">Генератор гармоник</a>
                         <hr class="text-white-50">
                         <a href="./LICENSE" class="btn btn-outline-light">Лицензионное соглашение</a>
                         <a href="./README.html" class="btn btn-outline-light">О программе</a>
+                        <hr class="text-white-50">
                         <a href="https://meweryk.github.io/Wave-of-land/index.html" class="btn btn-outline-light">Ещё проекты</a>
                     </div>
                 </div>
@@ -949,47 +953,32 @@
                     <label for="wavFmEnabled">FM модуляция</label>
                 </div>
                 
-                <div class="wav-option">
-                    <input type="checkbox" id="wavStereo" checked>
-                    <label for="wavStereo">Стерео</label>
-                </div>
+                <input type="hidden" id="wavSampleRate" value="48000">
+                <input type="hidden" id="wavStereo" value="true">
+                <input type="hidden" id="wavVolume" value="100">
                 
-                <div class="wav-option">
+                <!--<div class="wav-option">
                     <input type="checkbox" id="wavCompress" checked>
                     <label for="wavCompress">Компрессия</label>
-                </div>
+                </div>-->
+                
             </div>
             
             <div class="wav-controls">
                 <div class="wav-row">
                     <div class="wav-param">
                         <label for="wavDuration">Длительность (сек):</label>
-                        <input type="number" id="wavDuration" min="1" max="600" value="180" style="width: 100%;">
-                    </div>
-                    
-                    <div class="wav-param">
-                        <label for="wavSampleRate">Частота дискр.:</label>
-                        <select id="wavSampleRate" style="width: 100%;">                          
-                            <option value="48000" selected>48 kHz</option>
-                            <option value="24000">24 kHz</option>
-                        </select>
+                        <input type="number" id="wavDuration" min="1" max="600" value="60" style="width: 100%;">
                     </div>
                 </div>
                 
+                
                 <div class="wav-row">
-                    <div class="wav-param">
-                        <label for="wavBitDepth">Битовая глубина:</label>
-                        <select id="wavBitDepth" style="width: 100%;">
-                            <option value="16">16 бит</option>
-                            <option value="24">24 бита</option>
-                            <option value="32">32 бита</option>
-                        </select>
-                    </div>
-                    
-                    <div class="wav-param">
-                        <label for="wavVolume">Громкость (%):</label>
-                        <input type="range" id="wavVolume" min="0" max="100" value="100" style="width: 100%;">
-                    </div>
+                	<label>Качество:</label>
+                	<select id="wavBitDepth">
+                		<option value="24">24-bit PCM (совместимость)</option>
+                		<option value="32" selected>32-bit float (максимум)</option>
+                	</select>
                 </div>
             </div>
             
@@ -1385,7 +1374,7 @@
                 </div>
                 <br>
                 <div class="phase-control">
-                    <input type="range" class="phase-shift" min="0" max="180" value="0" step="1" style="width: 160px;">
+                    <input type="range" class="phase-shift" min="0" max="360" value="0" step="5" style="width: 160px;">
                     <span class="phase-value">0°</span>
                 </div>
                 <select class="pan-selector" style="width: 45px;">
@@ -2067,12 +2056,12 @@
         fmEnabled: document.getElementById('wavFmEnabled').checked, // ✅ Актуальные настройки FM из модального окна
         fmFreq: parseFloat(document.getElementById('fmFreq').value),
         fmDepth: parseFloat(document.getElementById('fmDepth').value),duration: parseFloat(document.getElementById('wavDuration').value),
-        sampleRate: parseInt(document.getElementById('wavSampleRate').value),
+        sampleRate: 48000,        // ← фиксировано
         bitDepth: parseInt(document.getElementById('wavBitDepth').value),
         volume: parseFloat(document.getElementById('wavVolume').value) / 100,
         stereo: document.getElementById('wavStereo').checked,
         //normalize: document.getElementById('wavNormalize').checked,
-        compress: document.getElementById('wavCompress').checked
+        //compress: document.getElementById('wavCompress').checked
         };
         
         // Запускаем генерацию в Web Worker
@@ -2122,21 +2111,22 @@
         const waveChar = waveType === 'sine' ? 's' : 'm';
         const fmChar = fmEnabled ? 'f' : '';
         
-        return `${presetName}_${waveChar}${fmChar}.wav`;
+        return `gen_${presetName}_${waveChar}${fmChar}.wav`;
         }
         
         // Web Worker функция для генерации WAV
         function wavWorkerFunction() {
         self.onmessage = function(e) {
         const config = e.data;
-        const sampleRate = config.sampleRate;
+        const sampleRate = 48000;
         const duration = config.duration;
         const numSamples = Math.floor(duration * sampleRate);
-        const numChannels = config.stereo ? 2 : 1;
-        const buffer = new ArrayBuffer(44 + numSamples * numChannels * 2);
+        const numChannels = 2;
+        const bitDepth = config.bitDepth || 32;
+        const bytesPerSample = (bitDepth === 32) ? 4 : 3;
+        const buffer = new ArrayBuffer(44 + numSamples * numChannels * bytesPerSample);
         const view = new DataView(buffer);
         
-        // Write WAV header
         function writeString(view, offset, string) {
         for (let i = 0; i < string.length; i++) {
         view.setUint8(offset + i, string.charCodeAt(i));
@@ -2144,98 +2134,72 @@
         }
         
         writeString(view, 0, 'RIFF');
-        view.setUint32(4, 36 + numSamples * numChannels * 2, true);
+        view.setUint32(4, 36 + numSamples * numChannels * bytesPerSample, true);
         writeString(view, 8, 'WAVE');
         writeString(view, 12, 'fmt ');
         view.setUint32(16, 16, true);
-        view.setUint16(20, 1, true); // PCM format
+        
+        if (bitDepth === 32) {
+        view.setUint16(20, 3, true);
+        view.setUint16(34, 32, true);
+        } else {
+        view.setUint16(20, 1, true);
+        view.setUint16(34, 24, true);
+        }
+        
         view.setUint16(22, numChannels, true);
         view.setUint32(24, sampleRate, true);
-        view.setUint32(28, sampleRate * numChannels * 2, true); // byte rate
-        view.setUint16(32, numChannels * 2, true); // block align
-        view.setUint16(34, 16, true); // bits per sample
+        view.setUint32(28, sampleRate * numChannels * bytesPerSample, true);
+        view.setUint16(32, numChannels * bytesPerSample, true);
         writeString(view, 36, 'data');
-        view.setUint32(40, numSamples * numChannels * 2, true);
+        view.setUint32(40, numSamples * numChannels * bytesPerSample, true);
         
-        // Generate audio data
         const dataOffset = 44;
         const samples = new Float32Array(numSamples * numChannels);
         const volume = config.volume;
         
-        // НОРМАЛИЗАЦИЯ ДЛЯ WAV: Приводим сумму громкостей к 100% по каждому каналу
         const leftFrequencies = config.frequencies.filter(f => f.pan <= 0);
         const rightFrequencies = config.frequencies.filter(f => f.pan >= 0);
-        
-        // Суммируем громкости для каждого канала
         let leftVolumeSum = leftFrequencies.reduce((sum, f) => sum + (f.volume || 100), 0);
         let rightVolumeSum = rightFrequencies.reduce((sum, f) => sum + (f.volume || 100), 0);
-        
-        // Если все поля громкости пустые, устанавливаем равномерное распределение
         const allVolumesEmpty = config.frequencies.every(f => f.volume === null);
         
-        // Вычисляем нормализованные громкости
         const normalizedVolumes = config.frequencies.map(freq => {
         if (allVolumesEmpty) {
-        // Равномерное распределение
-        if (freq.pan <= 0) {
-        return 100 / leftFrequencies.length;
+        if (freq.pan <= 0) return 100 / leftFrequencies.length;
+        else return 100 / rightFrequencies.length;
         } else {
-        return 100 / rightFrequencies.length;
-        }
-        } else {
-        // Нормализация пользовательских громкостей
-        const volume = freq.volume || 100;
-        if (freq.pan <= 0 && leftVolumeSum > 0) {
-        return (volume / leftVolumeSum) * 100;
-        } else if (freq.pan >= 0 && rightVolumeSum > 0) {
-        return (volume / rightVolumeSum) * 100;
-        }
-        return volume;
+        const volumeVal = freq.volume || 100;
+        if (freq.pan <= 0 && leftVolumeSum > 0) return (volumeVal / leftVolumeSum) * 100;
+        else if (freq.pan >= 0 && rightVolumeSum > 0) return (volumeVal / rightVolumeSum) * 100;
+        return volumeVal;
         }
         });
         
-        console.log('WAV Normalization:', {
-        leftFrequencies: leftFrequencies.length,
-        rightFrequencies: rightFrequencies.length,
-        leftVolumeSum,
-        rightVolumeSum,
-        allVolumesEmpty,
-        normalizedVolumes
-        });
-        
-        // ИСПРАВЛЕННАЯ ФУНКЦИЯ ДЛЯ FM МОДУЛЯЦИИ
         function calculateFMPhase(baseFreq, time, fmFreq, fmDepth, phaseShift) {
         if (!config.fmEnabled) {
         return 2 * Math.PI * baseFreq * time + phaseShift;
         }
-        
-        // Правильная формула для FM: интегрированная фаза
-        // θ(t) = 2πf₀t + (Δf/fₘ) * sin(2πfₘt)
         const modulationIndex = (baseFreq * (fmDepth / 100)) / fmFreq;
         const carrierPhase = 2 * Math.PI * baseFreq * time;
         const modulationPhase = modulationIndex * Math.sin(2 * Math.PI * fmFreq * time);
-        
         return carrierPhase + modulationPhase + phaseShift;
         }
         
-        // Генерация данных с нормализованными громкостями
         for (let i = 0; i < numSamples; i++) {
         const time = i / sampleRate;
         
-        // Суммируем все частоты с нормализованными громкостями
         for (let j = 0; j < config.frequencies.length; j++) {
         const freq = config.frequencies[j];
-        const normalizedVolume = normalizedVolumes[j] / 100; // Преобразуем % в коэффициент
+        const normalizedVolume = normalizedVolumes[j] / 100;
         const phaseShift = freq.phaseShift * (Math.PI / 180);
         
         let channelValue = 0;
         
         if (config.waveType === 'sine') {
-        // ИСПРАВЛЕННЫЙ ВЫЗОВ: используем правильную FM фазу
         const phase = calculateFMPhase(freq.freq, time, config.fmFreq, config.fmDepth, phaseShift);
         channelValue = Math.sin(phase);
-        } else { // square wave
-        // Для меандра FM модуляция сложнее, пока оставим без FM
+        } else {
         const period = 1 / freq.freq;
         const position = (time % period) / period;
         channelValue = position < 0.5 ? 1 : -1;
@@ -2243,74 +2207,63 @@
         
         channelValue *= normalizedVolume;
         
-        // Применяем панорамирование
-        if (config.stereo) {
         const pan = freq.pan;
         const leftGain = pan <= 0 ? 1 : 1 - pan;
         const rightGain = pan >= 0 ? 1 : 1 + pan;
         
         samples[i * numChannels] += channelValue * leftGain;
         samples[i * numChannels + 1] += channelValue * rightGain;
-        } else {
-        samples[i] += channelValue;
-        }
         }
         
-        // Отправляем прогресс каждые 1000 сэмплов
         if (i % 1000 === 0) {
         const progress = (i / numSamples) * 100;
         self.postMessage({ type: 'progress', value: progress });
         }
         }
         
-        // Упрощенная умная нормализация
         let maxAmplitude = 0;
         for (let i = 0; i < samples.length; i++) {
         if (Math.abs(samples[i]) > maxAmplitude) maxAmplitude = Math.abs(samples[i]);
         }
         
-        // Применяем нормализацию в зависимости от ситуации
         if (maxAmplitude > 1.0) {
-        // Случай 1: Обнаружен клиппинг - нормализуем до 0.99
         const normalizeFactor = 0.99 / maxAmplitude;
         for (let i = 0; i < samples.length; i++) {
         samples[i] *= normalizeFactor * volume;
         }
-        console.log(`Нормализация от клиппинга: ${maxAmplitude.toFixed(3)} → 0.99`);
         } else if (maxAmplitude > 0 && maxAmplitude < 1.0) {
-        // Случай 2: Сигнал тихий - усиливаем до 1.0
         const normalizeFactor = 1.0 / maxAmplitude;
         for (let i = 0; i < samples.length; i++) {
         samples[i] *= normalizeFactor * volume;
         }
-        console.log(`Усиление тихого сигнала: ${maxAmplitude.toFixed(3)} → 1.0`);
-        } else if (maxAmplitude === 1.0) {
-        // Случай 3: Идеальный уровень - просто применяем громкость
-        for (let i = 0; i < samples.length; i++) {
-        samples[i] *= volume;
-        }
-        console.log('Идеальный уровень, применяем громкость');
         } else {
-        // Случай 4: Тишина (maxAmplitude = 0)
         for (let i = 0; i < samples.length; i++) {
         samples[i] *= volume;
         }
-        console.log('Тихий сигнал, применяем громкость');
         }
         
-        // Запись данных в буфер
         let index = dataOffset;
+        if (bitDepth === 32) {
         for (let i = 0; i < samples.length; i++) {
         const s = Math.max(-1, Math.min(1, samples[i]));
-        const val = s < 0 ? s * 32768 : s * 32767;
-        view.setInt16(index, val, true);
-        index += 2;
+        view.setFloat32(index, s, true);
+        index += 4;
+        }
+        } else {
+        for (let i = 0; i < samples.length; i++) {
+        const s = Math.max(-1, Math.min(1, samples[i]));
+        const int24 = Math.round(s * 8388607);
+        view.setUint8(index, int24 & 0xFF);
+        view.setUint8(index + 1, (int24 >> 8) & 0xFF);
+        view.setUint8(index + 2, (int24 >> 16) & 0xFF);
+        index += 3;
+        }
         }
         
         self.postMessage({ type: 'complete', wavData: buffer });
         };
         }
-
+        
         // Инициализация визуализатора
         function initVisualizer() {
             oscilloscopeCanvas = document.getElementById('oscilloscopeCanvas');
@@ -2575,7 +2528,7 @@
     <script>
     if('serviceWorker' in navigator) {
         // Текущая версия (меняйте при каждом деплое)
-        const currentVersion = '12.5';
+        const currentVersion = '12.9';
         
         // Проверяем, показывали ли уже уведомление для этой версии
         const notificationShown = localStorage.getItem(`sw_notify_${currentVersion}`);

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Физический конвертер единиц</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f6; display: flex; justify-content: center; padding: 20px; }
+        .card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        h2 { color: #2c3e50; text-align: center; margin-bottom: 1.5rem; }
+        .group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; font-size: 0.9rem; }
+        input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 1rem; }
+        .flex { display: flex; gap: 10px; }
+        .hint { font-size: 0.8rem; color: #7f8c8d; margin-top: 4px; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Конвертер частот и волн</h2>
+    
+    <div class="group">
+        <label>Ангстремы (Å)</label>
+        <input type="number" id="angstrom" step="any" placeholder="Введите значение...">
+    </div>
+
+    <div class="group">
+        <label>Нанометры (нм)</label>
+        <input type="number" id="nanometer" step="any">
+    </div>
+
+    <div class="group">
+        <label>Волновое число (см⁻¹)</label>
+        <input type="number" id="wavenumber" step="any">
+    </div>
+
+    <div class="group">
+        <label>Частота</label>
+        <div class="flex">
+            <input type="number" id="frequency" step="any">
+            <select id="freqUnit">
+                <option value="1">Гц</option>
+                <option value="1e3">кГц</option>
+                <option value="1e6">МГц</option>
+                <option value="1e9" selected>ГГц</option>
+                <option value="1e12">ТГц</option>
+                <option value="1e15">ПГц</option>
+            </select>
+        </div>
+    </div>
+
+    <hr>
+    <p class="hint">* Используется скорость света $c = 299\,792\,458$ м/с.</p>
+</div>
+
+<script>
+    const C = 299792458; // Скорость света м/с
+
+    const inputs = {
+        ang: document.getElementById('angstrom'),
+        nm: document.getElementById('nanometer'),
+        wn: document.getElementById('wavenumber'),
+        freq: document.getElementById('frequency'),
+        unit: document.getElementById('freqUnit')
+    };
+
+    function updateAll(source) {
+        let meters;
+
+        // 1. Сначала переводим всё в метры (базовая единица)
+        try {
+            const val = parseFloat(source.value);
+            if (isNaN(val) || val <= 0) return;
+
+            if (source === inputs.ang)  meters = val * 1e-10;
+            if (source === inputs.nm)   meters = val * 1e-9;
+            if (source === inputs.wn)   meters = 0.01 / val;
+            if (source === inputs.freq || source === inputs.unit) {
+                const hz = parseFloat(inputs.freq.value) * parseFloat(inputs.unit.value);
+                if (isNaN(hz) || hz <= 0) return;
+                meters = C / hz;
+            }
+
+            // 2. Рассчитываем остальные поля на основе метров
+            if (source !== inputs.ang)  inputs.ang.value = (meters / 1e-10).toPrecision(10);
+            if (source !== inputs.nm)   inputs.nm.value = (meters / 1e-9).toPrecision(10);
+            if (source !== inputs.wn)   inputs.wn.value = (0.01 / meters).toPrecision(10);
+            if (source !== inputs.freq && source !== inputs.unit) {
+                const hz = C / meters;
+                inputs.freq.value = (hz / parseFloat(inputs.unit.value)).toPrecision(10);
+            }
+        } catch (e) {
+            console.error("Ошибка вычислений");
+        }
+    }
+
+    // Слушатели событий
+    [inputs.ang, inputs.nm, inputs.wn, inputs.freq].forEach(el => {
+        el.addEventListener('input', () => updateAll(el));
+    });
+
+    inputs.unit.addEventListener('change', () => updateAll(inputs.freq));
+</script>
+
+</body>
+</html>

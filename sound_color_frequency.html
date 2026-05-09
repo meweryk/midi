@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Свет + Звук: обратный расчёт → инфразвук</title>
+<style>
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: system-ui, 'Segoe UI', 'Roboto', sans-serif;
+    margin: 0;
+    padding: 10px;
+    background: #eef2f5;
+  }
+  /* закреплённая шапка (sticky) */
+  .sticky-header {
+    position: sticky;
+    top: 0;
+    background: cyan;
+    z-index: 100;
+    padding: 6px 10px;
+    border-radius: 40px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+  /* кнопка меню справа */
+  .menu-btn {
+    background: #1f6392;
+    color: white;
+    border: none;
+    padding: 8px 24px;
+    border-radius: 40px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  }
+  .menu-btn:hover {
+    background: #0f4b6e;
+  }
+  /* выпадающее меню */
+  .dropdown-menu {
+    position: relative;
+  }
+  .dropdown-content {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 48px;
+    background-color: cyan;
+    min-width: 360px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    border-radius: 24px;
+    padding: 8px 0;
+    z-index: 200;
+    border: 1px solid #cbdde9;
+  }
+  .dropdown-content a {
+    color: #1e4663;
+    padding: 10px 10px;
+    text-decoration: none;
+    display: block;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: 0.1s;
+  }
+  .dropdown-content a:hover {
+    background-color: #e9f0f5;
+  }
+  .mode-panel {
+    background: #f8fafc;
+    padding: 16px 18px;
+    border-radius: 28px;
+    margin: 15px 0 20px;
+    border: 1px solid #cfdfed;
+  }
+  .input-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px;
+    margin-top: 8px;
+  }
+  select, input {
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    border-radius: 28px;
+    border: 1px solid #bacddb;
+    background: white;
+  }
+  button.calc-btn {
+    background: #1f6392;
+    border: none;
+    color: white;
+    font-weight: bold;
+    padding: 8px 24px;
+    border-radius: 40px;
+    cursor: pointer;
+  }
+  .info-text {
+    font-size: 0.82rem;
+    color: #2c6e2c;
+    margin-top: 12px;
+    background: #eef4ea;
+    padding: 6px 12px;
+    border-radius: 28px;
+    display: inline-block;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 24px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  th, td {
+    padding: 8px 10px;
+    vertical-align: middle;
+    border-bottom: 1px solid #dce5ec;
+    font-size: 0.85rem;
+  }
+  th {
+    background: #eef3fc;
+    font-weight: 700;
+    position: sticky;
+    top: 0px;  /* фиксация под шапкой */
+    z-index: 10;
+    font-size: 0.9rem;
+  }
+  .divider td {
+    background-color: #e0e0e0;
+    font-weight: bold;
+    text-align: center;
+    font-size: 0.95rem;
+    padding: 6px;
+    border-top: 2px solid #aaa;
+    border-bottom: 1px solid #aaa;
+  }
+  .subnote {
+    font-size: 0.75rem;
+    font-weight: normal;
+    color: #2c5a2e;
+    display: inline-block;
+    background: #f0f7f0;
+    padding: 2px 10px;
+    border-radius: 20px;
+  }
+  .organism-tag {
+    font-size: 0.7rem;
+    background: #eef2fa;
+    padding: 2px 8px;
+    border-radius: 30px;
+    display: inline-block;
+    margin-left: 8px;
+    white-space: nowrap;
+    font-weight: normal;
+  }
+  td strong {
+    font-size: 0.85rem;
+  }
+  .popup {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 24px 28px;
+    border: 1px solid #aaa;
+    border-radius: 32px;
+    box-shadow: 0 20px 35px rgba(0,0,0,0.2);
+    z-index: 1000;
+    width: 500px;
+    max-width: 90%;
+    text-align: left;
+  }
+  .popup button {
+    margin-top: 20px;
+    background: #1f6392;
+    border: none;
+    color: white;
+    padding: 8px 20px;
+    border-radius: 40px;
+    cursor: pointer;
+  }
+  @media (max-width: 650px) {
+    td, th { padding: 6px 8px; font-size: 0.78rem; }
+    .organism-tag { font-size: 0.65rem; margin-left: 4px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- закреплённая шапка с кнопкой меню справа -->
+<div class="sticky-header">
+  <div class="dropdown-menu">
+    <button id="menuBtn" class="menu-btn">☰ Меню</button>
+    <div id="dropdownContent" class="dropdown-content">
+      <a id="modeDirectItem">📈 Прямой расчёт (частота → свет)</a>
+      <a id="modeReverseItem">🔄 Обратный расчёт (длина волны → звук)</a>
+      <hr style="margin:6px 0; border-color:#ddd;">
+      <a id="infoMenuItem">📘 Информация о диапазонах</a>
+      <a id="clearHintItem">🧹 Сброс подсказки</a>
+    </div>
+  </div>
+</div>
+
+<!-- Прямой режим (скрыт по умолчанию, показывается через меню) -->
+<div id="directPanel" class="mode-panel" style="display:none;">
+  <h3>🎵 Введите частоту (Гц):</h3>
+  <div class="input-group">
+    <input type="number" id="frequencyInput" min="0" step="any" value="270000" style="width: 220px;">
+    <button class="calc-btn" onclick="directCalculate()">Рассчитать октавы</button>
+  </div>
+  <div class="info-text">✨ Звуковой аналог приводится к диапазону <strong>1–20000 Гц</strong> (октавным делением/умножением).</div>
+</div>
+
+<!-- Обратный режим (скрыт по умолчанию) -->
+<div id="reversePanel" class="mode-panel" style="display:none;">
+  <h3>📏 Введите длину волны → звуковой аналог (инфразвук):</h3>
+  <div class="input-group">
+    <input type="number" id="wavelengthValue" step="any" value="517.4" style="width: 180px;" placeholder="число">
+    <select id="wavelengthUnit">
+      <option value="m">метры (м)</option>
+      <option value="mm">миллиметры (мм)</option>
+      <option value="um">микрометры (мкм)</option>
+      <option value="nm" selected>нанометры (нм)</option>
+    </select>
+    <button class="calc-btn" onclick="reverseCalculate()">🔁 Рассчитать</button>
+  </div>
+  <div class="info-text">💡 По длине волны вычисляется частота (f = c/λ), затем октавно делится до <strong>1 Гц</strong>. Например: 517.4 нм → 579 ТГц → деление до ~0.5 Гц даёт инфразвуковой ряд.</div>
+</div>
+
+<!-- Таблица результатов -->
+<table id="table">
+  <thead>
+    <tr><th id="colorSquaret" style="background:#eef3fc;">
+        Частоты и длины волн (октавное расширение от звукового аналога)<br>
+        <span id="visibleWavelengthSpan" class="subnote">длина волны света — н/д</span>
+      </th>
+    </tr>
+  </thead>
+  <tbody id="tableBody">
+  </tbody>
+</table>
+
+<div id="popup" class="popup">
+  <h2>🎼 Звук, свет + биология</h2>
+  <p>✔️ Октава — умножение/деление на 2.<br>
+  ✔️ <strong>Прямой расчёт:</strong> частота → звуковой диапазон 1–20000 Гц → октавы вверх.<br>
+  ✔️ <strong>Обратный расчёт:</strong> длина волны → частота → октавное деление до <strong>1 Гц</strong> (инфразвук).<br>
+  ✔️ <strong>Подписи организмов:</strong> вирусы (15–400 нм), бактерии (0.5–5 мкм), плесень (1–100 мкм), клещи (100–400 мкм).<br>
+  ✔️ Единицы длины: м → мм → мкм → нм → пм → фм.</p>
+  <button onclick="togglePopup()">Закрыть</button>
+</div>
+
+<script>
+// ---------- всплывающее окно ----------
+function togglePopup() {
+  let p = document.getElementById("popup");
+  p.style.display = (p.style.display === "none" || p.style.display === "") ? "block" : "none";
+}
+
+// ---------- меню (выпадающее справа) ----------
+const menuBtn = document.getElementById("menuBtn");
+const dropdown = document.getElementById("dropdownContent");
+menuBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  dropdown.style.display = dropdown.style.display === "block" ? "none" : "block";
+});
+document.addEventListener("click", () => { dropdown.style.display = "none"; });
+
+// Элементы управления режимами
+const directPanelDiv = document.getElementById("directPanel");
+const reversePanelDiv = document.getElementById("reversePanel");
+
+function setActiveMode(mode) {
+  if (mode === 'direct') {
+    directPanelDiv.style.display = 'block';
+    reversePanelDiv.style.display = 'none';
+  } else {
+    directPanelDiv.style.display = 'none';
+    reversePanelDiv.style.display = 'block';
+  }
+  dropdown.style.display = "none";
+}
+
+document.getElementById("modeDirectItem").addEventListener("click", () => {
+  setActiveMode('direct');
+  // если нужно авто-расчёт после переключения? нет, просто показываем панель
+});
+document.getElementById("modeReverseItem").addEventListener("click", () => {
+  setActiveMode('reverse');
+});
+document.getElementById("infoMenuItem").addEventListener("click", () => { togglePopup(); dropdown.style.display = "none"; });
+document.getElementById("clearHintItem").addEventListener("click", () => {
+  const span = document.getElementById("visibleWavelengthSpan");
+  if (span && span.innerHTML.includes("🔁")) {
+    span.innerHTML = "длина волны света — н/д";
+  }
+  dropdown.style.display = "none";
+});
+
+// по умолчанию: прямой режим
+setActiveMode('direct');
+
+// ---------- функции расчёта, цветов и т.д. ----------
+function getRangeInfo(freqHz, wavelengthNm) {
+  if (freqHz < 1) return { name: "📉 Суб-инфразвук (<1 Гц)", divider: true };
+  if (freqHz >= 1 && freqHz < 10) return { name: "🌬️ Инфразвук (1-10 Гц)", divider: true };
+  if (freqHz >= 10 && freqHz <= 20000) return { name: "🎵 Звуковой диапазон (10-20000 Гц)", divider: true };
+  if (freqHz > 20000 && freqHz <= 300000) return { name: "📻 Ультразвук / Низкие радиочастоты", divider: true };
+  if (freqHz > 300000 && freqHz <= 3e6) return { name: "📡 AM диапазон (300 кГц - 3 МГц)", divider: true };
+  if (freqHz > 3e6 && freqHz <= 30e6) return { name: "🌊 Короткие волны / HF", divider: true };
+  if (freqHz > 30e6 && freqHz <= 300e6) return { name: "📻 FM / VHF (30-300 МГц)", divider: true };
+  if (freqHz > 300e6 && freqHz <= 3e9) return { name: "📡 UHF / СВЧ (300 МГц - 3 ГГц)", divider: true };
+  if (freqHz > 3e9 && freqHz <= 3e11) return { name: "🔥 Микроволны / СВЧ", divider: true };
+  if (freqHz > 3e11 && freqHz <= 4e14) return { name: "☀️ Инфракрасное излучение (ИК)", divider: true };
+  if (freqHz > 4e14 && freqHz <= 7.9e14) return { name: "🌈 Видимый свет", divider: true };
+  if (freqHz > 7.9e14 && freqHz <= 3e16) return { name: "☢️ Ультрафиолет (УФ)", divider: true };
+  if (freqHz > 3e16 && freqHz <= 3e19) return { name: "💀 Рентгеновское излучение", divider: true };
+  if (freqHz > 3e19) return { name: "⚡ Гамма-излучение", divider: true };
+  return { name: "Другое", divider: false };
+}
+
+function getColorFromWavelength(wavelengthNm) {
+  let w = wavelengthNm;
+  let r=0,g=0,b=0;
+  if (w < 380 || w > 780) return [0,0,0];
+  if (w>=380 && w<440) { r=(440-w)/60; g=0; b=1; }
+  else if (w>=440 && w<490) { r=0; g=(w-440)/50; b=1; }
+  else if (w>=490 && w<510) { r=0; g=1; b=(510-w)/20; }
+  else if (w>=510 && w<580) { r=(w-510)/70; g=1; b=0; }
+  else if (w>=580 && w<645) { r=1; g=(645-w)/65; b=0; }
+  else if (w>=645 && w<=780) { r=1; g=0; b=0; }
+  let factor=1.0;
+  if (w<420) factor=0.3+0.7*(w-380)/40;
+  else if (w>700) factor=0.3+0.7*(780-w)/80;
+  const gamma=0.8;
+  const R = r>0 ? 255*Math.pow(r*factor, gamma):0;
+  const G = g>0 ? 255*Math.pow(g*factor, gamma):0;
+  const B = b>0 ? 255*Math.pow(b*factor, gamma):0;
+  return [Math.min(255,Math.round(R)), Math.min(255,Math.round(G)), Math.min(255,Math.round(B))];
+}
+
+function updateHeaderForVisibleLight(wavelengthNm) {
+  let square = document.getElementById("colorSquaret");
+  let span = document.getElementById("visibleWavelengthSpan");
+  if (wavelengthNm >= 380 && wavelengthNm <= 780) {
+    const [R,G,B] = getColorFromWavelength(wavelengthNm);
+    square.style.backgroundColor = `rgb(${R}, ${G}, ${B})`;
+    span.innerHTML = `🌈 длина волны света ${wavelengthNm.toFixed(2)} нм (видимый спектр)`;
+    span.style.background = `rgba(${R}, ${G}, ${B}, 0.25)`;
+  } else {
+    square.style.backgroundColor = "#eef3fc";
+    span.innerHTML = `⚡ длина волны вне видимого (${formatWavelength(wavelengthNm)})`;
+    span.style.background = "#ececec";
+  }
+}
+
+function formatWavelength(wavelengthNm) {
+  let wl = wavelengthNm;
+  if (wl >= 1e6) return (wl/1e9).toFixed(4)+" м";
+  if (wl >= 1e3) return (wl/1000).toFixed(4)+" мкм";
+  if (wl >= 1) return wl.toFixed(2)+" нм";
+  if (wl >= 1e-3) return (wl*1000).toFixed(4)+" пм";
+  if (wl >= 1e-6) return (wl*1e6).toFixed(4)+" фм";
+  return wl.toExponential(4)+" м";
+}
+
+// определение организма (кратко)
+function getOrganismTag(wavelengthNm) {
+  if (wavelengthNm >= 15 && wavelengthNm < 400) return "🦠 вирус";
+  if (wavelengthNm >= 750 && wavelengthNm < 5000) return "🧫 бактерии";
+  if (wavelengthNm >= 5000 && wavelengthNm < 100000) return "🍄 плесень";
+  if (wavelengthNm >= 100000 && wavelengthNm < 400000) return "🕷️ клещи (Demodex)";
+  return "";
+}
+
+function isVisibleLight(wavelengthNm) {
+  return (wavelengthNm >= 380 && wavelengthNm <= 780);
+}
+
+// построение таблицы от базовой частоты
+function buildTableFromBaseFreq(baseFreq) {
+  const C = 299792458;
+  let results = [];
+  let currentFreq = baseFreq;
+  const maxFreq = 1e20;
+  let prevRange = "";
+  
+  while (currentFreq <= maxFreq && results.length < 85) {
+    let wavelengthM = C / currentFreq;
+    let wavelengthNm = wavelengthM * 1e9;
+    let rangeInfo = getRangeInfo(currentFreq, wavelengthNm);
+    let rangeName = rangeInfo.name;
+    let isDividerNeeded = (rangeInfo.divider && rangeName !== prevRange);
+    let visible = isVisibleLight(wavelengthNm);
+    results.push({
+      freq: currentFreq,
+      wavelengthNm: wavelengthNm,
+      rangeName: rangeName,
+      showDivider: isDividerNeeded,
+      visible: visible
+    });
+    prevRange = rangeName;
+    currentFreq = currentFreq * 2;
+  }
+  
+  const tbody = document.getElementById("tableBody");
+  tbody.innerHTML = "";
+  let lastVisibleWavelength = null;
+  
+  for (let item of results) {
+    if (item.showDivider) {
+      let dividerRow = tbody.insertRow();
+      dividerRow.className = "divider";
+      let cell = dividerRow.insertCell();
+      cell.colSpan = 1;
+      cell.innerHTML = `<strong>✦ ${item.rangeName} ✦</strong>`;
+    }
+    const row = tbody.insertRow();
+    const cell = row.insertCell();
+    let f = item.freq;
+    let freqDisplay = "";
+    if (f < 1000) freqDisplay = f.toFixed(4) + " Гц";
+    else if (f < 1e6) freqDisplay = f.toFixed(2) + " Гц";
+    else if (f < 1e9) freqDisplay = (f/1e6).toFixed(4) + " МГц";
+    else if (f < 1e12) freqDisplay = (f/1e9).toFixed(4) + " ГГц";
+    else if (f < 1e15) freqDisplay = (f/1e12).toFixed(4) + " ТГц";
+    else if (f < 1e18) freqDisplay = (f/1e15).toFixed(4) + " ПГц";
+    else freqDisplay = f.toExponential(5) + " Гц";
+    
+    let wlDisplay = formatWavelength(item.wavelengthNm);
+    let organism = getOrganismTag(item.wavelengthNm);
+    let organismHtml = organism ? `<span class="organism-tag">${organism}</span>` : "";
+    let extraMark = item.visible ? " 🟢" : "";
+    let content = `<strong>${freqDisplay}</strong> &nbsp;| λ = ${wlDisplay}${extraMark}${organismHtml}`;
+    
+    if (item.visible) {
+      const [R,G,B] = getColorFromWavelength(item.wavelengthNm);
+      cell.style.backgroundColor = `rgba(${R}, ${G}, ${B}, 0.2)`;
+      cell.style.borderLeft = `4px solid rgb(${R}, ${G}, ${B})`;
+      content = `🌈 ${content}`;
+      lastVisibleWavelength = item.wavelengthNm;
+    } else {
+      cell.style.backgroundColor = "#f9f9f9";
+    }
+    cell.innerHTML = content;
+  }
+  if (lastVisibleWavelength !== null) updateHeaderForVisibleLight(lastVisibleWavelength);
+  else if (results.length) updateHeaderForVisibleLight(results[results.length-1].wavelengthNm);
+}
+
+// прямой расчёт
+function directCalculate() {
+  let inputFreq = parseFloat(document.getElementById("frequencyInput").value);
+  if (isNaN(inputFreq) || inputFreq <= 0) { alert("Введите частоту >0"); return; }
+  let soundBase = inputFreq;
+  if (soundBase > 20000) { while (soundBase > 20000) soundBase /= 2; }
+  else if (soundBase < 1) { while (soundBase < 1) soundBase *= 2; }
+  if (soundBase > 20000) soundBase = 20000;
+  if (soundBase < 1) soundBase = 1;
+  buildTableFromBaseFreq(soundBase);
+  if (soundBase >= 20 && soundBase <= 18000) {
+    try {
+      let audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      let osc = audioCtx.createOscillator();
+      let gain = audioCtx.createGain();
+      osc.connect(gain);
+      gain.connect(audioCtx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = soundBase;
+      gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 1.6);
+      osc.start();
+      osc.stop(audioCtx.currentTime + 1.6);
+      setTimeout(() => audioCtx.close(), 2000);
+    } catch(e) {}
+  }
+}
+
+// обратный расчёт (только до 1 Гц)
+function reverseCalculate() {
+  let value = parseFloat(document.getElementById("wavelengthValue").value);
+  if (isNaN(value) || value <= 0) { alert("Введите положительное число"); return; }
+  const unit = document.getElementById("wavelengthUnit").value;
+  let lambdaMeters = 0;
+  if (unit === "m") lambdaMeters = value;
+  else if (unit === "mm") lambdaMeters = value / 1000;
+  else if (unit === "um") lambdaMeters = value / 1e6;
+  else if (unit === "nm") lambdaMeters = value / 1e9;
+  const c = 299792458;
+  let freqHz = c / lambdaMeters;
+  if (!isFinite(freqHz)) { alert("Некорректная длина волны"); return; }
+  let soundBase = freqHz;
+  if (soundBase > 1) { while (soundBase > 1) soundBase /= 2; }
+  else if (soundBase < 0.5 && soundBase > 0) { while (soundBase < 0.5) soundBase *= 2; }
+  if (soundBase < 0.25) soundBase = 0.5;
+  if (soundBase > 2) soundBase = 1;
+  buildTableFromBaseFreq(soundBase);
+  
+  let srcWlDisplay = "";
+  if (unit === "nm") srcWlDisplay = value + " нм";
+  else if (unit === "um") srcWlDisplay = value + " мкм";
+  else if (unit === "mm") srcWlDisplay = value + " мм";
+  else srcWlDisplay = value + " м";
+  const spanHint = document.getElementById("visibleWavelengthSpan");
+  const originalHint = spanHint.innerHTML;
+  spanHint.innerHTML = `🔁 Исх. λ: ${srcWlDisplay} → f = ${freqHz.toExponential(5)} Гц → приведено к ${soundBase.toFixed(4)} Гц (инфразвук)<br>${originalHint}`;
+}
+
+// инициализация: прямой расчёт по умолчанию
+window.addEventListener('DOMContentLoaded', () => {
+  directCalculate();
+});
+</script>
+</body>
+</html>
