@@ -948,48 +948,48 @@
             <h3 id="wavModalTitle">Сохранить пресет в WAV файл</h3>
             
             <div class="wav-options">
-                <div class="wav-option">
-                    <input type="checkbox" id="wavFmEnabled" checked>
-                    <label for="wavFmEnabled">FM модуляция</label>
-                </div>
-                
-                <input type="hidden" id="wavSampleRate" value="48000">
-                <input type="hidden" id="wavStereo" value="true">
-                <input type="hidden" id="wavVolume" value="100">
-                
-                <!--<div class="wav-option">
-                    <input type="checkbox" id="wavCompress" checked>
-                    <label for="wavCompress">Компрессия</label>
-                </div>-->
-                
+            <div class="wav-option">
+            <input type="checkbox" id="wavFmEnabled" checked>
+            <label for="wavFmEnabled">FM модуляция</label>
+            </div>
+            
+            <input type="hidden" id="wavStereo" value="true">
+            <input type="hidden" id="wavVolume" value="100">
             </div>
             
             <div class="wav-controls">
-                <div class="wav-row">
-                    <div class="wav-param">
-                        <label for="wavDuration">Длительность (сек):</label>
-                        <input type="number" id="wavDuration" min="1" max="600" value="60" style="width: 100%;">
-                    </div>
-                </div>
-                
-                
-                <div class="wav-row">
-                	<label>Качество:</label>
-                	<select id="wavBitDepth">
-                		<option value="24">24-bit PCM (совместимость)</option>
-                		<option value="32" selected>32-bit float (максимум)</option>
-                	</select>
-                </div>
+            <div class="wav-row">
+            <div class="wav-param">
+            <label for="wavDuration">Длительность (сек):</label>
+            <input type="number" id="wavDuration" min="1" max="600" value="60" style="width: 100%;">
+            </div>
+            
+            <div class="wav-param">
+            <label for="wavBitDepth">Битность:</label>
+            <select id="wavBitDepth" style="width: 100%; background: white; border: 1px solid #d1d9e0; border-radius: 4px; padding: 5px; font-size: 0.9em; height: 31px; box-sizing: border-box;">
+            <option value="24">24-bit PCM</option>
+            <option value="32" selected>32-bit float</option>
+            </select>
+            </div>
+            </div>
+            
+            <div class="wav-row">
+            <div class="wav-param">
+            <label for="wavSampleRate">Частота дискретизации:</label>
+            <select id="wavSampleRate" style="width: 100%; background: white; border: 1px solid #d1d9e0; border-radius: 4px; padding: 5px; font-size: 0.9em; height: 31px; box-sizing: border-box;">
+            <option value="48000">48 кГц</option>
+            </select>
+            </div>
             </div>
             
             <div class="progress-container">
-                <div id="wavProgress" class="progress-bar"></div>
+            <div id="wavProgress" class="progress-bar"></div>
             </div>
-            <p id="wavStatus">Готов к генерации...</p>
+            <p id="wavStatus" style="text-align: center; font-size: 12px; margin: 10px 0;">Готов к генерации...</p>
             
-            <div style="display: flex; justify-content: space-between; margin-top: 20px;">
-                <button onclick="document.getElementById('wavModal').style.display = 'none'">Отмена</button>
-                <button onclick="startWavGeneration()" style="background: #4CAF50; color: white;">Генерировать</button>
+            <div style="display: flex; justify-content: space-between; gap: 10px; margin-top: 15px;">
+            <button onclick="document.getElementById('wavModal').style.display = 'none'" style="flex: 1; padding: 8px; background: #666; color: white; border: none; border-radius: 6px;">Отмена</button>
+            <button onclick="startWavGeneration()" style="flex: 1; padding: 8px; background: #4CAF50; color: white; border: none; border-radius: 6px;">Генерировать</button>
             </div>
         </div>
     </div>
@@ -1031,6 +1031,7 @@
         let oscilloscopeCtx, lissajousCtx;
         let leftAnalyser, rightAnalyser;
         let visualizerAnimationId;
+        let globalSystemMaxFreq = 192000; // будет обновлено при загрузке
         
         // Конфигурация визуализации
         const visualizerConfig = {
@@ -1366,8 +1367,8 @@
             const volumeValue = defaultVolume !== null ? defaultVolume : '';
             
             div.innerHTML = `
-                <input type="range" class="freq-range" min="1" max="20000" value="${defaultFrequency}" step="0.001" style="width: 120px;">
-                <input type="number" class="freq-number" value="${defaultFrequency}" step="0.001" style="width: 80px;">
+                <input type="range" class="freq-range" min="1" max="192000" value="${defaultFrequency}" step="0.001" style="width: 120px;">
+                <input type="number" class="freq-number" value="${defaultFrequency}" step="0.001" style="width: 80px;" max="192000">
                 <div class="volume-control">
                     <span class="volume-icon">🔊</span>
                     <input type="number" class="volume-input" min="0" max="100" value="${volumeValue}" placeholder="%" title="Громкость в % (оставьте пустым для авто)">
@@ -1386,43 +1387,108 @@
                 <button class="remove-btn" onclick="removeFrequency('${id}')">×</button>
             `;
 
-            const freqRange = div.querySelector('.freq-range');
+			const freqRange = div.querySelector('.freq-range');
             const freqNumber = div.querySelector('.freq-number');
             const phaseShift = div.querySelector('.phase-shift');
             const phaseValue = div.querySelector('.phase-value');
             const volumeInput = div.querySelector('.volume-input');
 
             freqNumber.addEventListener('input', () => {
-                const sanitized = freqNumber.value.replace(',', '.');
-                const val = parseFloat(sanitized);
-                if (!isNaN(val)) {
-                    freqRange.value = val;
-                    updateVisualization(id, val);
-                    if (channels.has(id)) {
-                        channels.get(id).oscillator.frequency.setValueAtTime(val, audioContext.currentTime);
-                        
-                        if (fmEnabled && channels.get(id).fmGain) {
-                            const deviation = val * (fmDepth / 100);
-                            channels.get(id).fmGain.gain.value = deviation;
-                        }
-                    }
-                }
+            const sanitized = freqNumber.value.replace(',', '.');
+            const val = parseFloat(sanitized);
+            
+            if (!isNaN(val)) {
+            
+            // ПРОВЕРКА 1: ПРЕВЫШЕНИЕ СИСТЕМНОГО МАКСИМУМА (alert)
+            if (val > globalSystemMaxFreq) {
+            alert(`⚠️ Ваша система ограничена частотой ${globalSystemMaxFreq} Гц (${globalSystemMaxFreq/1000} кГц).\nИзмените настройки браузера или введите корректное значение.`);
+            freqNumber.value = globalSystemMaxFreq;
+            freqRange.value = globalSystemMaxFreq;
+            return;
+            }
+            
+            // ПРОВЕРКА 2: ПРЕДУПРЕЖДЕНИЕ ОБ АЛИАСИНГЕ ПРИ СОХРАНЕНИИ WAV (жёлтый)
+            const wavNyquist = 24000; // 48 кГц / 2
+            if (val > wavNyquist) {
+            freqNumber.style.backgroundColor = '#ffcc00';
+            freqRange.style.backgroundColor = '#ffcc00';
+            console.warn(`🟡 Частота ${val} Гц превышает 24 кГц. При сохранении в WAV 48 кГц будет алиасинг.`);
+            } else {
+            freqNumber.style.backgroundColor = '';
+            freqRange.style.backgroundColor = '';
+            }
+            
+            // ПРОВЕРКА 3: ПРЕВЫШЕНИЕ Nyquist ПРИ ВОСПРОИЗВЕДЕНИИ (красный)
+            if (audioContext) {
+            const nyquist = audioContext.sampleRate / 2;
+            if (val > nyquist) {
+            freqNumber.style.backgroundColor = '#ff6666';
+            freqRange.style.backgroundColor = '#ff6666';
+            console.warn(`🔴 Частота ${val} Гц превышает ${nyquist} Гц. Невозможно воспроизвести.`);
+            }
+            }
+            
+            // СИНХРОНИЗАЦИЯ И ПРИМЕНЕНИЕ
+            freqRange.value = val;
+            updateVisualization(id, val);
+            if (channels.has(id)) {
+            channels.get(id).oscillator.frequency.setValueAtTime(val, audioContext.currentTime);
+            if (fmEnabled && channels.get(id).fmGain) {
+            const deviation = val * (fmDepth / 100);
+            channels.get(id).fmGain.gain.value = deviation;
+            }
+            }
+            }
             });
-
+            
+            
             freqRange.addEventListener('input', () => {
-                const val = parseFloat(freqRange.value);
-                freqNumber.value = val;
-                updateVisualization(id, val);
-                if (channels.has(id)) {
-                    channels.get(id).oscillator.frequency.setValueAtTime(val, audioContext.currentTime);
-                    
-                    if (fmEnabled && channels.get(id).fmGain) {
-                        const deviation = val * (fmDepth / 100);
-                        channels.get(id).fmGain.gain.value = deviation;
-                    }
-                }
+            const val = parseFloat(freqRange.value);
+            
+            if (!isNaN(val)) {
+            
+            // ПРОВЕРКА 1: ПРЕВЫШЕНИЕ СИСТЕМНОГО МАКСИМУМА (alert)
+            if (val > globalSystemMaxFreq) {
+            alert(`⚠️ Ваша система ограничена частотой ${globalSystemMaxFreq} Гц.`);
+            freqNumber.value = globalSystemMaxFreq;
+            freqRange.value = globalSystemMaxFreq;
+            return;
+            }
+            
+            // ПРОВЕРКА 2: ПРЕДУПРЕЖДЕНИЕ ОБ АЛИАСИНГЕ ПРИ СОХРАНЕНИИ WAV (жёлтый)
+            const wavNyquist = 24000;
+            if (val > wavNyquist) {
+            freqNumber.style.backgroundColor = '#ffcc00';
+            freqRange.style.backgroundColor = '#ffcc00';
+            console.warn(`🟡 Частота ${val} Гц превышает 24 кГц. При сохранении в WAV будет алиасинг.`);
+            } else {
+            freqNumber.style.backgroundColor = '';
+            freqRange.style.backgroundColor = '';
+            }
+            
+            // ПРОВЕРКА 3: ПРЕВЫШЕНИЕ Nyquist ПРИ ВОСПРОИЗВЕДЕНИИ (красный)
+            if (audioContext) {
+            const nyquist = audioContext.sampleRate / 2;
+            if (val > nyquist) {
+            freqNumber.style.backgroundColor = '#ff6666';
+            freqRange.style.backgroundColor = '#ff6666';
+            console.warn(`🔴 Частота ${val} Гц превышает ${nyquist} Гц. Невозможно воспроизвести.`);
+            }
+            }
+            
+            // СИНХРОНИЗАЦИЯ И ПРИМЕНЕНИЕ
+            freqNumber.value = val;
+            updateVisualization(id, val);
+            if (channels.has(id)) {
+            channels.get(id).oscillator.frequency.setValueAtTime(val, audioContext.currentTime);
+            if (fmEnabled && channels.get(id).fmGain) {
+            const deviation = val * (fmDepth / 100);
+            channels.get(id).fmGain.gain.value = deviation;
+            }
+            }
+            }
             });
-
+            
             phaseShift.addEventListener('input', () => {
                 const deg = parseFloat(phaseShift.value);
                 phaseValue.textContent = `${deg.toFixed(1)}°`;
@@ -2049,6 +2115,16 @@
         return;
         }        
         
+        const maxSignalFreq = Math.max(...preset.frequencies.map(f => f.freq));
+        const selectedSampleRate = parseInt(document.getElementById('wavSampleRate').value);
+        const maxAllowedFreq = selectedSampleRate / 2;
+        
+        if (maxSignalFreq > maxAllowedFreq) {
+        if (!confirm(`⚠️ Внимание! Максимальная частота сигнала ${maxSignalFreq} Гц превышает ${maxAllowedFreq} Гц (половина выбранной частоты дискретизации ${selectedSampleRate} Гц).\nЭто вызовет искажения (алиасинг). Продолжить?`)) {
+        return;
+        }
+        }
+        
         const config = {
         presetName: currentPresetName, // ✅ Актуальное имя пресета
         frequencies: preset.frequencies,
@@ -2056,7 +2132,7 @@
         fmEnabled: document.getElementById('wavFmEnabled').checked, // ✅ Актуальные настройки FM из модального окна
         fmFreq: parseFloat(document.getElementById('fmFreq').value),
         fmDepth: parseFloat(document.getElementById('fmDepth').value),duration: parseFloat(document.getElementById('wavDuration').value),
-        sampleRate: 48000,        // ← фиксировано
+        sampleRate: parseInt(document.getElementById('wavSampleRate').value),
         bitDepth: parseInt(document.getElementById('wavBitDepth').value),
         volume: parseFloat(document.getElementById('wavVolume').value) / 100,
         stereo: document.getElementById('wavStereo').checked,
@@ -2118,7 +2194,7 @@
         function wavWorkerFunction() {
         self.onmessage = function(e) {
         const config = e.data;
-        const sampleRate = 48000;
+        const sampleRate = config.sampleRate || 48000;
         const duration = config.duration;
         const numSamples = Math.floor(duration * sampleRate);
         const numChannels = 2;
@@ -2493,6 +2569,19 @@
                 });
             }
         }
+        
+        function updateAllFrequencyLimits(maxFreq) {
+        document.querySelectorAll('.freq-range, .freq-number').forEach(el => {
+        el.max = maxFreq;
+        const currentVal = parseFloat(el.value);
+        if (currentVal > maxFreq) {
+        el.value = maxFreq;
+        if (el.classList.contains('freq-range')) {
+        el.dispatchEvent(new Event('input'));
+        }
+        }
+        });
+        }
 
         window.onclick = function(event) {
         
@@ -2513,22 +2602,93 @@
         }
         
         window.addEventListener('DOMContentLoaded', () => {
-            createFrequencyControl(432);
-            renderSavedLists();
-            initScrollTopButton();
-            initVisualizer();
-            
-            document.getElementById('freqAccordion').style.display = 'block';
-            document.getElementById('colorAccordion').style.display = 'block';
-            
-            // Обработка изменения размера окна
-            window.addEventListener('resize', initVisualizer);
+        // ===== ПРОВЕРКА СИСТЕМЫ =====
+        // Создаём временный AudioContext только для проверки
+        const testCtx = new (window.AudioContext || window.webkitAudioContext)();
+        globalSystemMaxFreq = testCtx.sampleRate / 2;
+        const systemSampleRate = testCtx.sampleRate;
+        
+        console.log(`🎵 Системная частота дискретизации: ${systemSampleRate} Гц`);
+        console.log(`🎵 Максимальная частота воспроизведения: ${globalSystemMaxFreq} Гц (${globalSystemMaxFreq/1000} кГц)`);
+        
+        if (systemSampleRate < 96000) {
+        console.log('💡 Для работы с частотами > 48 кГц на десктопе: chrome://flags/#web-audio-sample-rate → 96 или 192 кГц');
+        }
+        
+        // Закрываем временный контекст (он не нужен для воспроизведения)
+        testCtx.close();
+        
+        // ===== НАСТРОЙКА WAV ЧАСТОТЫ ДИСКРЕТИЗАЦИИ =====
+        const wavSampleRateSelect = document.getElementById('wavSampleRate');
+        if (wavSampleRateSelect) {
+        // Сохраняем текущее выбранное значение (если есть)
+        const currentValue = wavSampleRateSelect.value;
+        
+        // Очищаем существующие option
+        wavSampleRateSelect.innerHTML = '';
+        
+        // Всегда добавляем 48 кГц (базовое качество)
+        const option48 = document.createElement('option');
+        option48.value = '48000';
+        option48.textContent = '48 кГц (до 24 кГц сигнал)';
+        wavSampleRateSelect.appendChild(option48);
+        
+        // Если система поддерживает 96 кГц (сигнал до 48 кГц)
+        if (systemSampleRate >= 96000) {
+        const option96 = document.createElement('option');
+        option96.value = '96000';
+        option96.textContent = '96 кГц (до 48 кГц сигнал)';
+        wavSampleRateSelect.appendChild(option96);
+        }
+        
+        // Если система поддерживает 192 кГц (сигнал до 96 кГц)
+        if (systemSampleRate >= 192000) {
+        const option192 = document.createElement('option');
+        option192.value = '192000';
+        option192.textContent = '192 кГц (до 96 кГц сигнал)';
+        wavSampleRateSelect.appendChild(option192);
+        }
+        
+        // Восстанавливаем выбранное значение, если оно было и доступно
+        if (currentValue && Array.from(wavSampleRateSelect.options).some(opt => opt.value === currentValue)) {
+        wavSampleRateSelect.value = currentValue;
+        } else {
+        // По умолчанию выбираем оптимальное качество
+        if (systemSampleRate >= 96000) {
+        wavSampleRateSelect.value = '96000';
+        } else {
+        wavSampleRateSelect.value = '48000';
+        }
+        }
+        
+        console.log(`🎵 Доступные частоты дискретизации WAV: ${Array.from(wavSampleRateSelect.options).map(o => o.value).join(', ')} Гц`);
+        }
+        
+        // ===== ОСНОВНАЯ ИНИЦИАЛИЗАЦИЯ =====
+        createFrequencyControl(432);
+        renderSavedLists();
+        initScrollTopButton();
+        initVisualizer();
+        
+        // Обновляем максимальные значения всех полей ввода частот
+        updateAllFrequencyLimits(globalSystemMaxFreq);
+        
+        // ===== АККОРДЕОНЫ =====
+        const freqAccordion = document.getElementById('freqAccordion');
+        const colorAccordion = document.getElementById('colorAccordion');
+        if (freqAccordion) freqAccordion.style.display = 'block';
+        if (colorAccordion) colorAccordion.style.display = 'block';
+        
+        // ===== ОБРАБОТЧИК РЕСАЙЗА =====
+        window.addEventListener('resize', initVisualizer);
+        
+        console.log('✅ Приложение загружено');
         });
     </script>
     <script>
     if('serviceWorker' in navigator) {
         // Текущая версия (меняйте при каждом деплое)
-        const currentVersion = '12.9';
+        const currentVersion = '13.0';
         
         // Проверяем, показывали ли уже уведомление для этой версии
         const notificationShown = localStorage.getItem(`sw_notify_${currentVersion}`);
