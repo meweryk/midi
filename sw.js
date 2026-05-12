@@ -1,4 +1,4 @@
-const CACHE_NAME = 'midi-bells-v13.1';
+const CACHE_NAME = 'midi-bells-v13.2';
 const DYNAMIC_CACHE = 'dynamic-cache-v12.5';
 const FALLBACK_HTML = '/midi/index.html';
 const FALLBACK_IMAGE = '/midi/icon-192.png';
@@ -9,6 +9,7 @@ const urlsToCache = [
   '/midi/index.html',
   '/midi/processorG.html',
   '/midi/OrganicStudioFinal.html',
+  '/midi/Vortex-gen.html',
   '/midi/kolokol0018.html',
   '/midi/converter-A.html',
   '/midi/sound_color_frequency.html',

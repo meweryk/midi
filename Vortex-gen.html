@@ -1,0 +1,1008 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHI VORTEX PRO v5.6</title>
+    <style>
+        :root { --neon: #0f0; --bg: #292929; }
+        body { background: var(--bg); color: var(--neon); font-family: 'Courier New', monospace; margin: 0; display: flex; flex-direction: column; align-items: center; padding: 10px; box-sizing: border-box; }
+        .panel { border: 2px solid var(--neon); padding: 15px; background: #292929; width: 100%; max-width: 800px; box-sizing: border-box; }
+        textarea { width: 100%; background: #111; color: var(--neon); border: 1px solid var(--neon); padding: 10px; height: 80px; font-size: 16px; box-sizing: border-box; margin-bottom: 10px; border-radius: 4px; }
+        .controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; width: 100%; }
+        button { background: var(--neon); color: #000; border: none; padding: 12px; font-weight: bold; cursor: pointer; font-size: 12px; text-transform: uppercase; border-radius: 4px; }
+        button:active { opacity: 0.7; }
+        .btn-stop { background: #700; color: #fff; }
+        .btn-wav { background: #00ccff; }
+        .canvas-container { width: 100%; max-width: 500px; aspect-ratio: 1/1; margin: 20px 0; border: 1px solid #292929; }
+        canvas { width: 100%; height: 100%; display: block; }
+        .library { margin-top: 15px; border-top: 1px solid #333; padding-top: 10px; width: 100%; max-height: 150px; overflow-y: auto; }
+        .preset-item { display: flex; justify-content: space-between; padding: 5px; border-bottom: 1px solid #111; font-size: 12px; align-items: center; }
+        .status { font-size: 11px; color: #0cf; margin-top: 10px; word-break: break-all; border: 1px dotted #333; padding: 5px; border-radius: 4px; }
+        .param-group { display: flex; gap: 5px; align-items: center; }
+        .param-group input, .param-group select { background: #000; color: #0f0; border: 1px solid #0f0; padding: 10px; border-radius: 4px; font-size: 12px; }
+        .param-group input { width: 60px; }
+        .param-group select { width: 70px; cursor: pointer; }
+        .harmonics-group { display: flex; gap: 5px; align-items: center; margin-top: 10px; width: 100%; }
+        .harmonics-group input { background: #000; color: #0f0; border: 1px solid #0f0; padding: 10px; border-radius: 4px; font-size: 12px; flex: 1; }
+        .harmonics-group label { font-size: 9px; margin-bottom: 0; white-space: nowrap; }
+        label { font-size: 9px; margin-bottom: 2px; display: block; }
+        .disabled-input { opacity: 0.5; pointer-events: none; background: #1a1a1a !important; }
+        /* Модальное окно WAV */
+        .wav-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        }
+        .wav-modal-content {
+        background: #292929;
+        border: 2px solid var(--neon);
+        padding: 20px;
+        border-radius: 8px;
+        max-width: 300px;
+        width: 90%;
+        }
+        .wav-modal-content h4 {
+        margin: 0 0 10px 0;
+        text-align: center;
+        }
+        
+        h3, h4 {
+            margin: 0;
+            text-align: center;
+        }
+        .info-modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.8);
+        }
+        .info-modal-content {
+            background-color: #292929;
+            margin: 10% 5%;
+            padding: 15px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 1px solid #0f0;
+            color: #F3FF9F;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+        }
+        .info-modal-content .close {
+            float: right;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: #0f0;
+            padding: 0 8px;
+        }
+        .info-modal-content .close:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+            <label style="margin-bottom: 0;">ЧАСТОТЫ (freq,amp; ...):</label>
+        <div>
+            <button onclick="window.location.href='index.html'" style="background: none; border: 1px solid #0f0; color: #0f0; padding: 2px 8px; margin-right: 5px; cursor: pointer;">←</button>
+            <button onclick="openInfoModal()" style="background: none; border: 1px solid #0f0; color: #0f0; padding: 2px 8px; cursor: pointer; font-weight: bold;">i</button>
+        </div>
+    </div>
+        <textarea id="freqInput">528,100; 264,60; 1056,20</textarea>
+        
+        <div class="controls">
+            <div style="display:flex; flex-direction:column;">
+                <label style="font-size:9px">ОБЕРТОНЫ &emsp;&emsp; ШАГ</label>
+                <div class="param-group" id="stepOvertoneGroup">
+                    <input type="number" id="overtones" value="1" min="0" max="10" style="width:50px;">
+                    <input type="number" id="step" value="4" min="1" max="6" step="1" style="width:50px;">
+                </div>
+            </div>
+            <div style="display:flex; flex-direction:column;">
+                <label style="font-size:9px">СЕЛЕКТОР PHI</label>
+                <select id="phiSelector" style="background:#000; color:#0f0; border:1px solid #0f0; padding:10px; border-radius:4px;">
+                    <option value="1.61803398875">φ (1.618)</option>
+                    <option value="2">2</option>
+                    <option value="3.14159265359">π (3.1416)</option>
+                    <option value="2.71828182846">e (2.7183)</option>
+                </select>
+            </div>
+            <button onclick="runVortex()" id="startBtn">START</button>
+            <button class="btn-stop" onclick="stopVortex()">STOP</button>
+            <button class="btn-wav" onclick="exportWav()">SAVE .WAV</button>
+            <button onclick="savePreset()" style="background:#444; color:#fff;">SAVE PRESET</button>
+        </div>
+        
+        <div class="harmonics-group">
+            <label>ГАРМОНИКИ (через запятую):</label>
+            <input type="text" id="harmonics" value="0" placeholder="0 или 3/2, 6/5, 2.5, 5">
+        </div>
+        
+        <div class="status" id="status">READY</div>
+        <div class="library" id="lib"><b>БИБЛИОТЕКА:</b></div>
+    </div>
+
+    <div class="canvas-container"><canvas id="lissajous"></canvas></div>
+    
+    <!-- Модальное окно настроек WAV -->
+    <div id="wavSettingsModal" class="wav-modal" style="display: none;">
+        
+    <div class="wav-modal-content">
+    <h4>Настройки WAV</h4>
+    
+    <div style="margin: 15px 0;">
+    <label>Длительность (сек):</label>
+    <input type="range" id="wavDuration" min="10" max="180" value="60" style="width: 100%;">
+    <span id="wavDurationValue">60</span> сек
+    </div>
+    
+    <div style="margin: 15px 0;">
+    <label>Битность:</label>
+    <select id="wavBitDepth" style="width: 100%; background:#000; color:#0f0; border:1px solid #0f0; padding: 8px;">
+    <option value="24">24-bit PCM</option>
+    <option value="32" selected>32-bit float</option>
+    </select>
+    </div>
+    
+    <div style="margin: 15px 0;">
+    <label>Частота дискретизации:</label>
+    <select id="wavSampleRate" style="width: 100%; background:#000; color:#0f0; border:1px solid #0f0; padding: 8px;">
+    <option value="48000">48 кГц</option>
+    </select>
+    </div>
+    
+    <div style="display: flex; gap: 10px; margin-top: 20px;">
+    <button onclick="closeWavSettingsModal()" style="flex:1; background:grey;">Отмена</button>
+    <button onclick="confirmWavSettings()" style="flex:1; background:#0f0; color:#000;">ОК</button>
+    </div>
+    </div>
+    </div>
+    
+    <!-- Модальное окно информации -->
+    <div id="infoModal" class="info-modal">
+    <div class="info-modal-content">
+        <button class="close" onclick="closeInfoModal()">&times;</button>
+        <h3 style="margin-top: 0;">PHI VORTEX PRO</h3>
+        
+        <h4>🎛️ ПАРАМЕТРЫ СИНТЕЗА</h4>
+        
+        <p><strong>СЕЛЕКТОР PHI (октавный множитель)</strong><br>
+        • <strong>φ = 1.618</strong> — золотое сечение (по умолчанию)<br>
+        • <strong>2</strong> — классическая октава<br>
+        • <strong>π = 3.1416</strong> — число Пи<br>
+        • <strong>e = 2.7183</strong> — число Эйлера<br>
+        Определяет множитель для построения частотного ряда.</p>
+        
+        <p><strong>ШАГ (k)</strong><br>
+        Степенной шаг для множителя PHI. Формула: <code>freq × PHI^(i × k)</code><br>
+        Диапазон: 1-6. Меньшие значения дают более плотный спектр.</p>
+        
+        <p><strong>ОБЕРТОНЫ (n)</strong><br>
+        Количество уровней разложения. Формула: <code>freq × PHI^(i × k)</code>, где i = 0..n<br>
+        Диапазон: 0-10. Больше обертонов — насыщеннее звук.</p>
+        
+        <p><strong>ГАРМОНИКИ</strong><br>
+        Пользовательские множители через запятую. Пример: <code>3/2, 6/5, 2.5, 5</code><br>
+        При вводе гармоник поля ШАГ, ОБЕРТОНЫ и PHI блокируются.<br>
+        Всегда добавляется гармоника 1 по умолчанию.</p>
+        
+        <h4>💾 ОСОБЕННОСТИ СОХРАНЕНИЯ И ГЕНЕРАЦИИ</h4>
+        
+        <p><strong>1. Адаптивная частота дискретизации</strong><br>
+        При загрузке страницы программа определяет максимальную частоту дискретизации вашей системы и настроек браузера. В зависимости от этого динамически расширяется поле ввода частот и доступные опции сохранения WAV. Для частот выше 48 кГц на десктопе требуется установить флаг <code>chrome://flags/#web-audio-sample-rate</code> в значение 96 или 192 кГц.</p>
+        
+        <p><strong>2. Энергетическая нормализация обертонов (режим PHI)</strong><br>
+        При использовании параметров ШАГ и ОБЕРТОНЫ амплитуда каждого последующего обертона уменьшается пропорционально увеличению частоты. Это сохраняет энергетическую тождественность каждого обертонного ряда по отношению к основному ряду частот. Формула: <code>amp = rawAmp / PHI^(i * k)</code>, где i — номер обертона.</p>
+        
+        <p><strong>3. Равная амплитуда гармоник (режим ГАРМОНИКИ)</strong><br>
+        При использовании пользовательских ГАРМОНИК амплитуда каждой гармоники равна амплитуде основной частоты. Это проявляет энергонасыщенность более высоких частот, делая спектр более плотным и насыщенным в верхнем регистре.</p>
+        
+        <h4>📀 СИСТЕМА РЕНДЕРИНГА WAV</h4>
+        <p>Используется OfflineAudioContext — точность частот идентична реальному воспроизведению.<br>
+        <strong>Параметры:</strong> 2 канала, 48 кГц (или выше при поддержке), до 180 сек.</p>
+        
+        <h4>💾 ЛОКАЛЬНОЕ ХРАНЕНИЕ</h4>
+        <p>Пресеты сохраняются в localStorage браузера в формате JSON. Библиотека под окном ввода.</p>
+        
+        <h4>🎮 ИНТЕРФЕЙС</h4>
+        <ul>
+            <li><strong>SAVE .WAV</strong> — генерация файла (48+ кГц / 24-32 бит)</li>
+            <li><strong>SAVE PRESET</strong> — сохранение текущей конфигурации</li>
+            <li><strong>PRESET LIBRARY</strong> — загрузка/удаление сохранённых пресетов</li></ul>
+        
+        <p><strong>Важно:</strong> Запись происходит на максимальной скорости процессора с сохранением нулевой фазы для всех осцилляторов.</p>
+        
+        <p style="margin-bottom: 0;"><em>&copy; 2026 PHI VORTEX PRO by meweryk</em></p>
+    </div>
+</div>
+
+<script>
+let aCtx, oscillators = [], animId;
+let PHI = 1.61803398875;
+let MAX_F = 24000;     // временное значение, будет обновлено при загрузке
+let SYSTEM_SAMPLE_RATE = 48000; // временное значение
+let MIN_F = 1
+
+function detectSystemCapabilities() {
+    const testCtx = new (window.AudioContext || window.webkitAudioContext)();
+    SYSTEM_SAMPLE_RATE = testCtx.sampleRate;
+    MAX_F = SYSTEM_SAMPLE_RATE / 2;
+    if (SYSTEM_SAMPLE_RATE < 96000) {
+    	console.log('💡 Для работы с частотами > 48 кГц на десктопе: chrome://flags/#web-audio-sample-rate → 96 или 192 кГц');
+    }
+    console.log(`🎵 Системная частота дискретизации: ${SYSTEM_SAMPLE_RATE} Гц`);
+    console.log(`🎵 Максимальная частота сигнала: ${MAX_F} Гц (${MAX_F/1000} кГц)`);
+    testCtx.close();
+};
+
+// Валидация введённых частот
+function checkFrequenciesAgainstMaxFreq(sources) {
+    for (const src of sources) {
+        if (src.f > MAX_F) {
+            alert(`⚠️ Одна или несколько введённых частот превышают аппаратный порог ${MAX_F} Гц.\nИсправьте значения или запустите скрипт в десктопной версии Chrome с изменением флага частоты дискретизации в настройках браузера.`);
+            return false;
+        }
+    }
+    return true;
+}
+
+// Парсинг гармоник из строки (с добавлением 1 по умолчанию)
+function parseHarmonics(harmonicsStr) {
+    if (!harmonicsStr || harmonicsStr.trim() === '0') return null;
+    
+    const parts = harmonicsStr.split(',').map(p => p.trim());
+    const harmonics = [];
+    
+    // Добавляем гармонику 1 по умолчанию
+    harmonics.push(1);
+    
+    for (const part of parts) {
+        if (part === '' || part === '0') continue;
+        if (part.includes('/')) {
+            const [num, den] = part.split('/');
+            const val = parseFloat(num) / parseFloat(den);
+            if (!isNaN(val) && isFinite(val) && val !== 1) harmonics.push(val);
+        } else {
+            const val = parseFloat(part);
+            if (!isNaN(val) && isFinite(val) && val !== 1) harmonics.push(val);
+        }
+    }
+    
+    // Удаляем дубликаты
+    return [...new Set(harmonics)];
+}
+
+// Проверка валидности гармоник
+function validateHarmonicsInput(harmonicsStr) {
+    if (!harmonicsStr || harmonicsStr.trim() === '0') return { valid: true, message: '' };
+    
+    const parts = harmonicsStr.split(',').map(p => p.trim());
+    for (const part of parts) {
+        if (part === '') continue;
+        if (part.includes('/')) {
+            const [num, den] = part.split('/');
+            if (isNaN(parseFloat(num)) || isNaN(parseFloat(den))) {
+                return { valid: false, message: 'Ошибка: используйте только числа и знак дроби /' };
+            }
+        } else {
+            if (isNaN(parseFloat(part))) {
+                return { valid: false, message: 'Ошибка: используйте только числа, запятые и знак дроби /' };
+            }
+        }
+    }
+    return { valid: true, message: '' };
+}
+
+// Обновление состояния полей в зависимости от гармоник
+function updateFieldsState() {
+    const harmonicsInput = document.getElementById('harmonics');
+    const harmonicsValue = harmonicsInput.value.trim();
+    const hasHarmonics = harmonicsValue !== '0' && harmonicsValue !== '';
+    
+    const overtonesInput = document.getElementById('overtones');
+    const stepInput = document.getElementById('step');
+    const phiSelector = document.getElementById('phiSelector');
+    
+    if (hasHarmonics) {
+        overtonesInput.classList.add('disabled-input');
+        stepInput.classList.add('disabled-input');
+        phiSelector.classList.add('disabled-input');
+        // Используем readonly вместо disabled, чтобы ловить клик
+        overtonesInput.readOnly = true;
+        stepInput.readOnly = true;
+        phiSelector.disabled = true; // select не поддерживает readonly
+        phiSelector.value = '2';
+    } else {
+        overtonesInput.classList.remove('disabled-input');
+        stepInput.classList.remove('disabled-input');
+        phiSelector.classList.remove('disabled-input');
+        overtonesInput.readOnly = false;
+        stepInput.readOnly = false;
+        phiSelector.disabled = false;
+    }
+}
+
+// Проверка нажатия на заблокированные поля
+function setupFieldClickWarning() {
+    const overtonesWrapper = document.getElementById('overtones').parentElement;
+    const stepWrapper = document.getElementById('step').parentElement;
+    const phiWrapper = document.getElementById('phiSelector').parentElement;
+    
+    const showWarning = (e) => {
+        const harmonicsValue = document.getElementById('harmonics').value.trim();
+        if (harmonicsValue !== '0' && harmonicsValue !== '') {
+            e.stopPropagation();
+            alert('⚠️ Для активации полей ввода ОБЕРТОН, ШАГ и СЕЛЕКТОР PHI установите в поле ГАРМОНИКИ значение 0.\nВозможен выбор либо ГАРМОНИК, либо ОБЕРТОНОВ.');
+        }
+    };
+    
+    overtonesWrapper.addEventListener('click', showWarning);
+    stepWrapper.addEventListener('click', showWarning);
+    phiWrapper.addEventListener('click', showWarning);
+}
+
+function getParams() {
+    const input = document.getElementById('freqInput').value;
+    let userN = parseInt(document.getElementById('overtones').value) || 0;
+    let userK = parseInt(document.getElementById('step').value) || 3;
+    const phiSelector = document.getElementById('phiSelector').value;
+    const harmonicsStr = document.getElementById('harmonics').value;
+    const harmonics = parseHarmonics(harmonicsStr);
+    
+    PHI = parseFloat(phiSelector);
+    
+    let sources = input.split(';').map(s => {
+        let [f, a] = s.trim().split(',');
+        return { f: parseFloat(f), a: a ? parseFloat(a) : 100 };
+    }).filter(s => !isNaN(s.f) && s.f > 0);
+    
+    // ========== РЕЖИМ ГАРМОНИК ==========
+    if (harmonics && harmonics.length > 0) {
+        const expandedSources = [];
+        for (const src of sources) {
+            for (const harm of harmonics) {
+                expandedSources.push({ f: src.f * harm, a: src.a });
+            }
+        }
+        sources = expandedSources;
+        
+        let maxFreq = Math.max(...sources.map(s => s.f));
+        if (maxFreq > MAX_F) {
+            alert(`⚠️ Максимальная частота ${maxFreq.toFixed(2)}Гц превышает границу ${MAX_F}Гц.\nИзмените гармоники.`);
+            return null;
+        }
+        
+        let totalMass = sources.reduce((sum, src) => sum + src.a, 0);
+        return { sources, n: 0, stepVal: 1, totalMass, hasHarmonics: true };
+    }
+    
+    // ========== ОБЫЧНЫЙ РЕЖИМ ==========
+    let freqs = sources.map(s => s.f);
+    let Fmin = Math.min(...freqs);
+    let Fmax = Math.max(...freqs);
+    let finalK = userK;
+    let finalN = userN;
+    let warnings = [];
+    let needsCorrection = false;
+    
+    // ШАГ 1: Проверка наложения для k (Fmin * PHI^k > Fmax?)
+    let hasOverlap = (Fmin * Math.pow(PHI, userK) <= Fmax);
+    
+    if (hasOverlap && sources.length > 1) {
+        // Ищем ближайший k без наложения
+        let suggestedK = userK;
+        while (suggestedK <= 6 && Fmin * Math.pow(PHI, suggestedK) <= Fmax) {
+            suggestedK++;
+        }
+        
+        if (suggestedK <= 6) {
+            const userChoice = confirm(`⚠️ Выбранный шаг k = ${userK} приводит к наложению частотного ряда.\nДля предотвращения наложения ближайший шаг ${suggestedK}.\nОставить ваш шаг k = ${userK}?`);
+            
+            if (!userChoice) {
+                finalK = suggestedK;
+                warnings.push(`Шаг скорректирован с ${userK} на ${finalK}`);
+                needsCorrection = true;
+            } else {
+                warnings.push(`Шаг ${userK} оставлен с наложением`);
+            }
+        }
+    }
+    
+    // ШАГ 2: Проверка выхода за MAX_F для k (Fmax * PHI^k <= MAX_F?)
+    let maxFreqForK = Fmax * Math.pow(PHI, finalK);
+    if (maxFreqForK > MAX_F) {
+        // Ищем максимальный k, который не превышает MAX_F
+        let safeK = finalK;
+        while (safeK > 1 && Fmax * Math.pow(PHI, safeK) > MAX_F) {
+            safeK--;
+        }
+        
+        if (safeK !== finalK) {
+            alert(`⚠️ Шаг k = ${finalK} выводит максимальную частоту ${maxFreqForK.toFixed(2)}Гц за границу ${MAX_F}Гц.\nРекомендуемый шаг ${safeK}.`);
+            finalK = safeK;
+            warnings.push(`Шаг скорректирован на ${finalK} из-за превышения MAX_F`);
+            needsCorrection = true;
+        }
+    }
+    
+    // ШАГ 3: Проверка выхода за MAX_F для n (Fmax * PHI^(k*n) <= MAX_F?)
+    let maxFreqForN = Fmax * Math.pow(PHI, finalK * finalN);
+    if (maxFreqForN > MAX_F && finalN > 0) {
+        // Ищем максимальный n, который не превышает MAX_F
+        let safeN = finalN;
+        while (safeN > 0 && Fmax * Math.pow(PHI, finalK * safeN) > MAX_F) {
+            safeN--;
+        }
+        
+        if (safeN !== finalN) {
+            alert(`⚠️ Превышен допустимый аппаратный частотный диапазон ${MAX_F}Гц.\nУстановлено максимально возможное количество обертонов ${safeN} для шага k = ${finalK}.`);
+            finalN = safeN;
+            warnings.push(`Обертоны скорректированы с ${userN} на ${finalN}`);
+            needsCorrection = true;
+        }
+    }
+    
+    // Обновляем поля, если были изменения
+    if (needsCorrection) {
+        document.getElementById('step').value = finalK;
+        document.getElementById('overtones').value = finalN;
+        document.getElementById('status').innerHTML = warnings.join(' | ');
+    }
+    
+    // Расчёт totalMass
+    let totalMass = 0;
+    sources.forEach(src => {
+        for(let i=0; i<=finalN; i++) {
+            const freq = src.f * Math.pow(PHI, i * finalK);
+            if(freq <= MAX_F) totalMass += src.a / Math.pow(PHI, i * finalK);
+        }
+    });
+    
+    return { sources, n: finalN, stepVal: finalK, totalMass, hasHarmonics: false };
+}
+
+// Рендеринг узлов (общий для Live и WAV)
+function setupVortex(ctx, destination, params, isLive) {
+    const startTime = ctx.currentTime + 0.05;
+    const merger = ctx.createChannelMerger(2);
+    const busL = ctx.createGain();
+    const busR = ctx.createGain();
+
+    let fullSequence = [];
+
+    params.sources.forEach(src => {
+        if (!params.hasHarmonics) {
+            // Обычный режим с PHI
+            for(let i=0; i<=params.n; i++) {
+                const freq = src.f * Math.pow(PHI, i * params.stepVal);
+                if(freq > MAX_F) break;
+                const rawAmp = src.a / Math.pow(PHI, i * params.stepVal);
+                const amp = rawAmp / params.totalMass;
+
+                if (isLive) {
+                    fullSequence.push(`${freq.toFixed(4)},${(amp * 100).toFixed(2)}`);
+                }
+
+                createOscillatorPair(ctx, freq, amp, startTime, busL, busR, isLive);
+            }
+        } else {
+            // Режим гармоник
+            const freq = src.f;
+            if(freq > MAX_F) return;
+            const amp = src.a / params.totalMass;
+            
+            if (isLive) {
+                fullSequence.push(`${freq.toFixed(2)},${(amp * 100).toFixed(2)}`);
+            }
+            
+            createOscillatorPair(ctx, freq, amp, startTime, busL, busR, isLive);
+        }
+    });
+
+    if (isLive && fullSequence.length > 0) {
+        const freqList = fullSequence.join('; ');
+        const currentStatus = document.getElementById('status').innerHTML;
+        if (!currentStatus.includes(freqList)) {
+            document.getElementById('status').innerHTML = currentStatus + '<br>' + freqList;
+        }
+    }
+
+    busL.connect(merger, 0, 0);
+    busR.connect(merger, 0, 1);
+    merger.connect(destination);
+    return { busL, busR };
+}
+
+function createOscillatorPair(ctx, freq, amp, startTime, busL, busR, isLive) {
+    const oscL = ctx.createOscillator();
+    const gainL = ctx.createGain();
+    oscL.frequency.setValueAtTime(freq, startTime);
+    gainL.gain.setValueAtTime(amp, startTime);
+    oscL.connect(gainL).connect(busL);
+    oscL.start(startTime);
+
+    const oscR = ctx.createOscillator();
+    const gainR = ctx.createGain();
+    const delayR = ctx.createDelay();
+    oscR.frequency.setValueAtTime(freq, startTime);
+    gainR.gain.setValueAtTime(amp, startTime);
+    delayR.delayTime.setValueAtTime((90/360)*(1/freq), startTime);
+    oscR.connect(delayR).connect(gainR).connect(busR);
+    oscR.start(startTime);
+
+    if(isLive) oscillators.push(oscL, oscR);
+}
+
+function validateAndCorrectParams(inputN, inputK, sources, phi) {
+    let correctedN = inputN;
+    let correctedK = inputK;
+    let warnings = [];
+    let changed = false;
+    
+    if (sources.length === 0) return { n: correctedN, k: correctedK, warnings: ['Нет источников частот!'], changed: false };
+    
+    let freqs = sources.map(s => s.f);
+    let Fmin = Math.min(...freqs);
+    let Fmax = Math.max(...freqs);
+    const isSingleFreq = sources.length === 1;
+    
+    if (!isSingleFreq) {
+        let currentKValid = (Fmin * Math.pow(phi, correctedK) > Fmax);
+        
+        if (!currentKValid) {
+            let newK = correctedK;
+            while (newK <= 6 && Fmin * Math.pow(phi, newK) <= Fmax) {
+                newK++;
+            }
+            if (newK <= 6 && newK !== correctedK) {
+                warnings.push(`⚠️ Шаг ${correctedK} создаёт наложение частот. Скорректирован на k = ${newK} для чистоты ряда`);
+                correctedK = newK;
+                changed = true;
+            }
+        }
+        
+        let maxFreqSequence = Fmax * Math.pow(phi, correctedK);
+        if (maxFreqSequence > MAX_F) {
+            let newK = correctedK;
+            while (newK > 1 && Fmax * Math.pow(phi, newK) > MAX_F) {
+                newK--;
+            }
+            if (newK !== correctedK) {
+                warnings.push(`⚠️ Шаг ${correctedK} выводит частоты за ${MAX_F}Гц. Скорректирован на k = ${newK}`);
+                correctedK = newK;
+                changed = true;
+            }
+        }
+        
+        if (correctedN > 1) {
+            let maxOverFreq = Fmin * Math.pow(phi, correctedK * correctedN);
+            if (maxOverFreq > Fmax) {
+                let newN = correctedN;
+                while (newN > 1 && Fmin * Math.pow(phi, correctedK * newN) > Fmax) {
+                    newN--;
+                }
+                if (newN !== correctedN) {
+                    warnings.push(`⚠️ Количество обертонов ${correctedN} создаёт паразитные биения. Скорректировано на n = ${newN}`);
+                    correctedN = newN;
+                    changed = true;
+                }
+            }
+        }
+    } else {
+        let maxFreqSequence = Fmax * Math.pow(phi, correctedK * correctedN);
+        if (maxFreqSequence > MAX_F) {
+            let newK = correctedK;
+            while (newK > 1 && Fmax * Math.pow(phi, newK * correctedN) > MAX_F) {
+                newK--;
+            }
+            if (newK !== correctedK) {
+                warnings.push(`⚠️ Шаг ${correctedK} выводит частоты за ${MAX_F}Гц. Скорректирован на k = ${newK}`);
+                correctedK = newK;
+                changed = true;
+            }
+            
+            if (Fmax * Math.pow(phi, correctedK * correctedN) > MAX_F) {
+                let newN = correctedN;
+                while (newN > 0 && Fmax * Math.pow(phi, correctedK * newN) > MAX_F) {
+                    newN--;
+                }
+                if (newN !== correctedN) {
+                    warnings.push(`⚠️ Частоты выходят за ${MAX_F}Гц. Обертоны скорректированы с ${correctedN} до ${newN}`);
+                    correctedN = newN;
+                    changed = true;
+                }
+            }
+        }
+    }
+    
+    if (changed) {
+        warnings.push(`✅ Принятые параметры: k = ${correctedK}, n = ${correctedN}`);
+    }
+    
+    return { n: correctedN, k: correctedK, warnings, changed };
+}
+
+function runVortex() {
+    stopVortex();
+    
+    // Проверка валидности гармоник
+    const harmonicsStr = document.getElementById('harmonics').value;
+    const validation = validateHarmonicsInput(harmonicsStr);
+    if (!validation.valid) {
+        alert(validation.message);
+        return;
+    }
+    
+    document.getElementById('status').innerHTML = "🟢 RUNNING...";
+    aCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const params = getParams();
+    
+    if (!params) {
+        document.getElementById('status').innerHTML = "❌ Ошибка: проверьте параметры";
+        return;
+    }
+    
+    if (!checkFrequenciesAgainstMaxFreq(params.sources)) {
+    	document.getElementById('status').innerHTML = "❌ Ошибка: превышение частотного порога";
+    	return;
+    }
+    
+    if (params.sources.length === 0) {
+        document.getElementById('status').innerHTML = "❌ Ошибка: нет корректных частот!";
+        return;
+    }
+    
+    const anaL = aCtx.createAnalyser();
+    const anaR = aCtx.createAnalyser();
+    
+    const nodes = setupVortex(aCtx, aCtx.destination, params, true);
+    nodes.busL.connect(anaL);
+    nodes.busR.connect(anaR);
+    
+    visualize(anaL, anaR);
+}
+
+function bufferToWav(abuf, bitDepth = '32') {
+    const numChannels = 2;
+    const sampleRate = abuf.sampleRate;
+    const length = abuf.length;
+    
+    let bytesPerSample, blockAlign, dataSize, wavHeaderSize, formatTag;
+    
+    if (bitDepth === '32') {
+        bytesPerSample = 4;
+        formatTag = 0x0003; // IEEE float
+    } else { // 24-bit
+        bytesPerSample = 3;
+        formatTag = 0x0001; // PCM
+    }
+    
+    blockAlign = numChannels * bytesPerSample;
+    dataSize = length * blockAlign;
+    wavHeaderSize = 44;
+    
+    const buffer = new ArrayBuffer(wavHeaderSize + dataSize);
+    const view = new DataView(buffer);
+    let p = 0;
+    
+    // RIFF chunk
+    writeString(view, p, 'RIFF'); p += 4;
+    view.setUint32(p, wavHeaderSize + dataSize - 8, true); p += 4;
+    writeString(view, p, 'WAVE'); p += 4;
+    
+    // fmt subchunk
+    writeString(view, p, 'fmt '); p += 4;
+    view.setUint32(p, 16, true); p += 4; // chunk size
+    view.setUint16(p, formatTag, true); p += 2;
+    view.setUint16(p, numChannels, true); p += 2;
+    view.setUint32(p, sampleRate, true); p += 4;
+    view.setUint32(p, sampleRate * blockAlign, true); p += 4; // byte rate
+    view.setUint16(p, blockAlign, true); p += 2;
+    view.setUint16(p, bytesPerSample * 8, true); p += 2; // bits per sample
+    
+    // data subchunk
+    writeString(view, p, 'data'); p += 4;
+    view.setUint32(p, dataSize, true); p += 4;
+    
+    // Пишем аудиоданные
+    const chL = abuf.getChannelData(0);
+    const chR = abuf.getChannelData(1);
+    
+    for (let i = 0; i < length; i++) {
+        const sampleL = Math.max(-1, Math.min(1, chL[i]));
+        const sampleR = Math.max(-1, Math.min(1, chR[i]));
+        
+        if (bitDepth === '32') {
+            // 32-bit float
+            view.setFloat32(p, sampleL, true); p += 4;
+            view.setFloat32(p, sampleR, true); p += 4;
+        } else { // 24-bit PCM
+            const intL = Math.round(sampleL * 0x7FFFFF);
+            const intR = Math.round(sampleR * 0x7FFFFF);
+            // Запись 24-bit (little-endian)
+            view.setUint8(p, intL & 0xFF); p++;
+            view.setUint8(p, (intL >> 8) & 0xFF); p++;
+            view.setUint8(p, (intL >> 16) & 0xFF); p++;
+            view.setUint8(p, intR & 0xFF); p++;
+            view.setUint8(p, (intR >> 8) & 0xFF); p++;
+            view.setUint8(p, (intR >> 16) & 0xFF); p++;
+        }
+    }
+    
+    return new Blob([buffer], {type: 'audio/wav'});
+}
+
+function writeString(view, offset, str) {
+    for (let i = 0; i < str.length; i++) {
+        view.setUint8(offset + i, str.charCodeAt(i));
+    }
+}
+
+function visualize(anaL, anaR) {
+    const canvas = document.getElementById('lissajous');
+    const d = canvas.getContext('2d');
+    canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
+    const datL = new Uint8Array(anaL.frequencyBinCount);
+    const datR = new Uint8Array(anaR.frequencyBinCount);
+
+    function draw() {
+        animId = requestAnimationFrame(draw);
+        anaL.getByteTimeDomainData(datL);
+        anaR.getByteTimeDomainData(datR);
+        d.fillStyle = 'rgba(0, 5, 0, 0.2)';
+        d.fillRect(0, 0, canvas.width, canvas.height);
+        d.beginPath(); d.strokeStyle = '#0f0'; d.lineWidth = 1.5;
+        for(let i=0; i<datL.length; i++) {
+            const x = (datL[i]/255)*canvas.width; const y = (datR[i]/255)*canvas.height;
+            if(i===0) d.moveTo(x,y); else d.lineTo(x,y);
+        }
+        d.stroke();
+    }
+    draw();
+}
+
+function stopVortex() {
+    oscillators.forEach(o => { try { o.stop(); } catch(e) {} }); 
+    oscillators = [];
+    if(aCtx) {
+        try { aCtx.close(); } catch(e) {}
+        aCtx = null;
+    }
+    if(animId) cancelAnimationFrame(animId);
+    animId = null;
+    document.getElementById('status').innerHTML = "⏹️ STOPPED.";
+}
+
+function savePreset() {
+    const freqVal = document.getElementById('freqInput').value;
+    const harmonicsVal = document.getElementById('harmonics').value;
+    const stepVal = document.getElementById('step').value;
+    const overtonesVal = document.getElementById('overtones').value;
+    const phiVal = document.getElementById('phiSelector').value;
+    
+    const sources = freqVal.split(';').map(s => {
+    	let [f, a] = s.trim().split(',');
+    	return { f: parseFloat(f), a: a ? parseFloat(a) : 100 };
+    }).filter(s => !isNaN(s.f) && s.f > 0);
+    
+    if (!checkFrequenciesAgainstMaxFreq(sources)) {
+    	return;
+    }
+    
+    const name = prompt("Имя пресета:");
+    if(!name) return;
+    
+    let lib = JSON.parse(localStorage.getItem('vortex_lib') || '[]');
+    lib.push({
+        name: name,
+        freq: freqVal,
+        harmonics: harmonicsVal,
+        step: stepVal,
+        overtones: overtonesVal,
+        phi: phiVal
+    });
+    localStorage.setItem('vortex_lib', JSON.stringify(lib));
+    renderLib();
+}
+
+function renderLib() {
+    const list = document.getElementById('lib');
+    let lib = JSON.parse(localStorage.getItem('vortex_lib') || '[]');
+    list.innerHTML = "<b>БИБЛИОТЕКА:</b>";
+    lib.forEach((it, idx) => {
+        const item = document.createElement('div');
+        item.className = 'preset-item';
+        item.innerHTML = `<span onclick="load(${idx})" style="cursor:pointer; color:#0f0">${it.name}</span>
+                          <span onclick="del(${idx})" style="color:red; cursor:pointer;">[X]</span>`;
+        list.appendChild(item);
+    });
+}
+
+// ========== ШАГ 2: МОДАЛЬНОЕ ОКНО WAV ==========
+let wavSettingsResolve = null;
+
+function showWavSettingsModal() {
+    return new Promise((resolve) => {
+        wavSettingsResolve = resolve;
+        
+        // Заполняем select частот дискретизации
+        const srSelect = document.getElementById('wavSampleRate');
+        srSelect.innerHTML = '';
+        
+        // Базовые частоты: 48 кГц всегда
+        const rates = [48000];
+        // Если система поддерживает больше 48 кГц, добавляем системную частоту
+        if (SYSTEM_SAMPLE_RATE > 48000) {
+            rates.push(SYSTEM_SAMPLE_RATE);
+        }
+        
+        rates.forEach(rate => {
+            const option = document.createElement('option');
+            option.value = rate;
+            const khz = rate / 1000;
+            option.textContent = Number.isInteger(khz) ? `${khz} кГц` : `${rate} Гц`;
+            if (rate === 48000) option.selected = true;
+            srSelect.appendChild(option);
+        });
+        
+        // Отображаем текущее значение длительности
+        const durSlider = document.getElementById('wavDuration');
+        const durSpan = document.getElementById('wavDurationValue');
+        const updateDuration = () => { durSpan.textContent = durSlider.value; };
+        durSlider.addEventListener('input', updateDuration);
+        updateDuration();
+        
+        // Показываем модальное окно
+        document.getElementById('wavSettingsModal').style.display = 'flex';
+    });
+}
+
+function closeWavSettingsModal() {
+    document.getElementById('wavSettingsModal').style.display = 'none';
+    if (wavSettingsResolve) {
+        wavSettingsResolve(null);
+        wavSettingsResolve = null;
+    }
+}
+
+function confirmWavSettings() {
+    const duration = parseInt(document.getElementById('wavDuration').value);
+    const bitDepth = document.getElementById('wavBitDepth').value;
+    const sampleRate = parseInt(document.getElementById('wavSampleRate').value);
+    
+    document.getElementById('wavSettingsModal').style.display = 'none';
+    
+    if (wavSettingsResolve) {
+        wavSettingsResolve({ duration, bitDepth, sampleRate });
+        wavSettingsResolve = null;
+    }
+}
+
+async function exportWav() {
+    // ШАГ 2: Открываем модальное окно с настройками
+    const settings = await showWavSettingsModal();
+    if (!settings) return; // пользователь нажал Отмена
+    
+    const name = prompt("Название файла:", "vortex_session");
+    if(!name) return;
+    
+    const harmonicsStr = document.getElementById('harmonics').value;
+    const validation = validateHarmonicsInput(harmonicsStr);
+    if (!validation.valid) {
+        alert(validation.message);
+        return;
+    }
+    
+    const oldStatus = document.getElementById('status').innerHTML;
+    
+    // ПОКАЗАТЬ ИНДИКАТОР
+    const statusDiv = document.getElementById('status');
+    statusDiv.innerHTML = '⏳ СОХРАНЕНИЕ: <span id="savingSpinner" style="display:inline-block; width:100px; height: 4px; background:#333; border-radius:4px; overflow:hidden; vertical-align:middle; margin-left:8px;"><span style="display:block; width:30%; height:100%; background:#0f0; animation: move 1s linear infinite;"></span></span>';
+    
+    // Добавить анимацию в style, если её нет
+    if (!document.querySelector('#savingAnimationStyle')) {
+        const style = document.createElement('style');
+        style.id = 'savingAnimationStyle';
+        style.textContent = '@keyframes move { 0% { width:0%; margin-left:0%; } 50% { width:80%; margin-left:10%; } 100% { width:0%; margin-left:100%; } }';
+        document.head.appendChild(style);
+    }
+    
+    const params = getParams();
+    
+    if (!params) {
+        document.getElementById('status').innerHTML = "❌ Ошибка: проверьте параметры";
+        return;
+    }
+    
+    if (!checkFrequenciesAgainstMaxFreq(params.sources)) {
+        document.getElementById('status').innerHTML = "❌ Ошибка: превышение частотного порога";
+        return;
+    }
+    
+    if (params.sources.length === 0) {
+        document.getElementById('status').innerHTML = "❌ Ошибка: нет корректных частот!";
+        return;
+    }
+    
+    // ШАГ 4: Используем динамические sampleRate и duration из настроек
+    const sr = settings.sampleRate;
+    const dur = settings.duration;
+    const offCtx = new OfflineAudioContext(2, sr * dur, sr);
+    
+    setupVortex(offCtx, offCtx.destination, params, false);
+    
+    const buffer = await offCtx.startRendering();
+    // ШАГ 5: Передаём битность в bufferToWav
+    const blob = bufferToWav(buffer, settings.bitDepth);
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = name + ".wav";
+    link.click();
+    
+    // СООБЩЕНИЕ О ЗАВЕРШЕНИИ
+    statusDiv.innerHTML = `✅ Файл "${name}.wav" сгенерирован`;
+    setTimeout(() => {
+        if (document.getElementById('status').innerHTML.includes('сгенерирован')) {
+            document.getElementById('status').innerHTML = oldStatus;
+        }
+    }, 3000);
+}
+
+window.load = (i) => {
+    const lib = JSON.parse(localStorage.getItem('vortex_lib') || '[]');
+    if (lib[i]) {
+        document.getElementById('freqInput').value = lib[i].freq || '';
+        document.getElementById('harmonics').value = lib[i].harmonics || '0';
+        document.getElementById('step').value = lib[i].step || '3';
+        document.getElementById('overtones').value = lib[i].overtones || '1';
+        document.getElementById('phiSelector').value = lib[i].phi || '1.61803398875';
+        updateFieldsState();
+    }
+};
+
+function openInfoModal() {
+    document.getElementById('infoModal').style.display = 'flex';
+}
+
+function closeInfoModal() {
+    document.getElementById('infoModal').style.display = 'none';
+}
+
+window.del = (i) => {
+    let lib = JSON.parse(localStorage.getItem('vortex_lib') || '[]');
+    lib.splice(i,1);
+    localStorage.setItem('vortex_lib', JSON.stringify(lib));
+    renderLib();
+};
+
+// Инициализация при загрузке
+window.onload = () => {
+    detectSystemCapabilities();  // ← добавить
+    renderLib();
+    setupFieldClickWarning();
+    document.getElementById('harmonics').addEventListener('input', updateFieldsState);
+    updateFieldsState();
+};
+</script>
+</body>
+</html>
