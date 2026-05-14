@@ -708,8 +708,24 @@
             <p>Поддерживаются MP3 и WAV файлы</p>
             <input type="file" id="fileInput" accept="audio/*" style="display:none" multiple>
         </div>
-               
-        <div class="player-controls" id="playControl"></div>
+        
+        <!-- НОВАЯ СТРОКА КНОПОК В ТРИ РЯДОМ -->
+        <div style="display: flex; justify-content: center; gap: 15px; margin: 15px 0; flex-wrap: wrap;">
+            <button id="bavsaAnalyzeBtn" class="save-btn">
+                <i class="fas fa-chart-line"></i>
+            </button>
+            <button id="saveBtn" class="save-btn" disabled>
+                <i class="fas fa-download"></i> WAV
+            </button>
+            <button id="backBtn" class="save-btn" onclick="window.location.href='https://meweryk.github.io/midi/index.html'">
+                <i class="fas fa-arrow-left"></i>
+            </button>
+        </div>
+        
+        <div id="tuneMessageContainer" class="tune-container"></div>
+        <div id="saveStatus" class="save-status">
+            <i class="fas fa-spinner fa-spin"></i> Идёт обработка...
+        </div>
         
         <div class="player-controls">
             <button id="playBtn" class="control-btn play-btn" disabled title="Играть">
@@ -725,16 +741,6 @@
             <button id="infoBtn" class="control-btn" title="Информация">
                 <i class="fas fa-info"></i>
             </button>
-        </div>
-        
-        <div style="text-align: center; margin: 15px 0;">
-            <button id="saveBtn" class="save-btn" disabled>
-                <i class="fas fa-download"></i> Сохранить WAV
-            </button>
-            <div id="tuneMessageContainer" class="tune-container"></div>
-            <div id="saveStatus" class="save-status">
-                <i class="fas fa-spinner fa-spin"></i> Идёт обработка...
-            </div>
         </div>
         
         <div class="phase-indicator" id="phaseInfo">
@@ -766,6 +772,7 @@
             </div>
             <div id="playlistItems"></div>
         </div>
+
         
         <div class="modal" id="settingsModal">
             <div class="modal-content">
@@ -1021,11 +1028,6 @@
             </div>
         </div>
         
-        <div class="player-controls">
-            <button class="secondary-btn" onclick="window.location.href='https://meweryk.github.io/midi/index.html'">
-                На главную
-            </button>
-        </div>                        
     </div>
 
     <script>
@@ -1121,6 +1123,7 @@
         let currentTrackIndex = -1;
         let autoPlayNext = false;
         let isEnded = false;
+        let showPeaksOnSpectrogram = false;  // По умолчанию пики скрыты
         
         // ===== ФУНКЦИЯ АНАЛИЗА КАЧЕСТВА ФАЗОВОГО СДВИГА =====
         function analyzePhaseQuality(leftData, rightData, samples) {
@@ -2002,8 +2005,8 @@
             let bufferForEffects = track.buffer;
             
             const effectName = phaseShiftActive ? 'фазовый сдвиг' : '';
-            const effectText = phaseShiftActive ? '(фазовый сдвиг)' : 'без эффектов';
-            saveBtn.innerHTML = `<i class="fas fa-download"></i> Сохранить WAV ${effectText}`;
+            const effectText = phaseShiftActive ? '(90° сдвиг)' : 'без эффектов';
+            saveBtn.innerHTML = `<i class="fas fa-download"></i> WAV ${effectText}`;
             
             const offlineContext = new OfflineAudioContext(2, bufferForEffects.length, bufferForEffects.sampleRate);
             const source = offlineContext.createBufferSource();
@@ -2071,7 +2074,7 @@
                 saveStatus.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Ошибка при сохранении';
             } finally {
                 saveBtn.disabled = false;
-                saveBtn.innerHTML = '<i class="fas fa-download"></i> Сохранить WAV';
+                saveBtn.innerHTML = '<i class="fas fa-download"></i> WAV';
             }
         }
         
@@ -2114,6 +2117,1110 @@
         });
         
         window.addEventListener('load', () => { initSettings(); fileInput.multiple = true; });
+        
+        // ===== BAVSA СПЕКТРОГРАФ (додати в кінець існуючого script) =====
+let bavsaModal = null;
+
+// Добавьте ЭТОТ класс где-нибудь перед analyzeBinauralBeats
+class TemporalSmoother {
+    constructor(alpha = 0.3) {
+        this.alpha = alpha; // Коэффициент сглаживания (0-1)
+        this.prev = null; // Предыдущий кадр
+    }
+    
+    // Сглаживание массива
+    smooth(current) {
+        if (!this.prev || this.prev.length !== current.length) {
+            // Первый кадр - просто копируем
+            this.prev = current.slice();
+            return current;
+        }
+        
+        // Экспоненциальное скользящее среднее:
+        // new = alpha * current + (1 - alpha) * previous
+        for (let i = 0; i < current.length; i++) {
+            current[i] = this.alpha * current[i] + (1 - this.alpha) * this.prev[i];
+            this.prev[i] = current[i];
+        }
+        return current;
+    }
+    
+    // Сброс (при смене файла)
+    reset() {
+        this.prev = null;
+    }
+}
+
+// Динамический порог шума (как в оригинальном BAVSA)
+function applyDynamicThreshold(spectrogram, multiplier = 1.5) {
+    // multiplier: 1.0 = агрессивный порог, 2.0 = мягкий порог
+    
+    const thresholded = [];
+    
+    for (let frameIdx = 0; frameIdx < spectrogram.length; frameIdx++) {
+        const frame = spectrogram[frameIdx];
+        
+        // 1. Вычисляем статистику текущего кадра
+        let sum = 0;
+        let sumSq = 0;
+        let count = 0;
+        
+        for (let i = 0; i < frame.length; i++) {
+            sum += frame[i];
+            sumSq += frame[i] * frame[i];
+            count++;
+        }
+        
+        const mean = sum / count;
+        const variance = (sumSq / count) - (mean * mean);
+        const stdDev = Math.sqrt(Math.max(0, variance));
+        
+        // 2. Динамический порог: среднее + k * стандартное отклонение
+        const threshold = mean + multiplier * stdDev;
+        
+        // 3. Применяем порог (обнуляем значения ниже порога)
+        const filtered = new Array(frame.length);
+        for (let i = 0; i < frame.length; i++) {
+            if (frame[i] > threshold) {
+                // Сохраняем значение, но немного усиливаем контраст
+                filtered[i] = Math.min(1, (frame[i] - threshold) / (1 - threshold));
+            } else {
+                filtered[i] = 0;
+            }
+        }
+        
+        thresholded.push(filtered);
+    }
+    
+    return thresholded;
+}
+
+// Параболическая интерполяция для точного определения частоты пика
+function interpolatePeak(amplitude, left, center, right) {
+    // amplitude - массив амплитуд
+    // left, center, right - индексы трех точек (center - пик)
+    
+    const a = amplitude[left];
+    const b = amplitude[center];
+    const c = amplitude[right];
+    
+    if (a === 0 && b === 0 && c === 0) return 0;
+    
+    // Параболическая интерполяция
+    const denominator = (a - 2 * b + c);
+    if (denominator === 0) return 0;
+    
+    const offset = (a - c) / (2 * denominator);
+    
+    // Ограничиваем offset в пределах [-0.5, 0.5]
+    return Math.max(-0.5, Math.min(0.5, offset));
+}
+
+// Функция для поиска и интерполяции пиков в кадре
+function findInterpolatedPeaks(frame, freqStep) {
+    const peaks = [];
+    
+    for (let i = 1; i < frame.length - 1; i++) {
+        // Проверяем, является ли точка локальным максимумом
+        if (frame[i] > frame[i - 1] && frame[i] > frame[i + 1] && frame[i] > 0.1) {
+            // Интерполируем положение пика
+            const offset = interpolatePeak(frame, i - 1, i, i + 1);
+            const exactIndex = i + offset;
+            const frequency = exactIndex * freqStep;
+            const amplitude = frame[i]; // Амплитуда пика
+            
+            peaks.push({
+                frequency: frequency,
+                amplitude: amplitude,
+                bin: i,
+                offset: offset
+            });
+        }
+    }
+    
+    // Сортируем по амплитуде (самые сильные первые)
+    peaks.sort((a, b) => b.amplitude - a.amplitude);
+    
+    return peaks;
+}
+
+// Функція для BAVSA-аналізу
+async function analyzeBinauralBeats() {
+    if (currentTrackIndex === -1 || !playlistData[currentTrackIndex]?.buffer) {
+        showToast('Спочатку завантажте аудіофайл', true);
+        return;
+    }
+    
+    showProcessingOverlay('Анализ наличия бинауральных ритмов, проверка первых 60 сек...');
+    await new Promise(r => setTimeout(r, 50)); // ← ЭТА СТРОКА
+    
+    const buffer = playlistData[currentTrackIndex].buffer;
+    const sampleRate = buffer.sampleRate;
+    const duration = Math.min(60, buffer.duration); // до 60 секунд для аналізу
+    const samplesToAnalyze = Math.floor(sampleRate * duration);
+    
+    const leftChannel = buffer.getChannelData(0);
+    const rightChannel = buffer.numberOfChannels > 1 ? buffer.getChannelData(1) : leftChannel;
+    
+    // ТОЧНІСТЬ: FFT 524288 (+0.084 Гц точність)
+    const fftSize = 524288; // 2^19, крок частоти 44100/524288 = 0.084 Гц
+    const hopSize = 110250; // 2.5 секунди крок (більше знімків)
+    const numWindows = Math.floor((samplesToAnalyze - fftSize) / hopSize);
+    
+    const spectrogram = [];
+    const frequencies = [];
+    
+    function blackmanWindow(size) {
+        const window = new Float64Array(size);
+        // Коэффициенты Blackman: a0 = 0.42, a1 = 0.5, a2 = 0.08
+        const a0 = 0.42;
+        const a1 = 0.5;
+        const a2 = 0.08;
+        
+        for (let i = 0; i < size; i++) {
+            const theta = 2 * Math.PI * i / (size - 1);
+            window[i] = a0 - a1 * Math.cos(theta) + a2 * Math.cos(2 * theta);
+        }
+        return window;
+    }
+    
+    const windowFunc = blackmanWindow(fftSize);
+    
+    function complexFFT(real, imag, invert) {
+        const n = real.length;
+        if (n <= 1) return;
+        
+        // Битово-инверсная перестановка
+        let j = 0;
+        for (let i = 1; i < n; i++) {
+            let bit = n >> 1;
+            while (j & bit) {
+                j ^= bit;
+                bit >>= 1;
+            }
+            j ^= bit;
+            if (i < j) {
+                [real[i], real[j]] = [real[j], real[i]];
+                [imag[i], imag[j]] = [imag[j], imag[i]];
+            }
+        }
+        
+        // Кулька-бабочка FFT
+        for (let len = 2; len <= n; len <<= 1) {
+            const angle = 2 * Math.PI / len * (invert ? -1 : 1);
+            const wlenReal = Math.cos(angle);
+            const wlenImag = Math.sin(angle);
+            
+            for (let i = 0; i < n; i += len) {
+                let wReal = 1;
+                let wImag = 0;
+                for (let j = 0; j < len / 2; j++) {
+                    const uReal = real[i + j];
+                    const uImag = imag[i + j];
+                    const vReal = real[i + j + len / 2] * wReal - imag[i + j + len / 2] * wImag;
+                    const vImag = real[i + j + len / 2] * wImag + imag[i + j + len / 2] * wReal;
+                    
+                    real[i + j] = uReal + vReal;
+                    imag[i + j] = uImag + vImag;
+                    real[i + j + len / 2] = uReal - vReal;
+                    imag[i + j + len / 2] = uImag - vImag;
+                    
+                    const newWReal = wReal * wlenReal - wImag * wlenImag;
+                    const newWImag = wReal * wlenImag + wImag * wlenReal;
+                    wReal = newWReal;
+                    wImag = newWImag;
+                }
+            }
+        }
+        
+        // Нормализация для обратного FFT
+        if (invert) {
+            for (let i = 0; i < n; i++) {
+                real[i] /= n;
+                imag[i] /= n;
+            }
+        }
+    }
+
+        for (let win = 0; win < numWindows && win < 60; win++) {
+            const offset = win * hopSize;
+            
+            const leftReal = new Float64Array(fftSize);
+            const leftImag = new Float64Array(fftSize);
+            const rightReal = new Float64Array(fftSize);
+            const rightImag = new Float64Array(fftSize);
+            
+            // Применяем окно (пока Hamming, позже заменим на Blackman)
+            for (let i = 0; i < fftSize && offset + i < samplesToAnalyze; i++) {
+                const valL = leftChannel[offset + i] * windowFunc[i];
+                leftReal[i] = valL;
+                const valR = rightChannel[offset + i] * windowFunc[i];
+                rightReal[i] = valR;
+            }
+            
+            // КОМПЛЕКСНОЕ БПФ (вместо simpleFFT)
+            complexFFT(leftReal, leftImag, false);
+            complexFFT(rightReal, rightImag, false);
+            
+            // МАССИВ magnitudes - СОХРАНЯЕМ!
+            const magnitudes = [];
+            
+            for (let i = 0; i < fftSize / 2; i++) {
+                // Амплитуды
+                const leftMag = Math.hypot(leftReal[i], leftImag[i]);
+                const rightMag = Math.hypot(rightReal[i], rightImag[i]);
+                
+                // ФАЗА (новое!)
+                const leftPhase = Math.atan2(leftImag[i], leftReal[i]);
+                const rightPhase = Math.atan2(rightImag[i], rightReal[i]);
+                let phaseDiff = Math.abs(leftPhase - rightPhase);
+                phaseDiff = Math.min(phaseDiff, 2 * Math.PI - phaseDiff);
+                
+                // Отношение амплитуд
+                const amplitudeRatio = Math.min(leftMag, rightMag) / (Math.max(leftMag, rightMag) + 1e-6);
+                
+                // Когерентность фаз (1 = синфазно, 0 = противофазно)
+                const phaseCoherence = 1 - (phaseDiff / Math.PI);
+                
+                // НОВАЯ формула интенсивности биения
+                // Бинауральное биение = когерентность фаз * близость амплитуд
+                const beatIntensity = phaseCoherence * amplitudeRatio;
+                
+                const freq = i * sampleRate / fftSize;
+                
+                // Сохраняем ВСЕ частоты до 2000 Гц (как и было)
+                if (freq <= 2000) {
+                    if (frequencies.length <= i) frequencies.push(freq);
+                    magnitudes.push(beatIntensity);
+                }
+            }
+            spectrogram.push(magnitudes);
+            console.log(`Анализ: снимок ${win + 1}/${Math.min(numWindows, 60)}`);
+}
+
+    // Применяем экспоненциальное сглаживание
+    const smoother = new TemporalSmoother(config.smoothingAlpha || 0.35);
+    for (let i = 0; i < spectrogram.length; i++) {
+        spectrogram[i] = smoother.smooth(spectrogram[i]);
+    }
+    
+    // ===== ДИНАМИЧЕСКИЙ ПОРОГ (исправленная версия) =====
+    console.log('Применяем динамический порог шума...');
+    const thresholdMultiplier = 1.5;
+    const thresholdedData = applyDynamicThreshold(spectrogram, thresholdMultiplier);
+    
+    // Очищаем и заменяем содержимое (сохраняя const)
+    spectrogram.length = 0;
+    for (let i = 0; i < thresholdedData.length; i++) {
+        spectrogram.push(thresholdedData[i]);
+    }
+    console.log('Пороговая обработка завершена');
+    // ===== КОНЕЦ =====
+    
+    
+    hideProcessingOverlay();
+    showBavsaWindow(spectrogram, frequencies, sampleRate);
+}
+
+function showBavsaWindow(spectrogram, frequencies, sampleRate) {
+    if (bavsaModal) bavsaModal.remove();
+    
+    bavsaModal = document.createElement('div');
+    bavsaModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.95);
+        z-index: 3000;
+        display: flex;
+        flex-direction: column;
+        padding: 20px;
+        touch-action: none;
+    `;
+    
+    bavsaModal.innerHTML = `
+        <div style="display: flex; justify-content: space-between; margin-bottom: 15px;">
+            <h3 style="color: #6a9eff;">Спектрограма бінауральних ритмів</h4>
+            <div>
+                <button id="closeBavsa" class="secondary-btn" style="padding: 8px 15px; color: white; font-size: 18px; cursor: pointer; border: none;">✕</button>
+                <button id="infoBavsaBtn" class="secondary-btn" style="padding: 8px 15px; color: white; font-size: 18px; cursor: pointer; border: none;">ℹ️</button>
+            </div>
+        </div>
+        <div style="display: flex; gap: 15px; margin-bottom: 15px; flex-wrap: wrap; align-items: center;">
+            <div><span style="background: #000; padding: 4px 4px; border-radius: 4px; font-size: 12px;">🔵 <span id="carrierFreqLabel">0</span> Гц (несущая)</span></div>
+            <div><span style="background: #000; padding: 4px 4px; border-radius: 4px; font-size: 12px;">🟡 <span id="beatFreqLabel">0</span> Гц (биения)</span></div>
+            <div>🎨 Яркость <input type="range" id="brightnessSlider" min="0" max="200" value="120" style="width: 100px;"></div>
+            <div>📐 Вид: 
+                <select id="viewModeSelect">
+                    <option value="carrier_beat">Несущая vs Биения</option>
+                    <option value="carrier_time">Несущая vs Время</option>
+                </select>
+            </div>
+        </div>
+        <div style="display: flex; gap: 10px; margin-bottom: 10px; justify-content: center; flex-wrap: wrap;">
+            <button id="zoomInBtn" class="secondary-btn" style="padding: 8px 15px;">🔍+ Увеличить</button>
+            <button id="zoomOutBtn" class="secondary-btn" style="padding: 8px 15px;">🔍- Уменьшить</button>
+            <button id="resetViewBtn" class="secondary-btn" style="padding: 8px 15px;">⟳ Сброс</button>
+            <button id="togglePeaksBavsaBtn" class="secondary-btn" style="padding: 8px 15px;">
+                <i class="fas fa-chart-line"></i> Показать пики
+            </button>
+        </div>
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; justify-content: center; flex-wrap: wrap;">
+            <button id="panUpBtn" class="secondary-btn" style="padding: 5px 12px;">⬆️</button>
+            <button id="panDownBtn" class="secondary-btn" style="padding: 5px 12px;">⬇️ </button>
+            <button id="PanLeftBtn" class="secondary-btn" style="padding: 5px 12px;">⬅️ </button>
+            <button id="PanRightBtn" class="secondary-btn" style="padding: 5px 12px;">➡️ </button>
+        </div>
+        <canvas id="bavsaCanvas" style="flex: 1; background: #000; border-radius: 8px; cursor: crosshair; touch-action: none;"></canvas>
+        <div style="display: flex; justify-content: space-between; margin-top: 10px;">
+            <div id="bavsaStatus" style="color: #6a9eff; font-family: monospace; font-size: 14px;"></div>
+            <!--<div style="text-align: center; margin-top: 5px;color: #ccc; font-size: 12px;"> Несущая частота (Гц) </div>
+            <div style="text-align: center; margin-top: 5px; color: #ccc; font-size: 12px;">Частота биения (Гц)</div>-->
+        </div>
+    `;
+    
+    document.body.appendChild(bavsaModal);
+    
+    const canvas = document.getElementById('bavsaCanvas');
+    const ctx = canvas.getContext('2d');
+    const closeBtn = document.getElementById('closeBavsa');
+    const brightnessSlider = document.getElementById('brightnessSlider');
+    const statusDiv = document.getElementById('bavsaStatus');
+    const viewModeSelect = document.getElementById('viewModeSelect');
+    const carrierFreqLabel = document.getElementById('carrierFreqLabel');
+    const beatFreqLabel = document.getElementById('beatFreqLabel');
+    
+    // КНОПКА ІНФОРМАЦІЇ
+const infoBavsaBtn = document.getElementById('infoBavsaBtn');
+
+// Функція створення інформаційного вікна
+function showInfoWindow() {
+    // Видаляємо старе вікно, якщо є
+    const existingInfo = document.getElementById('bavsaInfoModal');
+    if (existingInfo) existingInfo.remove();
+    
+    const infoModal = document.createElement('div');
+    infoModal.id = 'bavsaInfoModal';
+    infoModal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.85);
+        z-index: 4000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 20px;
+    `;
+    
+    infoModal.innerHTML = `
+        <div style="background: #1a1a2a; border-radius: 16px; max-width: 500px; width: 100%; max-height: 90vh; overflow-y: auto; border: 1px solid #6a9eff; position: relative;">
+            <div style="position: sticky; top: 0; background: #1a1a2a; padding: 15px 20px; border-bottom: 1px solid #3a3a4a; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="color: #6a9eff; margin: 0;">📖 Інтерпретація спектрограми</h3>
+                <button id="closeInfoModal" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
+            </div>
+            <div style="padding: 20px;">
+                <!-- Зміст -->
+                <div style="margin-bottom: 25px;">
+                    <h4 style="color: #ffdd44; margin-bottom: 10px;">🎯 Для чого це?</h4>
+                    <p style="color: #ccc; line-height: 1.5; font-size: 14px;">
+                        Спектрограма дозволяє <strong>візуально виявити бінауральні ритми</strong> в стереозаписі та визначити їх параметри: 
+                        несучу частоту, частоту Биения та інтенсивність. Це корисно для перевірки якості бінауральних треків 
+                        або аналізу власних записів.
+                    </p>
+                </div>
+                
+                <div style="margin-bottom: 25px;">
+                    <h4 style="color: #ffdd44; margin-bottom: 10px;">📊 Режими відображення</h4>
+                    
+                    <div style="background: #0f0f13; border-radius: 12px; padding: 12px; margin-bottom: 12px;">
+                        <div style="color: #44ff88; font-weight: bold; margin-bottom: 8px;">📐 Несуча vs Биття (основний режим)</div>
+                        <ul style="color: #aaa; font-size: 13px; margin-left: 20px;">
+                            <li><strong style="color: #fff;">Вісь X (горизонталь)</strong> — <span style="color: #ffdd44;">Несуча частота</span> (0-1500 Гц). Це частота, яку ви фізично чуєте.</li>
+                            <li><strong style="color: #fff;">Вісь Y (вертикаль)</strong> — <span style="color: #44ff88;">Частота биття</span> (0-50 Гц). Це частота мозкових хвиль, які стимулюються.</li>
+                            <li><strong style="color: #fff;">Колір/Яскравість</strong> — <span style="color: #ff8844;">Інтенсивність ефекту</span>. Що яскравіше, то сильніший бінауральний ритм.</li>
+                        </ul>
+                    </div>
+                    
+                    <div style="background: #0f0f13; border-radius: 12px; padding: 12px;">
+                        <div style="color: #44ff88; font-weight: bold; margin-bottom: 8px;">⏱️ Несуча vs Час</div>
+                        <ul style="color: #aaa; font-size: 13px; margin-left: 20px;">
+                            <li><strong style="color: #fff;">Вісь X</strong> — Несуча частота (Гц)</li>
+                            <li><strong style="color: #fff;">Вісь Y</strong> — Час (секунди)</li>
+                            <li>Дозволяє побачити, <strong>як змінюється спектр</strong> протягом треку</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 25px;">
+                    <h4 style="color: #ffdd44; margin-bottom: 10px;">🎨 Кольорова шкала (інтенсивність)</h4>
+                    <div style="display: flex; height: 30px; border-radius: 8px; overflow: hidden; margin-bottom: 10px;">
+                        <div style="flex: 1; background: #000; text-align: center; color: white; font-size: 10px; line-height: 30px;">0%</div>
+                        <div style="flex: 1; background: #0000ff; text-align: center; color: white; font-size: 10px; line-height: 30px;">25%</div>
+                        <div style="flex: 1; background: #00ff00; text-align: center; color: black; font-size: 10px; line-height: 30px;">50%</div>
+                        <div style="flex: 1; background: #ffff00; text-align: center; color: black; font-size: 10px; line-height: 30px;">75%</div>
+                        <div style="flex: 1; background: #ffffff; text-align: center; color: black; font-size: 10px; line-height: 30px;">100%</div>
+                    </div>
+                    <ul style="color: #aaa; font-size: 13px; margin-left: 20px;">
+                        <li><span style="color: #0000ff;">🔵 Синій</span> — дуже слабкий ефект (1-25%)</li>
+                        <li><span style="color: #00ff00;">🟢 Зелений</span> — помітний ефект (25-50%)</li>
+                        <li><span style="color: #ffff00;">🟡 Жовтий</span> — сильний ефект (50-75%)</li>
+                        <li><span style="color: #ffffff;">⚪ Білий</span> — дуже сильний, майже ідеальний 90° зсув (75-100%)</li>
+                        <li><span style="color: #000000;">⬛ Чорний</span> — ефект відсутній, канали ідентичні</li>
+                    </ul>
+                </div>
+                
+                <div style="margin-bottom: 25px;">
+                    <h4 style="color: #ffdd44; margin-bottom: 10px;">🧠 Лінії мозкових ритмів</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 10px;">
+                        <div style="background: #0f0f13; border-radius: 8px; padding: 6px 12px;"><span style="color: #4488ff;">🔵 Delta 4Гц</span> — глибокий сон</div>
+                        <div style="background: #0f0f13; border-radius: 8px; padding: 6px 12px;"><span style="color: #44ff88;">🟢 Theta 8Гц</span> — медитація, REM-сон</div>
+                        <div style="background: #0f0f13; border-radius: 8px; padding: 6px 12px;"><span style="color: #ffdd44;">🟡 Alpha 12Гц</span> — розслаблення</div>
+                        <div style="background: #0f0f13; border-radius: 8px; padding: 6px 12px;"><span style="color: #ff8844;">🟠 Beta 30Гц</span> — активне мислення</div>
+                        <div style="background: #0f0f13; border-radius: 8px; padding: 6px 12px;"><span style="color: #ff4488;">🔴 Gamma 50Гц</span> — пікові стани</div>
+                    </div>
+                    <p style="color: #aaa; font-size: 13px;">
+                        Яскрава пляма на перетині частоти биття (наприклад, Alpha 12Гц) та несучої (наприклад, 200Гц) 
+                        означає, що запис містить бінауральний ритм для стимуляції альфа-стану.
+                    </p>
+                </div>
+                
+                <div style="margin-bottom: 25px;">
+                    <h4 style="color: #ffdd44; margin-bottom: 10px;">🖱️ Як користуватися</h4>
+                    <ul style="color: #aaa; font-size: 13px; margin-left: 20px;">
+                        <li><strong>Наведіть курсор/палець</strong> на пляму — побачите точні значення несучої та биття</li>
+                        <li><strong>Коліщатко миші / два пальці</strong> — масштабування</li>
+                        <li><strong>ЛКМ + перетягування / один палець</strong> — панорамування</li>
+                        <li><strong>ПКМ</strong> — скидання масштабу</li>
+                        <li><strong>Кнопки 🔍+ / 🔍- / ⬆️⬇️⬅️➡️</strong> — для смартфонів</li>
+                        <li><strong>Яскравість</strong> — регулює контрастність відображення</li>
+                    </ul>
+                </div>
+                
+                <div style="margin-bottom: 15px;">
+                    <h4 style="color: #ffdd44; margin-bottom: 10px;">📖 Приклад читання</h4>
+                    <div style="background: #0f0f13; border-radius: 12px; padding: 12px;">
+                        <p style="color: #ccc; font-size: 13px; margin-bottom: 8px;">
+                            <strong>Яскрава жовта пляма на координатах:</strong>
+                        </p>
+                        <p style="color: #ffdd44; font-family: monospace; font-size: 14px; margin-bottom: 8px;">
+                            Несуча: 200 Гц | Биття: 10 Гц
+                        </p>
+                        <p style="color: #aaa; font-size: 13px;">
+                            Означає: у файлі присутні тони <strong>195 Гц (ліве вухо)</strong> і <strong>205 Гц (праве вухо)</strong>. 
+                            Це класичний альфа-ритм (10 Гц) на несучій 200 Гц, який використовується для розслаблення.
+                        </p>
+                    </div>
+                </div>
+                
+                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #3a3a4a; text-align: center;">
+                    <p style="color: #666; font-size: 11px;">
+                        Засновано на BAVSA (Jim Peters) — інструменті для аналізу бінауральних ритмів
+                    </p>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(infoModal);
+    
+    const closeInfoModal = document.getElementById('closeInfoModal');
+    closeInfoModal.onclick = () => infoModal.remove();
+    
+    // Закриття при кліку поза вікном
+    infoModal.onclick = (e) => {
+        if (e.target === infoModal) infoModal.remove();
+    };
+}
+
+if (infoBavsaBtn) infoBavsaBtn.onclick = showInfoWindow;
+    
+    // ОБМЕЖЕННЯ
+    const maxCarrierFreq = 1500;     // до 1500 Гц
+    const maxBeatFreq = 50;          // 50 Гц для биття
+    const maxTimeSec = 40;           // до 40 секунд
+    
+    // Ритми мозку для сітки (просто лінії)
+    const brainRhythms = [
+        { name: 'Delta', freq: 4, color: '#4488ff' },
+        { name: 'Theta', freq: 8, color: '#44ff88' },
+        { name: 'Alpha', freq: 12, color: '#ffdd44' },
+        { name: 'Beta', freq: 30, color: '#ff8844' },
+        { name: 'Gamma', freq: 50, color: '#ff4488' }
+    ];
+    
+    // Знаходимо індекси для обмежень
+    let maxCarrierIdx = 0;
+    let maxBeatIdx = 0;
+    for (let i = 0; i < frequencies.length; i++) {
+        if (frequencies[i] <= maxCarrierFreq) maxCarrierIdx = i;
+        if (frequencies[i] <= maxBeatFreq) maxBeatIdx = i;
+    }
+    if (maxCarrierIdx === 0) maxCarrierIdx = frequencies.length;
+    if (maxBeatIdx === 0) maxBeatIdx = Math.min(200, frequencies.length);
+    
+    // Обмеження часу (крок 2.5 секунди)
+    const maxTimeIdx = Math.min(spectrogram.length, Math.ceil(maxTimeSec / 2.5));
+    
+    // Створюємо beatMap
+    const beatMap = Array(maxBeatIdx).fill().map(() => Array(maxCarrierIdx).fill(0));
+    
+    for (let t = 0; t < Math.min(spectrogram.length, maxTimeIdx); t++) {
+        for (let c = 0; c < maxCarrierIdx && c < spectrogram[t]?.length; c++) {
+            const intensity = spectrogram[t][c] || 0;
+            if (t > 0) {
+                const prevIntensity = spectrogram[t-1][c] || 0;
+                const beatIdx = Math.min(maxBeatIdx-1, Math.floor(Math.abs(intensity - prevIntensity) * maxBeatIdx * 2));
+                if (beatIdx < maxBeatIdx && beatIdx >= 0) {
+                    beatMap[beatIdx][c] += intensity;
+                }
+            }
+        }
+    }
+    
+    for (let b = 0; b < maxBeatIdx; b++) {
+        let maxVal = 0;
+        for (let c = 0; c < maxCarrierIdx; c++) {
+            if (beatMap[b][c] > maxVal) maxVal = beatMap[b][c];
+        }
+        if (maxVal > 0) {
+            for (let c = 0; c < maxCarrierIdx; c++) {
+                beatMap[b][c] = Math.min(1, beatMap[b][c] / maxVal);
+            }
+        }
+    }
+    
+    let currentMode = 'carrier_beat';
+    let zoomX = { min: 0, max: maxCarrierIdx - 1 };
+    let zoomY = { min: 0, max: (currentMode === 'carrier_beat' ? maxBeatIdx : maxTimeIdx) - 1 };
+    let mouseX = 0, mouseY = 0;
+    let isPanning = false;
+    let panStartX = 0, panStartY = 0;
+    let zoomStartX = { min: 0, max: 0 };
+    let zoomStartY = { min: 0, max: 0 };
+    
+    // Для touch-подій
+    let touchStartDistance = 0;
+    let touchStartZoomX = { min: 0, max: 0 };
+    let touchStartZoomY = { min: 0, max: 0 };
+    
+    function getTouchDistance(e) {
+        if (e.touches.length < 2) return 0;
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+    
+    function resizeCanvas() {
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+        drawSpectrogram();
+    }
+    
+    // Функція малювання ліній ритмів з урахуванням зуму
+    function drawBrainRhythmLines(width, height) {
+        if (currentMode !== 'carrier_beat') return;
+        
+        for (const rhythm of brainRhythms) {
+            // Перетворюємо частоту ритму в Y-координату на графіку з урахуванням зуму
+            const beatValue = rhythm.freq;
+            // Нормалізуємо в діапазоні 0-1 відносно поточного зуму
+            const normalizedY = (beatValue - zoomY.min * (maxBeatFreq / maxBeatIdx)) / ((zoomY.max - zoomY.min) * (maxBeatFreq / maxBeatIdx));
+            const yPos = normalizedY * height;
+            
+            if (yPos >= 0 && yPos <= height) {
+                ctx.beginPath();
+                ctx.strokeStyle = rhythm.color;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([8, 6]);
+                ctx.moveTo(0, yPos);
+                ctx.lineTo(width, yPos);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                ctx.fillStyle = rhythm.color;
+                ctx.font = 'bold 10px monospace';
+                ctx.shadowBlur = 2;
+                ctx.shadowColor = 'black';
+                ctx.fillText(`${rhythm.name} ${rhythm.freq}Гц`, 8, yPos - 4);
+            }
+        }
+        ctx.shadowBlur = 0;
+        ctx.setLineDash([]);
+    }
+    
+    function drawSpectrogram() {
+        if (!ctx || canvas.width === 0) return;
+        
+        const width = canvas.width;
+        const height = canvas.height;
+        const brightness = brightnessSlider.value / 100;
+        
+        let xStart, xEnd, yStart, yEnd;
+        
+        if (currentMode === 'carrier_beat') {
+            xStart = Math.max(0, Math.floor(zoomX.min));
+            xEnd = Math.min(maxCarrierIdx, Math.ceil(zoomX.max));
+            yStart = Math.max(0, Math.floor(zoomY.min));
+            yEnd = Math.min(maxBeatIdx, Math.ceil(zoomY.max));
+        } else {
+            xStart = Math.max(0, Math.floor(zoomX.min));
+            xEnd = Math.min(maxCarrierIdx, Math.ceil(zoomX.max));
+            yStart = Math.max(0, Math.floor(zoomY.min));
+            yEnd = Math.min(maxTimeIdx, Math.ceil(zoomY.max));
+        }
+        
+        const xStep = (xEnd - xStart) / width;
+        const yStep = (yEnd - yStart) / height;
+        
+        const imageData = ctx.createImageData(width, height);
+        
+        for (let py = 0; py < height; py++) {
+            const yIdx = yStart + py * yStep;
+            const yInt = Math.floor(yIdx);
+            
+            for (let px = 0; px < width; px++) {
+                const xIdx = xStart + px * xStep;
+                const xInt = Math.floor(xIdx);
+                
+                let intensity = 0;
+                if (currentMode === 'carrier_beat') {
+                    if (yInt >= 0 && yInt < maxBeatIdx && xInt >= 0 && xInt < maxCarrierIdx) {
+                        intensity = beatMap[yInt][xInt] * brightness;
+                    }
+                } else {
+                    if (yInt >= 0 && yInt < maxTimeIdx && xInt >= 0 && xInt < spectrogram[yInt]?.length) {
+                        intensity = spectrogram[yInt][xInt] * brightness;
+                    }
+                }
+                
+                intensity = Math.min(1, Math.max(0, intensity));
+                
+                let r, g, b;
+                if (intensity < 0.25) {
+                    r = 0; g = 0; b = Math.floor(255 * (intensity / 0.25));
+                } else if (intensity < 0.50) {
+                    r = 0; g = Math.floor(255 * ((intensity - 0.25) / 0.25));
+                    b = 255 - Math.floor(255 * ((intensity - 0.25) / 0.25));
+                } else if (intensity < 0.75) {
+                    r = Math.floor(255 * ((intensity - 0.50) / 0.25));
+                    g = 255; b = 0;
+                } else {
+                    r = 255; g = 255;
+                    b = Math.floor(255 * ((1 - intensity) / 0.25));
+                }
+                
+                const idx = (py * width + px) * 4;
+                imageData.data[idx] = r;
+                imageData.data[idx + 1] = g;
+                imageData.data[idx + 2] = b;
+                imageData.data[idx + 3] = 255;
+            }
+        }
+        
+        ctx.putImageData(imageData, 0, 0);
+
+        // ===== ОТРИСОВКА ПИКОВ =====
+        if (showPeaksOnSpectrogram && currentMode === 'carrier_beat') {
+            const freqStep = maxCarrierFreq / maxCarrierIdx;
+            let peaksFound = 0;
+            
+            for (let beatY = 0; beatY < maxBeatIdx; beatY++) {
+                const frame = beatMap[beatY];
+                if (!frame) continue;
+                
+                for (let i = 2; i < frame.length - 2; i++) {
+                    if (frame[i] > frame[i - 1] && frame[i] > frame[i + 1] &&
+                        frame[i] > frame[i - 2] && frame[i] > frame[i + 2] &&
+                        frame[i] > 0.35) {
+                        
+                        peaksFound++;
+                        const freq = i * freqStep;
+                        
+                        if (freq < zoomX.min * freqStep || freq > zoomX.max * freqStep) continue;
+                        
+                        const x = ((freq - zoomX.min * freqStep) / ((zoomX.max - zoomX.min) * freqStep)) * width;
+                        const y = (beatY / maxBeatIdx) * height;
+                        
+                        if (x >= 0 && x <= width && y >= 0 && y <= height) {
+                            ctx.beginPath();
+                            ctx.arc(x, y, 2, 0, 2 * Math.PI);
+                            ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+                            ctx.fill();
+                            ctx.beginPath();
+                            ctx.arc(x, y, 1, 0, 2 * Math.PI);
+                            ctx.fillStyle = '#FF4444';
+                            ctx.fill();
+                        }
+                    }
+                }
+            }
+            console.log('Пиков отрисовано:', peaksFound);
+        }
+        // ===== КОНЕЦ ОТРИСОВКИ ПИКОВ =====
+        
+        // Малюємо сітку ритмів з урахуванням зуму
+        drawBrainRhythmLines(width, height);
+        
+        // Основна сітка
+        ctx.strokeStyle = '#555';
+        ctx.lineWidth = 0.5;
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 10px monospace';
+        ctx.shadowBlur = 2;
+        ctx.shadowColor = 'black';
+        
+        for (let x = 0; x <= 4; x++) {
+            const xPos = (x / 4) * width;
+            ctx.beginPath();
+            ctx.moveTo(xPos, 0);
+            ctx.lineTo(xPos, height);
+            ctx.stroke();
+            
+            let freqValue = (zoomX.min + (x / 4) * (zoomX.max - zoomX.min)) * (maxCarrierFreq / maxCarrierIdx);
+            ctx.fillText(`${freqValue.toFixed(0)}`, xPos - 12, height - 5);
+        }
+        
+        for (let y = 0; y <= 4; y++) {
+            const yPos = (y / 4) * height;
+            ctx.beginPath();
+            ctx.moveTo(0, yPos);
+            ctx.lineTo(width, yPos);
+            ctx.stroke();
+            
+            let value;
+            if (currentMode === 'carrier_beat') {
+                value = (zoomY.min + (y / 4) * (zoomY.max - zoomY.min)) * (maxBeatFreq / maxBeatIdx);
+                ctx.fillText(`${value.toFixed(1)}`, 5, yPos - 3);
+            } else {
+                value = (zoomY.min + (y / 4) * (zoomY.max - zoomY.min)) * 2.5;
+                ctx.fillText(`${value.toFixed(1)}с`, 5, yPos - 3);
+            }
+        }
+        
+        ctx.shadowBlur = 0;
+        
+        ctx.fillStyle = '#CCCCCC';
+        ctx.font = '10px monospace';
+        ctx.fillText('Несущая частота (Гц) →', width/2 - 70, height - 5);
+        
+        ctx.save();
+        ctx.translate(12, height/2);
+        ctx.rotate(-Math.PI/2);
+        ctx.fillStyle = '#CCCCCC';
+        if (currentMode === 'carrier_beat') {
+            ctx.fillText('↓ Частота би (Гц) ↓', -35, 0);
+        } else {
+            ctx.fillText('↓ Час (секунди) ↓', -35, 0);
+        }
+        ctx.restore();
+        
+        // Улучшите отображение статуса:
+        
+        if (mouseX > 0 && mouseX < width && mouseY > 0 && mouseY < height) {
+            const xIdx = xStart + (mouseX / width) * (xEnd - xStart);
+            const yIdx = yStart + (mouseY / height) * (yEnd - yStart);
+            
+            let carrier = xIdx * (maxCarrierFreq / maxCarrierIdx);
+            
+            if (currentMode === 'carrier_beat') {
+                let beat = yIdx * (maxBeatFreq / maxBeatIdx);
+                
+                // === НОВОЕ: интерполяция пика в окрестности курсора ===
+                const beatInt = Math.floor(yIdx);
+                const carrierInt = Math.floor(xIdx);
+                
+                if (beatInt >= 0 && beatInt < maxBeatIdx && carrierInt >= 1 && carrierInt < maxCarrierIdx - 1) {
+                    const frame = beatMap[beatInt];
+                    if (frame && frame[carrierInt] > 0.1) {
+                        // Интерполируем точную частоту
+                        const offset = interpolatePeak(frame, carrierInt - 1, carrierInt, carrierInt + 1);
+                        const exactCarrier = (carrierInt + offset) * (maxCarrierFreq / maxCarrierIdx);
+                        const exactBeat = beat; // Частота биения остаётся как есть
+                        
+                        beatFreqLabel.textContent = exactBeat.toFixed(2);
+                        carrierFreqLabel.textContent = exactCarrier.toFixed(2);
+                        statusDiv.innerHTML = `🎯 Несущая: ${exactCarrier.toFixed(2)} Гц | Биття: ${exactBeat.toFixed(2)} Гц | Ампл: ${(frame[carrierInt] * 100).toFixed(1)}%`;
+                    } else {
+                        beatFreqLabel.textContent = beat.toFixed(2);
+                        carrierFreqLabel.textContent = carrier.toFixed(0);
+                        statusDiv.innerHTML = `🎯 Несущая: ${carrier.toFixed(0)} Гц | Биение: ${beat.toFixed(2)} Гц`;
+                    }
+                } else {
+                    beatFreqLabel.textContent = beat.toFixed(2);
+                    carrierFreqLabel.textContent = carrier.toFixed(0);
+                    statusDiv.innerHTML = `🎯 Несущая: ${carrier.toFixed(0)} Гц | Биения: ${beat.toFixed(2)} Гц`;
+                }
+                // === КОНЕЦ НОВОГО ===
+                
+                // Отрисовка крестика (как было)
+                ctx.beginPath();
+                ctx.arc(mouseX, mouseY, 8, 0, 2 * Math.PI);
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.arc(mouseX, mouseY, 3, 0, 2 * Math.PI);
+                ctx.fillStyle = 'white';
+                ctx.fill();
+            }
+}
+    }
+    
+    // Миша
+    function handleMouseMove(e) {
+        const rect = canvas.getBoundingClientRect();
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+        mouseX = (e.clientX - rect.left) * scaleX;
+        mouseY = (e.clientY - rect.top) * scaleY;
+        
+        if (isPanning) {
+            const dx = (e.clientX - panStartX) / canvas.width * (zoomX.max - zoomX.min);
+            const dy = (e.clientY - panStartY) / canvas.height * (zoomY.max - zoomY.min);
+            zoomX.min = Math.max(0, zoomStartX.min - dx);
+            zoomX.max = Math.min((currentMode === 'carrier_beat' ? maxCarrierIdx : maxCarrierIdx), zoomStartX.max - dx);
+            zoomY.min = Math.max(0, zoomStartY.min - dy);
+            zoomY.max = Math.min((currentMode === 'carrier_beat' ? maxBeatIdx : maxTimeIdx), zoomStartY.max - dy);
+            drawSpectrogram();
+        } else {
+            drawSpectrogram();
+        }
+    }
+    
+    function handleMouseDown(e) {
+        if (e.button === 0) {
+            isPanning = true;
+            panStartX = e.clientX;
+            panStartY = e.clientY;
+            zoomStartX = { min: zoomX.min, max: zoomX.max };
+            zoomStartY = { min: zoomY.min, max: zoomY.max };
+            canvas.style.cursor = 'grabbing';
+        }
+    }
+    
+    function handleMouseUp(e) {
+        isPanning = false;
+        canvas.style.cursor = 'crosshair';
+    }
+    
+    function handleWheel(e) {
+        e.preventDefault();
+        const rect = canvas.getBoundingClientRect();
+        const mouseNormX = (e.clientX - rect.left) / rect.width;
+        const mouseNormY = (e.clientY - rect.top) / rect.height;
+        
+        const zoomFactor = e.deltaY > 0 ? 1.2 : 0.8;
+        const rangeX = zoomX.max - zoomX.min;
+        const rangeY = zoomY.max - zoomY.min;
+        
+        const newRangeX = Math.min(rangeX * zoomFactor, (currentMode === 'carrier_beat' ? maxCarrierIdx : maxCarrierIdx));
+        const newRangeY = Math.min(rangeY * zoomFactor, (currentMode === 'carrier_beat' ? maxBeatIdx : maxTimeIdx));
+        
+        zoomX.min = Math.max(0, zoomX.min + (rangeX - newRangeX) * mouseNormX);
+        zoomX.max = Math.min((currentMode === 'carrier_beat' ? maxCarrierIdx : maxCarrierIdx), zoomX.min + newRangeX);
+        zoomY.min = Math.max(0, zoomY.min + (rangeY - newRangeY) * mouseNormY);
+        zoomY.max = Math.min((currentMode === 'carrier_beat' ? maxBeatIdx : maxTimeIdx), zoomY.min + newRangeY);
+        
+        drawSpectrogram();
+    }
+    
+    function handleContextMenu(e) {
+        e.preventDefault();
+        zoomX = { min: 0, max: (currentMode === 'carrier_beat' ? maxCarrierIdx : maxCarrierIdx) - 1 };
+        zoomY = { min: 0, max: (currentMode === 'carrier_beat' ? maxBeatIdx : maxTimeIdx) - 1 };
+        drawSpectrogram();
+        return false;
+    }
+    
+    // Touch події
+    function handleTouchStart(e) {
+        e.preventDefault();
+        if (e.touches.length === 1) {
+            isPanning = true;
+            panStartX = e.touches[0].clientX;
+            panStartY = e.touches[0].clientY;
+            zoomStartX = { min: zoomX.min, max: zoomX.max };
+            zoomStartY = { min: zoomY.min, max: zoomY.max };
+            
+            // Оновлюємо позицію для відображення значень
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            mouseX = (e.touches[0].clientX - rect.left) * scaleX;
+            mouseY = (e.touches[0].clientY - rect.top) * scaleY;
+            drawSpectrogram();
+        } else if (e.touches.length === 2) {
+            isPanning = false;
+            touchStartDistance = getTouchDistance(e);
+            touchStartZoomX = { min: zoomX.min, max: zoomX.max };
+            touchStartZoomY = { min: zoomY.min, max: zoomY.max };
+        }
+    }
+    
+    function handleTouchMove(e) {
+        e.preventDefault();
+        if (e.touches.length === 1 && isPanning) {
+            const dx = (e.touches[0].clientX - panStartX) / canvas.width * (zoomX.max - zoomX.min);
+            const dy = (e.touches[0].clientY - panStartY) / canvas.height * (zoomY.max - zoomY.min);
+            zoomX.min = Math.max(0, zoomStartX.min - dx);
+            zoomX.max = Math.min((currentMode === 'carrier_beat' ? maxCarrierIdx : maxCarrierIdx), zoomStartX.max - dx);
+            zoomY.min = Math.max(0, zoomStartY.min - dy);
+            zoomY.max = Math.min((currentMode === 'carrier_beat' ? maxBeatIdx : maxTimeIdx), zoomStartY.max - dy);
+            drawSpectrogram();
+            
+            // Оновлюємо позицію
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            mouseX = (e.touches[0].clientX - rect.left) * scaleX;
+            mouseY = (e.touches[0].clientY - rect.top) * scaleY;
+        } else if (e.touches.length === 2 && touchStartDistance > 0) {
+            const newDistance = getTouchDistance(e);
+            const zoomFactor = touchStartDistance / newDistance;
+            const rangeX = touchStartZoomX.max - touchStartZoomX.min;
+            const rangeY = touchStartZoomY.max - touchStartZoomY.min;
+            const newRangeX = Math.min(rangeX * zoomFactor, (currentMode === 'carrier_beat' ? maxCarrierIdx : maxCarrierIdx));
+            const newRangeY = Math.min(rangeY * zoomFactor, (currentMode === 'carrier_beat' ? maxBeatIdx : maxTimeIdx));
+            zoomX.min = Math.max(0, touchStartZoomX.min + (rangeX - newRangeX) * 0.5);
+            zoomX.max = Math.min((currentMode === 'carrier_beat' ? maxCarrierIdx : maxCarrierIdx), zoomX.min + newRangeX);
+            zoomY.min = Math.max(0, touchStartZoomY.min + (rangeY - newRangeY) * 0.5);
+            zoomY.max = Math.min((currentMode === 'carrier_beat' ? maxBeatIdx : maxTimeIdx), zoomY.min + newRangeY);
+            drawSpectrogram();
+        }
+    }
+    
+    function handleTouchEnd(e) {
+        e.preventDefault();
+        isPanning = false;
+        touchStartDistance = 0;
+    }
+    
+    function changeMode() {
+        currentMode = viewModeSelect.value;
+        zoomX = { min: 0, max: (currentMode === 'carrier_beat' ? maxCarrierIdx : maxCarrierIdx) - 1 };
+        zoomY = { min: 0, max: (currentMode === 'carrier_beat' ? maxBeatIdx : maxTimeIdx) - 1 };
+        drawSpectrogram();
+    }
+    
+    // Кнопки
+    const zoomInBtn = document.getElementById('zoomInBtn');
+    const zoomOutBtn = document.getElementById('zoomOutBtn');
+    const resetViewBtn = document.getElementById('resetViewBtn');
+    const panUpBtn = document.getElementById('panUpBtn');
+    const panDownBtn = document.getElementById('panDownBtn');
+    const panLeftBtn = document.getElementById('PanLeftBtn');
+    const panRightBtn = document.getElementById('PanRightBtn');
+    
+    function zoomIn() {
+        const centerX = (zoomX.min + zoomX.max) / 2;
+        const centerY = (zoomY.min + zoomY.max) / 2;
+        const rangeX = (zoomX.max - zoomX.min) * 0.7;
+        const rangeY = (zoomY.max - zoomY.min) * 0.7;
+        zoomX.min = Math.max(0, centerX - rangeX / 2);
+        zoomX.max = Math.min((currentMode === 'carrier_beat' ? maxCarrierIdx : maxCarrierIdx), centerX + rangeX / 2);
+        zoomY.min = Math.max(0, centerY - rangeY / 2);
+        zoomY.max = Math.min((currentMode === 'carrier_beat' ? maxBeatIdx : maxTimeIdx), centerY + rangeY / 2);
+        drawSpectrogram();
+    }
+    
+    function zoomOut() {
+        const centerX = (zoomX.min + zoomX.max) / 2;
+        const centerY = (zoomY.min + zoomY.max) / 2;
+        const rangeX = Math.min((currentMode === 'carrier_beat' ? maxCarrierIdx : maxCarrierIdx), (zoomX.max - zoomX.min) * 1.4);
+        const rangeY = Math.min((currentMode === 'carrier_beat' ? maxBeatIdx : maxTimeIdx), (zoomY.max - zoomY.min) * 1.4);
+        zoomX.min = Math.max(0, centerX - rangeX / 2);
+        zoomX.max = Math.min((currentMode === 'carrier_beat' ? maxCarrierIdx : maxCarrierIdx), centerX + rangeX / 2);
+        zoomY.min = Math.max(0, centerY - rangeY / 2);
+        zoomY.max = Math.min((currentMode === 'carrier_beat' ? maxBeatIdx : maxTimeIdx), centerY + rangeY / 2);
+        drawSpectrogram();
+    }
+    
+    function resetView() {
+        zoomX = { min: 0, max: (currentMode === 'carrier_beat' ? maxCarrierIdx : maxCarrierIdx) - 1 };
+        zoomY = { min: 0, max: (currentMode === 'carrier_beat' ? maxBeatIdx : maxTimeIdx) - 1 };
+        drawSpectrogram();
+    }
+    
+    function panUp() {
+        const delta = (zoomY.max - zoomY.min) * 0.2;
+        zoomY.min = Math.max(0, zoomY.min - delta);
+        zoomY.max = Math.min((currentMode === 'carrier_beat' ? maxBeatIdx : maxTimeIdx), zoomY.max - delta);
+        drawSpectrogram();
+    }
+    
+    function panDown() {
+        const delta = (zoomY.max - zoomY.min) * 0.2;
+        zoomY.min = Math.min((currentMode === 'carrier_beat' ? maxBeatIdx : maxTimeIdx) - (zoomY.max - zoomY.min), zoomY.min + delta);
+        zoomY.max = Math.min((currentMode === 'carrier_beat' ? maxBeatIdx : maxTimeIdx), zoomY.max + delta);
+        drawSpectrogram();
+    }
+    
+    function panLeft() {
+        const delta = (zoomX.max - zoomX.min) * 0.2;
+        zoomX.min = Math.max(0, zoomX.min - delta);
+        zoomX.max = Math.max(delta, Math.min((currentMode === 'carrier_beat' ? maxCarrierIdx : maxCarrierIdx), zoomX.max - delta));
+        drawSpectrogram();
+    }
+    
+    function panRight() {
+        const delta = (zoomX.max - zoomX.min) * 0.2;
+        zoomX.min = Math.min((currentMode === 'carrier_beat' ? maxCarrierIdx : maxCarrierIdx) - (zoomX.max - zoomX.min), zoomX.min + delta);
+        zoomX.max = Math.min((currentMode === 'carrier_beat' ? maxCarrierIdx : maxCarrierIdx), zoomX.max + delta);
+        drawSpectrogram();
+    }
+    
+    if (zoomInBtn) zoomInBtn.onclick = zoomIn;
+    if (zoomOutBtn) zoomOutBtn.onclick = zoomOut;
+    if (resetViewBtn) resetViewBtn.onclick = resetView;
+    if (panUpBtn) panUpBtn.onclick = panUp;
+    if (panDownBtn) panDownBtn.onclick = panDown;
+    if (panLeftBtn) panLeftBtn.onclick = panLeft;
+    if (panRightBtn) panRightBtn.onclick = panRight;
+    
+    // Підключення обробників
+    window.addEventListener('resize', resizeCanvas);
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mousedown', handleMouseDown);
+    window.addEventListener('mouseup', handleMouseUp);
+    canvas.addEventListener('wheel', handleWheel);
+    canvas.addEventListener('contextmenu', handleContextMenu);
+    canvas.addEventListener('touchstart', handleTouchStart);
+    canvas.addEventListener('touchmove', handleTouchMove);
+    canvas.addEventListener('touchend', handleTouchEnd);
+    brightnessSlider.addEventListener('input', () => drawSpectrogram());
+    viewModeSelect.addEventListener('change', changeMode);
+    
+    const togglePeaksBavsaBtn = document.getElementById('togglePeaksBavsaBtn');
+    if (togglePeaksBavsaBtn) {
+        togglePeaksBavsaBtn.addEventListener('click', () => {
+            showPeaksOnSpectrogram = !showPeaksOnSpectrogram;
+            console.log('Показ пиков:', showPeaksOnSpectrogram); // Отладка
+            togglePeaksBavsaBtn.style.background = showPeaksOnSpectrogram ? 'rgba(106, 158, 255, 0.3)' : 'none';
+            togglePeaksBavsaBtn.style.borderColor = showPeaksOnSpectrogram ? '#6a9eff' : '#3a3a4a';
+            drawSpectrogram(); // Перерисовываем
+        });
+}
+    
+    resizeCanvas();
+    
+    closeBtn.onclick = () => {
+        bavsaModal.remove();
+        bavsaModal = null;
+        window.removeEventListener('resize', resizeCanvas);
+        window.removeEventListener('mouseup', handleMouseUp);
+    };
+}
+        
+        // Привязываем существующую кнопку "Спектр" к функции analyzeBinauralBeats
+        const bavsaAnalyzeBtn = document.getElementById('bavsaAnalyzeBtn');
+        if (bavsaAnalyzeBtn) {
+            bavsaAnalyzeBtn.onclick = analyzeBinauralBeats;
+        }
     </script>
 </body>
 </html>
