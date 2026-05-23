@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Weighted Binaural Generator | Multi-Beat</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #121212;
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background: #1e1e1e;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 550px;
+            text-align: center;
+        }
+        h1 { color: #1db954; margin-bottom: 25px; font-size: 24px; }
+        .controls { margin-bottom: 20px; text-align: left; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #b3b3b3; }
+        textarea, input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            background: #2a2a2a;
+            border: 1px solid #404040;
+            color: #fff;
+            border-radius: 6px;
+            box-sizing: border-box;
+            margin-bottom: 15px;
+            font-family: inherit;
+        }
+        textarea { height: 120px; resize: vertical; font-family: monospace; }
+        .btn-group { display: flex; gap: 10px; margin-top: 20px; }
+        button {
+            flex: 1;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 6px;
+            transition: background 0.2s;
+        }
+        .btn-play { background: #1db954; color: white; }
+        .btn-play:hover { background: #1aa34a; }
+        .btn-stop { background: #e91429; color: white; }
+        .btn-stop:hover { background: #cc1022; }
+        .btn-download { background: #333; color: #1db954; border: 1px solid #1db954; }
+        .btn-download:hover { background: #1db954; color: white; }
+        .log-area {
+            margin-top: 20px;
+            background: #151515;
+            padding: 15px;
+            border-radius: 6px;
+            text-align: left;
+            font-family: monospace;
+            font-size: 13px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #282828;
+        }
+        .log-line { margin-bottom: 4px; color: #888; }
+        .log-accent { color: #1db954; }
+        .note {
+            color: #777;
+            font-size: 12px;
+            margin-top: -8px;
+            margin-bottom: 12px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Smart Weighted Binaural Generator<br><span style="font-size: 14px;">мульти-частота биений</span></h1>
+    
+    <div class="controls">
+        <label for="freqData">Массив параметров (разделитель ";" | частота биений, несущая, интенсивность):</label>
+        <textarea id="freqData">14, 432, 10; 8, 528; 12, 639, 80; 0, 1000, 25</textarea>
+        <small class="note">
+            Формат: [биения (Гц), несущая (Гц), интенсивность]<br>
+            • биения = 0 → моно-тон (одинаковые каналы)<br>
+            • интенсивность опционально → авто-вес (сумма интенсивностей = 100%)<br>
+            Пример: "7.83, 432, 15; 14, 528; 0, 639"
+        </small>
+
+        <label for="duration">Длительность для скачивания (сек):</label>
+        <input type="number" id="duration" value="30">
+
+        <label for="fileName">Имя файла при скачивании:</label>
+        <input type="text" id="fileName" value="binaural_multi" placeholder="Название без .wav">
+    </div>
+
+    <div class="btn-group">
+        <button class="btn-play" id="startBtn">Старт</button>
+        <button class="btn-stop" id="stopBtn" disabled>Стоп</button>
+    </div>
+    <div class="btn-group">
+        <button class="btn-download" id="downloadBtn">Скачать WAV</button>
+    </div>
+
+    <div class="log-area" id="log">
+        <div class="log-line">Модуль готов (мульти-биения) ...</div>
+    </div>
+</div>
+
+<script>
+const startBtn = document.getElementById('startBtn');
+const stopBtn = document.getElementById('stopBtn');
+const downloadBtn = document.getElementById('downloadBtn');
+const log = document.getElementById('log');
+
+let audioCtx = null;
+let activeNodes = [];
+const MAX_TOTAL_VOLUME = 0.6; 
+
+function writeLog(text, isAccent = false) {
+    const div = document.createElement('div');
+    div.className = 'log-line' + (isAccent ? ' log-accent' : '');
+    div.innerText = text;
+    log.appendChild(div);
+    log.scrollTop = log.scrollHeight;
+}
+
+// Парсинг строки с поддержкой трех чисел: биения, несущая, интенсивность (опционально)
+function parseTripletData(rawText) {
+    const rawElements = rawText.split(';').map(el => el.trim()).filter(el => el.length > 0);
+    const defaultIntensityTotal = 100; // база для распределения весов
+    let items = [];
+    
+    for (let elem of rawElements) {
+        const parts = elem.split(',').map(p => p.trim());
+        if (parts.length < 2) continue;
+        
+        let beatFreq = parseFloat(parts[0]);
+        let carrier = parseFloat(parts[1]);
+        let intensity = (parts.length >= 3 && parts[2] !== '') ? parseFloat(parts[2]) : null;
+        
+        // валидация чисел с округлением до 3 знаков (по желанию)
+        if (isNaN(beatFreq)) beatFreq = 0;
+        if (isNaN(carrier)) continue;
+        
+        // округляем для эстетики
+        beatFreq = Math.round(beatFreq * 1000) / 1000;
+        carrier = Math.round(carrier * 1000) / 1000;
+        if (intensity !== null && !isNaN(intensity)) {
+            intensity = Math.round(intensity * 1000) / 1000;
+        }
+        
+        items.push({
+            beat: beatFreq,
+            carrier: carrier,
+            intensityRaw: intensity  // может быть null
+        });
+    }
+    
+    // обработка интенсивностей: если какая-то запись не имеет явной интенсивности,
+    // то присваиваем дефолтное значение: 100 / общее количество
+    const totalItems = items.length;
+    if (totalItems === 0) return [];
+    
+    let hasMissingIntensity = items.some(item => item.intensityRaw === null);
+    let defaultIntensityPerItem = 100 / totalItems;
+    
+    let finalItems = [];
+    for (let item of items) {
+        let intensityVal = (item.intensityRaw !== null) ? item.intensityRaw : defaultIntensityPerItem;
+        finalItems.push({
+            beat: item.beat,
+            carrier: item.carrier,
+            intensity: intensityVal
+        });
+    }
+    
+    return finalItems;
+}
+
+function getCalculatedData() {
+    const rawData = document.getElementById('freqData').value;
+    const items = parseTripletData(rawData);
+    if (items.length === 0) return { calculatedPairs: [], totalIntensity: 0 };
+    
+    let totalIntensity = 0;
+    for (let it of items) {
+        totalIntensity += it.intensity;
+    }
+    if (totalIntensity === 0) totalIntensity = 1; // защита
+    
+    const calculatedPairs = items.map(item => {
+        const weight = item.intensity / totalIntensity;
+        const amplitude = weight * MAX_TOTAL_VOLUME;
+        
+        let leftFreq, rightFreq;
+        const beatHalf = item.beat / 2;
+        if (item.beat === 0) {
+            leftFreq = item.carrier;
+            rightFreq = item.carrier;
+        } else {
+            leftFreq = item.carrier - beatHalf;
+            rightFreq = item.carrier + beatHalf;
+        }
+        
+        return {
+            beat: item.beat,
+            carrier: item.carrier,
+            intensity: item.intensity,
+            weight: weight,
+            amplitude: amplitude,
+            left: leftFreq,
+            right: rightFreq
+        };
+    });
+    
+    return { calculatedPairs, totalIntensity };
+}
+
+// --- ЖИВОЙ СИНТЕЗ (Web Audio) ---
+startBtn.addEventListener('click', () => {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+
+    const { calculatedPairs, totalIntensity } = getCalculatedData();
+    if (calculatedPairs.length === 0) {
+        alert('❌ Нет корректных данных! Укажите хотя бы одну запись: частота биений, несущая, интенсивность (опционально)');
+        return;
+    }
+
+    log.innerHTML = '';
+    writeLog(`🎧 Мульти-биения запущены. Сумма интенсивностей: ${totalIntensity.toFixed(2)}`, true);
+    
+    // Создаём два панорамных узла (левый и правый канал)
+    const leftPanner = audioCtx.createStereoPanner();
+    const rightPanner = audioCtx.createStereoPanner();
+    leftPanner.pan.value = -1;
+    rightPanner.pan.value = 1;
+    leftPanner.connect(audioCtx.destination);
+    rightPanner.connect(audioCtx.destination);
+    
+    calculatedPairs.forEach(pair => {
+        const pct = (pair.weight * 100).toFixed(1);
+        writeLog(`[биения ${pair.beat} Гц | несущая ${pair.carrier} Гц] интенсивность: ${pair.intensity.toFixed(2)} (${pct}%) → Левый: ${pair.left.toFixed(2)} Гц / Правый: ${pair.right.toFixed(2)} Гц`);
+        
+        // левый осциллятор
+        const oscL = audioCtx.createOscillator();
+        const gainL = audioCtx.createGain();
+        oscL.type = 'sine';
+        oscL.frequency.value = pair.left;
+        gainL.gain.value = pair.amplitude;
+        oscL.connect(gainL).connect(leftPanner);
+        
+        // правый осциллятор
+        const oscR = audioCtx.createOscillator();
+        const gainR = audioCtx.createGain();
+        oscR.type = 'sine';
+        oscR.frequency.value = pair.right;
+        gainR.gain.value = pair.amplitude;
+        oscR.connect(gainR).connect(rightPanner);
+        
+        oscL.start();
+        oscR.start();
+        
+        activeNodes.push(oscL, oscR);
+    });
+    
+    startBtn.disabled = true;
+    stopBtn.disabled = false;
+});
+
+stopBtn.addEventListener('click', () => {
+    activeNodes.forEach(node => { 
+        try { node.stop(); } catch(e) {}
+    });
+    activeNodes = [];
+    startBtn.disabled = false;
+    stopBtn.disabled = true;
+    writeLog('🛑 Воспроизведение остановлено.');
+});
+
+// --- СКАЧИВАНИЕ WAV (рендеринг) ---
+downloadBtn.addEventListener('click', () => {
+    const { calculatedPairs } = getCalculatedData();
+    if (calculatedPairs.length === 0) {
+        alert('Нет валидных данных для экспорта. Проверьте формат ввода.');
+        return;
+    }
+    
+    const duration = parseFloat(document.getElementById('duration').value) || 10;
+    let inputName = document.getElementById('fileName').value.trim();
+    if (!inputName) inputName = 'binaural_multi';
+    if (inputName.toLowerCase().endsWith('.wav')) inputName = inputName.slice(0, -4);
+    
+    const sampleRate = 44100;
+    const numSamples = Math.floor(sampleRate * duration);
+    
+    writeLog(`💾 Генерация WAV (${duration} сек, ${calculatedPairs.length} слоёв) ...`, true);
+    
+    const leftBuffer = new Float32Array(numSamples);
+    const rightBuffer = new Float32Array(numSamples);
+    
+    // Предварительно вычисляем частоты и амплитуды для каждого семпла (оптимизация)
+    for (let i = 0; i < numSamples; i++) {
+        const t = i / sampleRate;
+        let sumL = 0;
+        let sumR = 0;
+        
+        for (let pair of calculatedPairs) {
+            sumL += pair.amplitude * Math.sin(2 * Math.PI * pair.left * t);
+            sumR += pair.amplitude * Math.sin(2 * Math.PI * pair.right * t);
+        }
+        leftBuffer[i] = sumL;
+        rightBuffer[i] = sumR;
+    }
+    
+    const wavBlob = createWavBlob(leftBuffer, rightBuffer, sampleRate);
+    const url = URL.createObjectURL(wavBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${inputName}.wav`;
+    a.click();
+    URL.revokeObjectURL(url);
+    writeLog(`✅ Файл "${inputName}.wav" сохранён! (${duration} сек, стерео, биения распределены)`);
+});
+
+// --- WAV конвертер (16-bit PCM, стерео) ---
+function createWavBlob(left, right, sampleRate) {
+    const numSamples = left.length;
+    const buffer = new ArrayBuffer(44 + numSamples * 4);
+    const view = new DataView(buffer);
+    
+    writeString(view, 0, 'RIFF');
+    view.setUint32(4, 36 + numSamples * 4, true);
+    writeString(view, 8, 'WAVE');
+    writeString(view, 12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);      // PCM
+    view.setUint16(22, 2, true);      // stereo
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, sampleRate * 4, true); // byte rate
+    view.setUint16(32, 4, true);      // block align
+    view.setUint16(34, 16, true);     // bits per sample
+    writeString(view, 36, 'data');
+    view.setUint32(40, numSamples * 4, true);
+    
+    let offset = 44;
+    for (let i = 0; i < numSamples; i++) {
+        let sL = Math.max(-1, Math.min(1, left[i]));
+        let sR = Math.max(-1, Math.min(1, right[i]));
+        const intL = sL < 0 ? sL * 0x8000 : sL * 0x7FFF;
+        const intR = sR < 0 ? sR * 0x8000 : sR * 0x7FFF;
+        view.setInt16(offset, intL, true);
+        view.setInt16(offset + 2, intR, true);
+        offset += 4;
+    }
+    
+    return new Blob([view], { type: 'audio/wav' });
+}
+
+function writeString(view, offset, str) {
+    for (let i = 0; i < str.length; i++) {
+        view.setUint8(offset + i, str.charCodeAt(i));
+    }
+}
+
+// отображение примера в консоль при загрузке (необязательно)
+window.addEventListener('load', () => {
+    // тест парсинга для демонстрации в логе
+    const example = document.getElementById('freqData').value;
+    const testParsed = parseTripletData(example);
+    if (testParsed.length) {
+        writeLog(`📋 Парсинг примера: обнаружено ${testParsed.length} звуковых слоёв (собственные биения)`, false);
+    }
+});
+</script>
+</body>
+</html>

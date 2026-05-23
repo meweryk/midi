@@ -675,7 +675,7 @@
 </head>
 <body>
     <!-- Шапка сайта (Header/Navbar) с кнопкой всплывающего меню -->
-    <nav class="navbar navbar-dark navbar-custom fixed-top">
+    <nav class="navbar navbar-/container/Spector_bin.html navbar-custom fixed-top">
         <div class="container-fluid">
             <!-- Заголовок приложения -->
             <span class="navbar-brand navbar-brand-custom me-auto ms-3 h1">Генератор частот</span>
@@ -699,12 +699,14 @@
                         <a href="./kolokol0018.html" class="btn btn-outline-light">Генератор колокольного звона</a>
                         <a href="./OrganicStudioFinal.html" class="btn btn-outline-light">Pifagor Organic Studio</a>
                         <a href="./Vortex-gen.html" class="btn btn-outline-light">Vortex генератор</a>
-                        <a href="./calc_music.html" class="btn btn-outline-light">Анализ музыкального строя с оптимизацией</a>
+                        <a href="./SWB Generator.html" class="btn btn-outline-light">Генератор бинауральных ритмов</a>
+                        <a href="./calc_music.html" class="btn btn-outline-light">Анализ музыкального строя</a>
                         <hr class="text-white-50">
                         <a href="./Raman-ir-uv.html" class="btn btn-outline-light">Конвертер спектров в звук</a>
                         <a href="./converter-A.html" class="btn btn-outline-light">Конвертер длин волн</a>
                         <a href="./sound_color_frequency.html" class="btn btn-outline-light">Конвертер частот и цветов спектра</a>
                         <a href="./Eyler.html" class="btn btn-outline-light">Генератор гармоник</a>
+                        <a href="./Spector_bin.html" class="btn btn-outline-light">Спектры биений</a>
                         <hr class="text-white-50">
                         <a href="./LICENSE" class="btn btn-outline-light">Лицензионное соглашение</a>
                         <a href="./README.html" class="btn btn-outline-light">О программе</a>
@@ -2719,7 +2721,7 @@ console.log('Баланс:', { rawLeftTotal, rawRightTotal, k, leftFactor, right
     <script>
     if('serviceWorker' in navigator) {
         // Текущая версия (меняйте при каждом деплое)
-        const currentVersion = '13.9';
+        const currentVersion = '14.0';
         
         // Проверяем, показывали ли уже уведомление для этой версии
         const notificationShown = localStorage.getItem(`sw_notify_${currentVersion}`);

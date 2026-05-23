@@ -1,4 +1,4 @@
-const CACHE_NAME = 'midi-bells-v13.9';
+const CACHE_NAME = 'midi-bells-v14.0';
 const DYNAMIC_CACHE = 'dynamic-cache-v13.8';
 const FALLBACK_HTML = '/midi/index.html';
 const FALLBACK_IMAGE = '/midi/icon-192.png';
@@ -17,23 +17,19 @@ const urlsToCache = [
   '/midi/Raman-ir-uv.html',
   '/midi/Eyler.html',
   '/midi/README.html',
+  "/midi/container/Spector_bin.html",
+  "/midi/container/Spector_bin.html",
   
   // Статические активы
   '/midi/icon-192.png',
   '/midi/icon-512.png',
   '/midi/manifest.json',
   
-  // Скрипты и стили (добавьте ваши реальные пути)
-  //'/midi/main.js',
-  //'/midi/styles.css',
-  
   // Внешние зависимости
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css',
   'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css',
   'https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js',
    
-  // Аудиоресурсы (пример)
-  //'/midi/audio/bell.mp3'
 ];
 
 self.addEventListener('install', event => {
