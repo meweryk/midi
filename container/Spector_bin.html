@@ -318,7 +318,7 @@
         <span>🎛️ <kbd>Z/X</kbd> зум • <kbd>1-9</kbd> яркость</span>
         <span>⏱️ <kbd>PgUp/PgDn</kbd> время</span>
         <span>📐 <kbd>G H J K L</kbd> наклон пиков</span>
-        <span>🎨 <span style="background:#0000ff;">&nbsp;&nbsp;</span>→<span style="background:#ff00ff;">&nbsp;&nbsp;</span>→<span style="background:#ff0000;">&nbsp;&nbsp;</span>→<span style="background:#ffff00;">&nbsp;&nbsp;</span>→<span style="background:#00ff00;">&nbsp;&nbsp;</span>→<span style="background:#00ffff;">&nbsp;&nbsp;</span>→<span style="background:#ffffff;">&nbsp;&nbsp;</span> BAVSA</span>
+        <span>🎨 <span style="background:#0000ff;">&nbsp;&nbsp;</span>→<span style="background:#ff00ff;">&nbsp;&nbsp;</span>→<span style="background:#ff0000;">&nbsp;&nbsp;</span>→<span style="background:#ffff00;">&nbsp;&nbsp;</span>→<span style="background:#00ff00;">&nbsp;&nbsp;</span>→<span style="background:#00ffff;">&nbsp;&nbsp;</span>→<span style="background:#ffffff;">&nbsp;&nbsp;</span> COLOR</span>
     </div>
 </div>
 
@@ -690,10 +690,15 @@
                 amp = Math.min(1, amp);
                 if (amp < MIN_DISPLAY_AMP) continue;
 
-                const [r, g, b] = amplitudeToColor(amp);
-                let drawX = px, drawY = py;
-                const rayLenX = Math.floor(slantDx * amp);
-                const rayLenY = Math.floor(slantDy * amp);
+                                const [r, g, b] = amplitudeToColor(amp);
+                let drawX = px,
+                    drawY = py;
+                
+                // МАТЕМАТИЧЕСКОЕ ИСПРАВЛЕНИЕ НАКЛОНА:
+                // Убираем Math.floor, чтобы на десктопе сохранялся идеальный угол в 45 градусов без искажений геометрии
+                const rayLenX = slantDx * amp;
+                const rayLenY = slantDy * amp;
+                
                 switch (viewState.mode) {
                     case 1: // H ↗
                         drawX = px + rayLenX;
@@ -705,17 +710,24 @@
                         break;
                     case 3: // K ↘
                         drawX = px + rayLenX;
-                    drawY = py + rayLenY; // добавлен наклон вниз
-                    break;
+                        drawY = py + rayLenY;
+                        break;
                     case 4: // L ↙
                         drawX = px - rayLenX;
-                    drawY = py + rayLenY;
-                    break;
+                        drawY = py + rayLenY;
+                        break;
                     default:
                         break;
                 }
+                
                 if (viewState.mode !== 0) {
-                    const steps = Math.max(1, Math.floor(Math.hypot(drawX - px, drawY - py)));
+                    // МАТЕМАТИЧЕСКОЕ ИСПРАВЛЕНИЕ ЧЕРЕЗСТРОЧНОСТИ:
+                    // На больших экранах десктопа Math.floor давал слишком мало шагов отрисовки,
+                    // из-за чего линии рассыпались на точки и "чересстрочные лучи".
+                    // Math.ceil + плотный шаг (* 2.0) гарантирует заполнение каждого пикселя без пропусков.
+                    const distance = Math.hypot(drawX - px, drawY - py);
+                    const steps = Math.ceil(distance * 2.0) || 1;
+                    
                     for (let s = 0; s <= steps; s++) {
                         const t = s / steps;
                         const ix = Math.round(px + (drawX - px) * t);
