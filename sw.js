@@ -1,4 +1,4 @@
-const CACHE_NAME = 'midi-bells-v14.5';
+const CACHE_NAME = 'midi-bells-v14.6';
 const DYNAMIC_CACHE = 'dynamic-cache-v13.8';
 const FALLBACK_HTML = '/midi/index.html';
 const FALLBACK_IMAGE = '/midi/icon-192.png';
@@ -134,20 +134,25 @@ self.addEventListener('fetch', event => {
           return cacheRes;
         }
         
-        // 2.2. Загрузка из сети
+                // 2.2. Загрузка из сети
         return fetch(event.request)
           .then(fetchRes => {
-            // Кэшируем только успешные GET-ответы
-            if (fetchRes.ok && event.request.method === 'GET') {
+            // Кэшируем только успешные GET-ответы, 
+            // Исключая временный файл передачи данных и ваши внутренние страницы /midi/ (они обновляются по CACHE_NAME)
+            if (fetchRes.ok && event.request.method === 'GET' && 
+                !event.request.url.includes(tempFileUrl) && 
+                !event.request.url.includes('/midi/')) {
+              
               const resClone = fetchRes.clone();
               caches.open(DYNAMIC_CACHE)
                 .then(cache => {
-                  console.log(`[SW] Кэшируем ресурс: ${event.request.url}`);
+                  console.log(`[SW] Кэшируем внешний ресурс в динамику: ${event.request.url}`);
                   cache.put(event.request, resClone);
                 });
             }
             return fetchRes;
           })
+
           .catch(error => {
             console.error(`[SW] Ошибка сети: ${event.request.url}`, error);
             
