@@ -2198,10 +2198,15 @@
                 body: wavBlob
             })
             .then(response => response.json())
+            
             // ... ваш fetch-запрос, который сохраняет WAV в Service Worker ...
             .then(data => {
                 if (data.success) {
-                    const analyzerUrl = `./container/Spector_bin.html?file=${encodeURIComponent(tempFileUrl)}`;
+                    // Генерируем уникальный антикеш-маркер (таймстамп)
+                    const antiCacheToken = Date.now();
+                    
+                    // Добавляем параметр &v=... в конец ссылки
+                    const analyzerUrl = `./container/Spector_bin.html?file=${encodeURIComponent(tempFileUrl)}&v=${antiCacheToken}`;
                     
                     // Создаем фрейм во весь экран поверх плейлиста
                     const iframe = document.createElement('iframe');

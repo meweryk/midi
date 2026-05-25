@@ -1,4 +1,4 @@
-const CACHE_NAME = 'midi-bells-v14.8';
+const CACHE_NAME = 'midi-bells-v14.9';
 const DYNAMIC_CACHE = 'dynamic-cache-v13.8';
 const FALLBACK_HTML = '/midi/index.html';
 const FALLBACK_IMAGE = '/midi/icon-192.png';
@@ -37,22 +37,26 @@ self.addEventListener('install', event => {
   
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('[SW] Кэширование основных ресурсов');
-        // Кэшируем по одному, чтобы найти проблемный
-        return Promise.all(
-          urlsToCache.map(url => {
-            return cache.add(url).catch(err => {
-              console.error(`[SW] Ошибка кэширования: ${url}`, err);
-              // Продолжаем с остальными файлами
-              return Promise.resolve();
-            });
-          })
-        );
-      })
-      .catch(err => {
-        console.error('[SW] Общая ошибка при установке:', err);
-      })
+    .then(cache => {
+      console.log('[SW] Кэширование основных ресурсов');
+      
+      return Promise.all(
+        urlsToCache.map(url => {
+          // Если ресурс внешний (CDN), запрашиваем обычно. 
+          // Если локальный (/midi/), заставляем сервер принудительно отдать свежую копию.
+          const requestOptions = url.startsWith('http') ? {} : { cache: 'reload' };
+          const request = new Request(url, requestOptions);
+          
+          return cache.add(request).catch(err => {
+            console.error(`[SW] Ошибка кэширования: ${url}`, err);
+            return Promise.resolve();
+          });
+        })
+      );
+    })
+    .catch(err => {
+      console.error('[SW] Общая ошибка при установке:', err);
+    })
   );
 });
 
