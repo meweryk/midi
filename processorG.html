@@ -2198,19 +2198,33 @@
                 body: wavBlob
             })
             .then(response => response.json())
+            // ... ваш fetch-запрос, который сохраняет WAV в Service Worker ...
             .then(data => {
                 if (data.success) {
-                    // Файл в кэше! Теперь формируем безопасную ссылку для PWA
                     const analyzerUrl = `./container/Spector_bin.html?file=${encodeURIComponent(tempFileUrl)}`;
-                    console.log("Открываем анализатор в PWA:", analyzerUrl);
                     
-                    // Перенаправляем пользователя прямо внутри приложения
-                    window.location.href = analyzerUrl;
-                } else {
-                    console.error("Service Worker вернул ошибку при сохранении:", data.error);
-                    showToast('Ошибка при передаче данных в анализатор', true);
+                    // Создаем фрейм во весь экран поверх плейлиста
+                    const iframe = document.createElement('iframe');
+                    iframe.id = 'spectorIframe';
+                    iframe.src = analyzerUrl;
+                    iframe.style.cssText = 'position:fixed; top:0; left:0; width:100vw; height:100vh; border:none; z-index:99999;';
+                    
+                    // Создаем кнопку закрытия анализатора
+                    const closeBtn = document.createElement('button');
+                    closeBtn.innerText = '← Вернуться в плеер';
+                    closeBtn.style.cssText = 'position:fixed; top:12px; left:12px; z-index:100000; padding:10px 16px; background:#dc3545; color:#fff; border:none; border-radius:8px; cursor:pointer; font-weight:bold;';
+                    
+                    // При клике на кнопку удаляем анализатор, плеер останется нетронутым!
+                    closeBtn.onclick = () => {
+                        iframe.remove();
+                        closeBtn.remove();
+                    };
+                    
+                    document.body.appendChild(iframe);
+                    document.body.appendChild(closeBtn);
                 }
             })
+
             .catch(err => {
                 console.error("Сбой сети/SW при отправке файла:", err);
                 showToast('Не удалось запустить анализатор', true);
