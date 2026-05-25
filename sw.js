@@ -1,4 +1,4 @@
-const CACHE_NAME = 'midi-bells-v14.2';
+const CACHE_NAME = 'midi-bells-v14.3';
 const DYNAMIC_CACHE = 'dynamic-cache-v13.8';
 const FALLBACK_HTML = '/midi/index.html';
 const FALLBACK_IMAGE = '/midi/icon-192.png';
@@ -64,14 +64,32 @@ self.addEventListener('fetch', event => {
   if (event.request.url.includes(tempFileUrl) && event.request.method === 'PUT') {
     event.respondWith(
       caches.open(DYNAMIC_CACHE)
-        .then(cache => cache.put(tempFileUrl, event.request.clone()))
-        .then(() => new Response(JSON.stringify({ success: true }), {
-          headers: { 'Content-Type': 'application/json' }
-        }))
-        .catch(err => new Response(JSON.stringify({ error: err.message }), { status: 500 }))
+        .then(cache => {
+          // Создаем чистый Response из тела запроса и кладем в кэш
+          return event.request.blob().then(blob => {
+            const responseToCache = new Response(blob, {
+              status: 200,
+              headers: { 'Content-Type': 'audio/wav' }
+            });
+            return cache.put(tempFileUrl, responseToCache);
+          });
+        })
+        .then(() => {
+          // Возвращаем железобетонный JSON-ответ
+          return new Response(JSON.stringify({ success: true }), {
+            headers: { 'Content-Type': 'application/json' }
+          });
+        })
+        .catch(err => {
+          return new Response(JSON.stringify({ error: err.message }), { 
+            status: 500,
+            headers: { 'Content-Type': 'application/json' }
+          });
+        })
     );
     return;
   }
+
 
   // Б) Отдаем этот файл странице Spector_bin.html, когда она его запросит
   if (event.request.url.includes(tempFileUrl) && event.request.method === 'GET') {
