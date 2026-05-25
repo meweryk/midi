@@ -1,4 +1,4 @@
-const CACHE_NAME = 'midi-bells-v14.1';
+const CACHE_NAME = 'midi-bells-v14.2';
 const DYNAMIC_CACHE = 'dynamic-cache-v13.8';
 const FALLBACK_HTML = '/midi/index.html';
 const FALLBACK_IMAGE = '/midi/icon-192.png';
@@ -57,7 +57,37 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // 1. Обработка API запросов
+  // ================= ВСТАВКА ДЛЯ ПЕРЕДАЧИ ФАЙЛОВ МЕЖДУ СТРАНИЦАМИ PWA =================
+  const tempFileUrl = '/midi/get-temporary-file';
+
+  // А) Принимаем файл от главной страницы и сохраняем в кэш
+  if (event.request.url.includes(tempFileUrl) && event.request.method === 'PUT') {
+    event.respondWith(
+      caches.open(DYNAMIC_CACHE)
+        .then(cache => cache.put(tempFileUrl, event.request.clone()))
+        .then(() => new Response(JSON.stringify({ success: true }), {
+          headers: { 'Content-Type': 'application/json' }
+        }))
+        .catch(err => new Response(JSON.stringify({ error: err.message }), { status: 500 }))
+    );
+    return;
+  }
+
+  // Б) Отдаем этот файл странице Spector_bin.html, когда она его запросит
+  if (event.request.url.includes(tempFileUrl) && event.request.method === 'GET') {
+    event.respondWith(
+      caches.match(tempFileUrl)
+        .then(cachedResponse => {
+          if (cachedResponse) {
+            return cachedResponse;
+          }
+          return new Response('Файл не найден или устарел', { status: 404 });
+        })
+    );
+    return;
+  }
+
+  // 2. Обработка API запросов
   if (event.request.url.includes('/api/')) {
     event.respondWith(
       fetch(event.request)

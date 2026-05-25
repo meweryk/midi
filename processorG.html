@@ -2177,7 +2177,7 @@
             return new Blob([arrayBuffer], { type: 'audio/wav' });
         }
         
-        // Открывает внешний анализатор спектра с текущим аудиофайлом
+        // Открывает внешний анализатор спектра внутри PWA приложения
         function openSpectrumAnalyzer() {
             if (currentTrackIndex === -1 || !playlistData[currentTrackIndex]?.buffer) {
                 showToast('Сначала загрузите аудиофайл', true);
@@ -2185,21 +2185,43 @@
             }
             
             const buffer = playlistData[currentTrackIndex].buffer;
-            const wavBlob = bufferToWavBlob(buffer);
-            const blobUrl = URL.createObjectURL(wavBlob);
+            const wavBlob = bufferToWavBlob(buffer); // Получаем чистый объект Blob
             
-            // Укажите правильный путь к вашему HTML-анализатору
-            const analyzerUrl = `./container/Spector_bin.html?file=${encodeURIComponent(blobUrl)}`;
-            window.open(analyzerUrl, '_blank');
-            
-            showToast('Открывается анализатор спектра...');
+            showToast('Подготовка файла спектра...');
+        
+            // Виртуальный URL, который перехватит наш sw.js
+            const tempFileUrl = '/midi/get-temporary-file';
+        
+            // Отправляем Blob в Service Worker для сохранения в динамический кэш
+            fetch(tempFileUrl, {
+                method: 'PUT',
+                body: wavBlob
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Файл в кэше! Теперь формируем безопасную ссылку для PWA
+                    const analyzerUrl = `./container/Spector_bin.html?file=${encodeURIComponent(tempFileUrl)}`;
+                    console.log("Открываем анализатор в PWA:", analyzerUrl);
+                    
+                    // Перенаправляем пользователя прямо внутри приложения
+                    window.location.href = analyzerUrl;
+                } else {
+                    console.error("Service Worker вернул ошибку при сохранении:", data.error);
+                    showToast('Ошибка при передаче данных в анализатор', true);
+                }
+            })
+            .catch(err => {
+                console.error("Сбой сети/SW при отправке файла:", err);
+                showToast('Не удалось запустить анализатор', true);
+            });
         }
         
-        // Привязываем кнопку "Спектр" (та же, что была) к новой функции
+        // Привязываем кнопку "Спектр" к обновленной функции
         const bavsaAnalyzeBtn = document.getElementById('bavsaAnalyzeBtn');
         if (bavsaAnalyzeBtn) {
             bavsaAnalyzeBtn.onclick = openSpectrumAnalyzer;
-        }
+}
 
     </script>
 </body>
