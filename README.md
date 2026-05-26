@@ -1,4 +1,4 @@
-# MIDI Project V15.1
+# MIDI Project V15.2
 
 ## 📄 Лицензия
 

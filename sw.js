@@ -1,4 +1,4 @@
-const CACHE_NAME = 'midi-bells-v15.1';
+const CACHE_NAME = 'midi-bells-v15.2';
 const DYNAMIC_CACHE = 'dynamic-cache-v13.8';
 const FALLBACK_HTML = '/midi/index.html';
 const FALLBACK_IMAGE = '/midi/icon-192.png';
@@ -61,138 +61,156 @@ self.addEventListener('install', event => {
 });
 
 self.addEventListener('fetch', event => {
-  // ================= ВСТАВКА ДЛЯ ПЕРЕДАЧИ ФАЙЛОВ МЕЖДУ СТРАНИЦАМИ PWA =================
+  const url = new URL(event.request.url);
   const tempFileUrl = '/midi/get-temporary-file';
-
+  
+  // ================= 1. ВРЕМЕННЫЕ ФАЙЛЫ (ВАШ РАБОТАЮЩИЙ КОД) =================
   // А) Принимаем файл от главной страницы и сохраняем в кэш
   if (event.request.url.includes(tempFileUrl) && event.request.method === 'PUT') {
     event.respondWith(
       caches.open(DYNAMIC_CACHE)
-        .then(cache => {
-          // Создаем чистый Response из тела запроса и кладем в кэш
-          return event.request.blob().then(blob => {
-            const responseToCache = new Response(blob, {
-              status: 200,
-              headers: { 'Content-Type': 'audio/wav' }
-            });
-            return cache.put(tempFileUrl, responseToCache);
+      .then(cache => {
+        return event.request.blob().then(blob => {
+          const responseToCache = new Response(blob, {
+            status: 200,
+            headers: { 'Content-Type': 'audio/wav' }
           });
-        })
-        .then(() => {
-          // Возвращаем железобетонный JSON-ответ
-          return new Response(JSON.stringify({ success: true }), {
-            headers: { 'Content-Type': 'application/json' }
-          });
-        })
-        .catch(err => {
-          return new Response(JSON.stringify({ error: err.message }), { 
-            status: 500,
-            headers: { 'Content-Type': 'application/json' }
-          });
-        })
+          return cache.put(tempFileUrl, responseToCache);
+        });
+      })
+      .then(() => {
+        return new Response(JSON.stringify({ success: true }), {
+          headers: { 'Content-Type': 'application/json' }
+        });
+      })
+      .catch(err => {
+        return new Response(JSON.stringify({ error: err.message }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' }
+        });
+      })
     );
     return;
   }
-
-
-  // Б) Отдаем этот файл странице Spector_bin.html, когда она его запросит
+  
+  // Б) Отдаем этот файл странице Spector_bin.html
   if (event.request.url.includes(tempFileUrl) && event.request.method === 'GET') {
     event.respondWith(
       caches.match(tempFileUrl)
-        .then(cachedResponse => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          return new Response('Файл не найден или устарел', { status: 404 });
-        })
+      .then(cachedResponse => {
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        return new Response('Файл не найден или устарел', { status: 404 });
+      })
     );
     return;
   }
-
-  // 2. Обработка API запросов
+  
+  // ================= 2. НАВИГАЦИЯ ПО СТРАНИЦАМ (НОВЫЙ КОД) =================
+  // Проверяем, является ли запрос переходом на HTML-страницу
+  const isNavigation = event.request.mode === 'navigate' ||
+    (event.request.method === 'GET' &&
+      event.request.destination === 'document');
+  
+  if (isNavigation) {
+    event.respondWith(
+      fetch(event.request)
+      .then(response => {
+        // Кэшируем страницу для офлайн-доступа
+        const responseClone = response.clone();
+        caches.open(CACHE_NAME).then(cache => {
+          cache.put(event.request, responseClone);
+        });
+        return response;
+      })
+      .catch(async () => {
+        // При отсутствии сети - ищем в кэше
+        const cachedResponse = await caches.match(event.request);
+        if (cachedResponse) {
+          return cachedResponse;
+        }
+        // Если нет - показываем главную страницу
+        return caches.match(FALLBACK_HTML);
+      })
+    );
+    return;
+  }
+  
+  // ================= 3. API ЗАПРОСЫ (ВАШ КОД) =================
   if (event.request.url.includes('/api/')) {
     event.respondWith(
       fetch(event.request)
-        .then(networkRes => {
-          // Клонируем ответ для кэширования
-          const resClone = networkRes.clone();
-          caches.open(DYNAMIC_CACHE)
-            .then(cache => cache.put(event.request, resClone));
-          return networkRes;
-        })
-        .catch(() => {
-          // Пытаемся вернуть из кэша при ошибке сети
-          return caches.match(event.request);
-        })
+      .then(networkRes => {
+        const resClone = networkRes.clone();
+        caches.open(DYNAMIC_CACHE)
+          .then(cache => cache.put(event.request, resClone));
+        return networkRes;
+      })
+      .catch(() => {
+        return caches.match(event.request);
+      })
     );
     return;
   }
-
-  // 2. Обработка статических ресурсов
+  
+  // ================= 4. СТАТИЧЕСКИЕ РЕСУРСЫ (ВАШ КОД С УЛУЧШЕНИЯМИ) =================
   event.respondWith(
     caches.match(event.request)
-      .then(cacheRes => {
-        // 2.1. Ресурс найден в кэше
-        if (cacheRes) {
-          console.log(`[SW] Используем кэш: ${event.request.url}`);
-          return cacheRes;
-        }
-        
-                // 2.2. Загрузка из сети
-        return fetch(event.request)
-          .then(fetchRes => {
-            // Кэшируем только успешные GET-ответы, 
-            // Исключая временный файл передачи данных и ваши внутренние страницы /midi/ (они обновляются по CACHE_NAME)
-            if (fetchRes.ok && event.request.method === 'GET' && 
-                !event.request.url.includes(tempFileUrl) && 
-                !event.request.url.includes('/midi/')) {
-              
-              const resClone = fetchRes.clone();
-              caches.open(DYNAMIC_CACHE)
-                .then(cache => {
-                  console.log(`[SW] Кэшируем внешний ресурс в динамику: ${event.request.url}`);
-                  cache.put(event.request, resClone);
-                });
-            }
-            return fetchRes;
-          })
-
-          .catch(error => {
-            console.error(`[SW] Ошибка сети: ${event.request.url}`, error);
+    .then(cacheRes => {
+      if (cacheRes) {
+        console.log(`[SW] Используем кэш: ${event.request.url}`);
+        return cacheRes;
+      }
+      
+      return fetch(event.request)
+        .then(fetchRes => {
+          // Кэшируем только успешные GET-ответы
+          if (fetchRes.ok && event.request.method === 'GET' &&
+            !event.request.url.includes(tempFileUrl)) {
             
-            // 2.3. Fallback-стратегии
-            // Для HTML - главная страница
-            if (event.request.destination === 'document' || 
-                event.request.headers.get('accept').includes('text/html')) {
-              return caches.match(FALLBACK_HTML);
-            }
-            
-            // Для изображений - заглушка
-            if (event.request.destination === 'image') {
-              return caches.match(FALLBACK_IMAGE);
-            }
-            
-            // Для CSS - пустой ответ
-            if (event.request.destination === 'style') {
-              return new Response('', { 
-                status: 204, 
-                statusText: 'No Content',
-                headers: {'Content-Type': 'text/css'}
+            const resClone = fetchRes.clone();
+            caches.open(DYNAMIC_CACHE)
+              .then(cache => {
+                console.log(`[SW] Кэшируем: ${event.request.url}`);
+                cache.put(event.request, resClone);
               });
-            }
-            
-            // Для JS - пустой ответ
-            if (event.request.destination === 'script') {
-              return new Response('// Offline', { 
-                status: 200,
-                headers: {'Content-Type': 'application/javascript'}
-              });
-            }
-            
-            // Общий fallback
-            return new Response('', { status: 503, statusText: 'Service Unavailable' });
-          });
-      })
+          }
+          return fetchRes;
+        })
+        .catch(error => {
+          console.error(`[SW] Ошибка сети: ${event.request.url}`, error);
+          
+          // Fallback для HTML
+          if (event.request.destination === 'document' ||
+            event.request.headers.get('accept')?.includes('text/html')) {
+            return caches.match(FALLBACK_HTML);
+          }
+          
+          // Fallback для изображений
+          if (event.request.destination === 'image') {
+            return caches.match(FALLBACK_IMAGE);
+          }
+          
+          // Fallback для CSS
+          if (event.request.destination === 'style') {
+            return new Response('', {
+              status: 204,
+              headers: { 'Content-Type': 'text/css' }
+            });
+          }
+          
+          // Fallback для JS
+          if (event.request.destination === 'script') {
+            return new Response('// Offline', {
+              status: 200,
+              headers: { 'Content-Type': 'application/javascript' }
+            });
+          }
+          
+          return new Response('', { status: 503 });
+        });
+    })
   );
 });
 
