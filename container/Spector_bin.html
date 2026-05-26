@@ -313,6 +313,13 @@
     </div>
     <div class="resonances" id="resonancesPanel" style="display:none">
         <h4>🎯 Выявленные резонансы (биения / несущая / мощность)</h4>
+        <div id="inputContainer" style="padding: 8px 12px; background: #222; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #aaa;">
+            <span>Порог (MIN_PEAK_AMP):</span>
+            <input type="number" id="minPeakAmpInput" value="4.0" step="0.1" min="0.1" max="100" 
+                   style="width: 60px; background: #333; border: 1px solid #444; color: #fff; border-radius: 4px; padding: 4px; font-family: monospace; font-size: 12px; text-align: center; user-select: text !important;">
+            <span>%</span>
+            <span style="font-size: 10px; color: #666; margin-left: auto;">(Enter ↵)</span>
+        </div>
         <div class="resonances-list" id="resonancesList"></div>
     </div>
     <div class="legend">
@@ -342,6 +349,8 @@
                 <li><span style="color:#00ffff;">🔵 59-80%</span> – голубой</li>
                 <li><span style="color:#ffffff;">⚪ 80-100%</span> – белый</li>
             </ul>
+            <p><strong>Спектрограмма</strong> показывает  реальные пики.В таблице резонансов указаны расчитанные по центроидному методу значени соседних точек,  дающие погрешность.<br>Чтобы увидеть на спектрограмме пик в 100% задайте этот порог.</p>
+            <p><strong>Сброс</strong> масштаба и значений порога по нажатию кнопки ⟳ "сброс"</p>
             <p><strong>Наклон (G,H,J,K,L):</strong> помогает визуально выделить пики. J – вид сверху (точные измерения).</p>
             <p><strong>Яркость:</strong> регулирует общую интенсивность.</p>
             <p><strong>Контраст:</strong> управляет логарифмическим сжатием (чем выше значение, тем контрастнее слабые сигналы).</p>
@@ -350,6 +359,47 @@
         </div>
     </div>
 </div>
+
+<script>
+    (function() {
+        const ampInput = document.getElementById('minPeakAmpInput');
+        if (!ampInput) return;
+        
+        // ЖЕСТКАЯ ЗАЩИТА: останавливаем любые события, чтобы они не уходили на canvas под инпутом
+        const stopSignals = (e) => { e.stopImmediatePropagation(); };
+        ampInput.addEventListener('pointerdown', stopSignals);
+        ampInput.addEventListener('mousedown', stopSignals);
+        ampInput.addEventListener('touchstart', stopSignals);
+        ampInput.addEventListener('touchmove', stopSignals);
+        ampInput.addEventListener('keydown', (e) => {
+            e.stopImmediatePropagation(); // Запрещает горячим клавишам приложения срабатывать от инпута
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                applyNewPeakAmp();
+                ampInput.blur();
+            }
+        });
+         
+        function applyNewPeakAmp() {
+            let val = parseFloat(ampInput.value);
+            if (isNaN(val) || val < 0.1) {
+                val = 0.1;
+                ampInput.value = "0.1";
+            }
+            
+            // Записываем в глобальную переменную
+            MIN_PEAK_AMP = val / 100;
+            MIN_DISPLAY_AMP = MIN_PEAK_AMP;
+            // Вызываем один чистый пересчет
+            if (typeof renderSpectrogram === 'function') {
+                renderSpectrogram();
+            }
+        }
+        
+        // Обновление только при потере фокуса (клик вне поля)
+        ampInput.addEventListener('change', applyNewPeakAmp);
+    })();
+</script>
 
 <script>
     // ============================================================
@@ -428,9 +478,6 @@
     let isDragging = false;
     let lastX = 0, lastY = 0;
     let lastTouchDist = 0;
-    const TOUCH_CROSSHAIR_OFFSET_PX = 120;
-    let activeMarker = false;
-    let markerX = 0, markerY = 0;
 
     const WIN_SEC = 7.0;
     const STEP_SEC = 5.0;
@@ -439,8 +486,8 @@
     const MIN_BEAT = 0;
     const MAX_BEAT = 55;
     
-    const MIN_DISPLAY_AMP = 0.05;   // 5% для отрисовки
-    const MIN_PEAK_AMP = 0.04;      // 5% для списка резонансов
+    let MIN_PEAK_AMP = 0.26;      // 26% для списка резонансов
+    let MIN_DISPLAY_AMP = MIN_PEAK_AMP;   // 26% для отрисовки
 
     // ---------- 2. WAV парсер ----------
     function readString(view, offset, length) {
@@ -818,20 +865,6 @@
         // Вызываем отрисовку осей
         drawAxes();
         findAndDisplayPeaks(map, carrierStep, beatStep, carrierBins, beatBins);
-
-        if (activeMarker) {
-            ctx.save();
-            ctx.translate(paddingLeft, paddingTop);
-            ctx.strokeStyle = '#00ff66';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(markerX - 8, markerY);
-            ctx.lineTo(markerX + 8, markerY);
-            ctx.moveTo(markerX, markerY - 8);
-            ctx.lineTo(markerX, markerY + 8);
-            ctx.stroke();
-            ctx.restore();
-        }
     }
 
     function drawAxes() {
@@ -937,55 +970,78 @@
                     }
                 }
                 if (isMax) {
-                    let xOffset = 0;
-                    if (ci > 0 && ci < carrierBins-1) {
-                        const left = map[ci-1][bi];
-                        const center = map[ci][bi];
-                        const right = map[ci+1][bi];
-                        const denom = left - 2*center + right;
-                        if (denom !== 0) {
-                            xOffset = (left - right) / (2 * denom);
-                            xOffset = Math.max(-0.5, Math.min(0.5, xOffset));
+                    // Уточнение положения максимума методом параболы по carrier
+                    // ---- Центроидный метод для carrier (частота несущей) ----
+                    let sumAmpC = 0;
+                    let sumCf = 0;
+                    const radiusC = 2; // ±2 бина
+                    for (let dc = -radiusC; dc <= radiusC; dc++) {
+                        const idx = ci + dc;
+                        if (idx >= 0 && idx < carrierBins) {
+                            const a = map[idx][bi];
+                            sumAmpC += a;
+                            sumCf += a * dc;
                         }
                     }
-                    let yOffset = 0;
-                    if (bi > 0 && bi < beatBins-1) {
-                        const left = map[ci][bi-1];
-                        const center = map[ci][bi];
-                        const right = map[ci][bi+1];
-                        const denom = left - 2*center + right;
-                        if (denom !== 0) {
-                            yOffset = (left - right) / (2 * denom);
-                            yOffset = Math.max(-0.5, Math.min(0.5, yOffset));
+                    let xOffset = (sumAmpC > 1e-6) ? sumCf / sumAmpC : 0;
+                    xOffset = Math.max(-0.8, Math.min(0.8, xOffset));
+                    
+                    // ---- Центроидный метод для beat (частота биений) ----
+                    let sumAmpB = 0;
+                    let sumBf = 0;
+                    const radiusB = 2;
+                    for (let db = -radiusB; db <= radiusB; db++) {
+                        const idx = bi + db;
+                        if (idx >= 0 && idx < beatBins) {
+                            const a = map[ci][idx];
+                            sumAmpB += a;
+                            sumBf += a * db;
                         }
                     }
+                    let yOffset = (sumAmpB > 1e-6) ? sumBf / sumAmpB : 0;
+                    yOffset = Math.max(-0.8, Math.min(0.8, yOffset));
+                    
+                    // Уточнённые координаты
                     const exactCarrier = MIN_CARRIER + (ci + xOffset) * carrierStep;
                     const exactBeat = MIN_BEAT + (bi + yOffset) * beatStep;
-                    const cx = ci + xOffset;
-                    const cy = bi + yOffset;
-                    const cx0 = Math.floor(cx);
-                    const cx1 = Math.min(cx0+1, carrierBins-1);
-                    const cy0 = Math.floor(cy);
-                    const cy1 = Math.min(cy0+1, beatBins-1);
-                    const wx = cx - cx0;
-                    const wy = cy - cy0;
-                    const v00 = map[cx0][cy0];
-                    const v10 = map[cx1][cy0];
-                    const v01 = map[cx0][cy1];
-                    const v11 = map[cx1][cy1];
-                    const amp = v00*(1-wx)*(1-wy) + v10*wx*(1-wy) + v01*(1-wx)*wy + v11*wx*wy;
+                    
+                    // Амплитуда - берём максимальное значение в окрестности (можно также центроидную, но максимум даёт лучшее соответствие визуалу)
+                    let amp = map[ci][bi];
+                    for (let dc = -radiusC; dc <= radiusC; dc++) {
+                        for (let db = -radiusB; db <= radiusB; db++) {
+                            const ic = ci + dc;
+                            const ib = bi + db;
+                            if (ic >= 0 && ic < carrierBins && ib >= 0 && ib < beatBins) {
+                                if (map[ic][ib] > amp) amp = map[ic][ib];
+                            }
+                        }
+                    }
+                    // Фиксируем амплитуду в пределах [0,1]
+                    const finalAmp = Math.min(1, Math.max(0, amp));
                     peaks.push({ carrier: exactCarrier, beat: exactBeat, amp: amp });
                 }
             }
         }
+        
         peaks.sort((a,b) => b.amp - a.amp);
-        const top = peaks.slice(0, 12);
+        
         const panel = document.getElementById('resonancesPanel');
         const listDiv = document.getElementById('resonancesList');
-        if (top.length === 0) { panel.style.display = 'none'; return; }
+        if (!panel || !listDiv) return;
+    
+        if (peaks.length === 0) { 
+            panel.style.display = 'none'; 
+            return; 
+        }
+        
         panel.style.display = 'block';
-        listDiv.innerHTML = top.map((p, idx) => `<div class="resonance-item">${idx+1}. 🎵 ${p.beat.toFixed(3)}Hz / ${p.carrier.toFixed(2)}Hz / ${(p.amp*100).toFixed(2)}%</div>`).join('');
+        
+        // Выводим ВСЕ найденные пики (убрали .slice(0, 12))
+        listDiv.innerHTML = peaks.map((p, idx) => 
+            `<div class="resonance-item">${idx+1}. 🎵 ${p.beat.toFixed(3)}Hz / ${p.carrier.toFixed(2)}Hz / ${(p.amp*100).toFixed(2)}%</div>`
+        ).join('');
     }
+
 
     // ---------- 9. Управление видом ----------
     function clampView() {
@@ -1052,163 +1108,6 @@
         if (currentData) renderSpectrogram();
     }
 
-    function updateCursorAndMarker(clientX, clientY, offsetYCanvas = 0) {
-    const rect = canvas.getBoundingClientRect();
-    const scaleXCanvas = canvas.width / rect.width;
-    const scaleYCanvas = canvas.height / rect.height;
-    
-    // Внутренние сдвиги графика
-    const paddingLeft = 40;
-    const paddingTop = 20;
-    const plotWidth = width - paddingLeft - 10;
-    const plotHeight = height - paddingTop - 30;
-    
-    // Физические координаты клика внутри canvas
-    let cx = (clientX - rect.left) * scaleXCanvas;
-    let cy = (clientY - rect.top) * scaleYCanvas + offsetYCanvas;
-    
-    // Переводим их во внутренние координаты рабочей области графика
-    let mx = Math.round(cx - paddingLeft);
-    let my = Math.round(cy - paddingTop);
-    
-    if (mx < 0 || mx >= plotWidth || my < 0 || my >= plotHeight) return;
-    
-    if (!currentData) return;
-
-    const hzPerPixelX = (MAX_CARRIER - MIN_CARRIER) / plotWidth / viewState.scale;
-    const hzPerPixelY = (MAX_BEAT - MIN_BEAT) / plotHeight / viewState.scale;
-    const offsetXPx = plotWidth / 2 - (viewState.cx - MIN_CARRIER) / hzPerPixelX;
-    const offsetYPx = plotHeight / 2 - (viewState.cy - MIN_BEAT) / hzPerPixelY;
-
-    // Ваша оригинальная функция получения амплитуды
-    const { stepHz, freqStart, freqCount, timeStamps, left, right } = currentData;
-    const getAmp = (spec, freq) => {
-        const bin = (freq - freqStart)/stepHz;
-        const idx0 = Math.floor(bin), idx1 = Math.min(idx0+1, freqCount-1);
-        const frac = bin - idx0;
-        if (idx0<0 || idx0>=freqCount) return 0;
-        return spec[idx0]*(1-frac) + spec[idx1]*frac;
-    };
-
-    // Точки, куда встанет маркер
-    let targetX = mx;
-    let targetY = my;
-
-    // --- НАДЁЖНЫЙ КВАДРАТНЫЙ ПОИСК ЛУЧА ---
-    if (viewState.mode !== 0) {
-        const isMobile = window.innerWidth <= 768;
-        const baseUnit = isMobile ? Math.floor(plotWidth / 3) : Math.floor(plotWidth / 10);
-        const slantDx = baseUnit;
-        const slantDy = Math.max(1, Math.floor(baseUnit / 2));
-
-        let bestDist = 99999; 
-
-        // Перебираем область вокруг курсора. 
-        // Так как максимальная длина луча около 40-50 пикселей, берём безопасный диапазон
-        const searchRadiusX = 50;
-        const searchRadiusY = 30;
-
-        const x0 = Math.max(0, mx - searchRadiusX);
-        const x1 = Math.min(plotWidth - 1, mx + searchRadiusX);
-        const y0 = Math.max(0, my - searchRadiusY);
-        const y1 = Math.min(plotHeight - 1, my + searchRadiusY);
-
-        for (let testY = y0; testY <= y1; testY++) {
-            for (let testX = x0; testX <= x1; testX++) {
-                
-                // Считаем частоты для проверяемого пикселя-источника
-                const cHz = MIN_CARRIER + (testX - offsetXPx) * hzPerPixelX;
-                const bHz = MIN_BEAT + (testY - offsetYPx) * hzPerPixelY;
-
-                if (cHz < MIN_CARRIER || cHz > MAX_CARRIER) continue;
-                if (bHz < MIN_BEAT || bHz > MAX_BEAT) continue;
-
-                const fL = cHz - bHz / 2;
-                const fR = cHz + bHz / 2;
-
-                if (fL < freqStart || fL > freqStart + freqCount * stepHz) continue;
-                if (fR < freqStart || fR > freqStart + freqCount * stepHz) continue;
-
-                const aL = getAmp(left[currentSnapshot], fL);
-                const aR = getAmp(right[currentSnapshot], fR);
-                let testAmp = Math.sqrt(aL * aR) * viewState.brightness;
-                testAmp = Math.min(1, testAmp);
-
-                // Если пиксель горит ярче порога шума
-                if (testAmp >= MIN_DISPLAY_AMP) {
-                    const rayLenX = Math.floor(slantDx * testAmp);
-                    const rayLenY = Math.floor(slantDy * testAmp);
-
-                    // Вычисляем, где должен закончиться луч, выходящий из этой точки (testX, testY)
-                    let endX = testX, endY = testY;
-                    switch (viewState.mode) {
-                        case 1: endX = testX + rayLenX; endY = testY - rayLenY; break; // H ↗
-                        case 2: endX = testX - rayLenX; endY = testY - rayLenY; break; // G ↖
-                        case 3: endX = testX + rayLenX; endY = testY + rayLenY; break; // K ↘
-                        case 4: endX = testX - rayLenX; endY = testY + rayLenY; break; // L ↙
-                    }
-
-                    // Проверяем: лежит ли наш клик (mx, my) на отрезке между (testX, testY) и (endX, endY)?
-                    // Для этого смотрим, находится ли клик в границах луча и близко ли он к математической прямой
-                    const minX = Math.min(testX, endX), maxX = Math.max(testX, endX);
-                    const minY = Math.min(testY, endY), maxY = Math.max(testY, endY);
-
-                    if (mx >= minX - 2 && mx <= maxX + 2 && my >= minY - 2 && my <= maxY + 2) {
-                        // Расстояние от клика до линии луча (формула перпендикуляра)
-                        const num = Math.abs((endY - testY) * mx - (endX - testX) * my + endX * testY - endY * testX);
-                        const den = Math.hypot(endX - testX, endY - testY);
-                        const distanceToLine = den === 0 ? 0 : num / den;
-
-                        // Если кликнули близко к лучу (в пределах 2 пикселей толщины)
-                        if (distanceToLine < 2.5) {
-                            // Находим расстояние от клика до корня, выбираем самый близкий корень
-                            const distToRoot = Math.hypot(mx - testX, my - testY);
-                            if (distToRoot < bestDist) {
-                                bestDist = distToRoot;
-                                targetX = testX;
-                                targetY = testY;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Принудительно округляем финальные координаты маркера
-    markerX = Math.round(targetX);
-    markerY = Math.round(targetY);
-    activeMarker = true;
-
-    // Финальный расчет частот на основе targetX и targetY
-    const carrier = MIN_CARRIER + (targetX - offsetXPx) * hzPerPixelX;
-    const beat = MIN_BEAT + (targetY - offsetYPx) * hzPerPixelY;
-
-    if (carrier < MIN_CARRIER || carrier > MAX_CARRIER) return;
-    if (beat < MIN_BEAT || beat > MAX_BEAT) return;
-
-    const finalFL = carrier - beat/2, finalFR = carrier + beat/2;
-    const aL = getAmp(left[currentSnapshot], finalFL);
-    const aR = getAmp(right[currentSnapshot], finalFR);
-    let amp = Math.sqrt(aL*aR) * viewState.brightness;
-    amp = Math.min(1, amp);
-    const t = timeStamps[currentSnapshot];
-
-    // Выводим данные в верхнюю строку
-    document.getElementById('statusMsg').innerHTML = `🎯${carrier.toFixed(2)}Hz / ${beat.toFixed(3)}Hz / ${(amp*100).toFixed(2)}% | ⏱️${Math.floor(t/60)}:${Math.floor(t%60).toString().padStart(2,'0')}`;
-}
-
-
-    function hideCursorAndMarker() {
-        activeMarker = false;
-        if (currentData) {
-            document.getElementById('statusMsg').innerHTML = `✅ ${currentData.timeStamps.length} снимков, разрешение ${currentData.stepHz.toFixed(3)}Hz`;
-        } else {
-            document.getElementById('statusMsg').innerHTML = '🎧 SPECTRO-BIN PWA — выберите стерео WAV файл';
-        }
-        renderSpectrogram();
-    }
-
     // ---------- Инициализация UI ----------
     const fileInput = document.getElementById('fileInput');
     const statusMsg = document.getElementById('statusMsg');
@@ -1249,7 +1148,20 @@
     });
     document.getElementById('zoomOut').addEventListener('click', () => zoom(0.8, width/2, height/2));
     document.getElementById('zoomIn').addEventListener('click', () => zoom(1.2, width/2, height/2));
-    document.getElementById('resetView').addEventListener('click', resetView);
+    document.getElementById('resetView').addEventListener('click', () => {
+        // Сброс масштаба и позиции
+        resetView();
+        // Сброс порога до 5%
+        const defaultPercent = 26.0;
+        const input = document.getElementById('minPeakAmpInput');
+        if (input) {
+            input.value = defaultPercent;
+            const val = defaultPercent / 100;
+            MIN_PEAK_AMP = val;
+            MIN_DISPLAY_AMP = MIN_PEAK_AMP; // если используется отдельная переменная
+            if (typeof renderSpectrogram === 'function') renderSpectrogram();
+        }
+    });
 
     function updateTimeDisplay() {
         if (!currentData) return;
@@ -1285,14 +1197,12 @@
         }
     });
 
-    canvas.addEventListener('mousemove', (e) => updateCursorAndMarker(e.clientX, e.clientY, 0));
-    canvas.addEventListener('mouseleave', hideCursorAndMarker);
+    canvas.addEventListener('mousemove', (e) => {});
     canvas.addEventListener('mousedown', (e) => {
         if (e.button === 0) {
             isDragging = true;
             lastX = e.clientX;
             lastY = e.clientY;
-            updateCursorAndMarker(e.clientX, e.clientY, 0);
             e.preventDefault();
         }
     });
@@ -1303,12 +1213,10 @@
             pan(-dx, -dy);
             lastX = e.clientX;
             lastY = e.clientY;
-            updateCursorAndMarker(e.clientX, e.clientY, 0);
         }
     });
     window.addEventListener('mouseup', (e) => {
         isDragging = false;
-        hideCursorAndMarker();
     });
     canvas.addEventListener('wheel', (e) => {
         const factor = e.deltaY > 0 ? 0.9 : 1.1;
@@ -1322,10 +1230,6 @@
             isDragging = true;
             lastX = e.touches[0].clientX;
             lastY = e.touches[0].clientY;
-            const rect = canvas.getBoundingClientRect();
-            const scaleYCanvas = canvas.height / rect.height;
-            const offsetYCanvas = -TOUCH_CROSSHAIR_OFFSET_PX * scaleYCanvas;
-            updateCursorAndMarker(e.touches[0].clientX, e.touches[0].clientY, offsetYCanvas);
         } else if (e.touches.length === 2) {
             const dx = e.touches[0].clientX - e.touches[1].clientX;
             const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -1340,10 +1244,6 @@
             pan(-dx, -dy);
             lastX = e.touches[0].clientX;
             lastY = e.touches[0].clientY;
-            const rect = canvas.getBoundingClientRect();
-            const scaleYCanvas = canvas.height / rect.height;
-            const offsetYCanvas = -TOUCH_CROSSHAIR_OFFSET_PX * scaleYCanvas;
-            updateCursorAndMarker(e.touches[0].clientX, e.touches[0].clientY, offsetYCanvas);
         } else if (e.touches.length === 2 && lastTouchDist > 0) {
             const dx = e.touches[0].clientX - e.touches[1].clientX;
             const dy = e.touches[0].clientY - e.touches[1].clientY;
@@ -1365,7 +1265,6 @@
     canvas.addEventListener('touchend', (e) => {
         isDragging = false;
         lastTouchDist = 0;
-        hideCursorAndMarker();
     });
     canvas.addEventListener('contextmenu', (e) => e.preventDefault());
     window.addEventListener('resize', () => setCanvasSize());
@@ -1446,8 +1345,9 @@
         const activeBtn = document.querySelector(`.mode-btn[data-mode="${viewState.mode}"]`);
         if (activeBtn) activeBtn.classList.add('active');
     }
+
     
-        // Логика для кнопки-крестика закрытия окна анализатора
+    // Логика для кнопки-крестика закрытия окна анализатора
     const closeAnalyzerBtn = document.getElementById('closeAnalyzerBtn');
     if (closeAnalyzerBtn) {
         closeAnalyzerBtn.onclick = (e) => {
