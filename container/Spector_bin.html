@@ -703,13 +703,17 @@
                 let amp = Math.pow(maxAmp, contrastPower) * bright;
                 amp = Math.min(1, amp);
                 if (amp < MIN_DISPLAY_AMP) continue;
-
+                
+                // Для 2D режима берем стандартный цвет пикселя из оригинальной палитры
                 const [r, g, b] = amplitudeToColor(amp);
-                let drawX = px, drawY = py;
-                // Квадратичная зависимость — пропорционально мощности:
-                const powerFactor = amp * amp; // Находим квадрат амплитуды (A²)
-                const rayLenX = Math.floor(slantDx * powerFactor);
-                const rayLenY = Math.floor(slantDy * powerFactor);
+                
+                let drawX = px,
+                    drawY = py;
+                
+                // ПРЯМО ПРОПОРЦИОНАЛЬНАЯ (линейная) зависимость длины луча от амплитуды
+                const rayLenX = Math.floor(slantDx * amp);
+                const rayLenY = Math.floor(slantDy * amp);
+                
                 switch (viewState.mode) {
                     case 1: // H ↗
                         drawX = px + rayLenX;
@@ -730,12 +734,77 @@
                     default:
                         break;
                 }
+                
                 if (viewState.mode !== 0) {
                     const steps = Math.max(1, Math.floor(Math.hypot(drawX - px, drawY - py)));
+                    
+                    // 1. Вычисляем 100% базовой максимальной длины луча на экране в пикселях
+                    const baseMaxLenPx = Math.hypot(slantDx, slantDy);
+                
+                    // 2. Цвета из вашего ТЗ
+                    const cBlue   = [0, 0, 255];
+                    const cPurple = [255, 0, 255];
+                    const cRed    = [255, 0, 0];
+                    const cYellow = [255, 255, 0];
+                    const cGreen  = [0, 255, 0];
+                    const cCyan   = [0, 255, 255];
+                    const cWhite  = [255, 255, 255];
+                
                     for (let s = 0; s <= steps; s++) {
                         const t = s / steps;
                         const ix = Math.round(px + (drawX - px) * t);
                         const iy = Math.round(py + (drawY - py) * t);
+                
+                        // Фактическое расстояние текущего пикселя от корня (в пикселях холста)
+                        const d = Math.hypot(ix - px, iy - py);
+                
+                        // Переводим текущее расстояние в проценты от АБСОЛЮТНОЙ базы холста
+                        const p = baseMaxLenPx === 0 ? 0 : (d / baseMaxLenPx) * 100;
+                
+                        let r = 0, g = 0, b = 0;
+                
+                        // 3. Честная сквозная линейная интерполяция без жестких ступеней
+                        if (p <= 8.0) {
+                            // Синий -> Пурпурный
+                            const factor = p / 8.0;
+                            r = Math.round(cBlue[0] + (cPurple[0] - cBlue[0]) * factor);
+                            g = Math.round(cBlue[1] + (cPurple[1] - cBlue[1]) * factor);
+                            b = Math.round(cBlue[2] + (cPurple[2] - cBlue[2]) * factor);
+                        } else if (p > 8.0 && p <= 20.0) {
+                            // Пурпурный -> Красный
+                            const factor = (p - 8.0) / (20.0 - 8.0);
+                            r = Math.round(cPurple[0] + (cRed[0] - cPurple[0]) * factor);
+                            g = Math.round(cPurple[1] + (cRed[1] - cPurple[1]) * factor);
+                            b = Math.round(cPurple[2] + (cRed[2] - cPurple[2]) * factor);
+                        } else if (p > 20.0 && p <= 26.0) {
+                            // Красный -> Жёлтый
+                            const factor = (p - 20.0) / (26.0 - 20.0);
+                            r = Math.round(cRed[0] + (cYellow[0] - cRed[0]) * factor);
+                            g = Math.round(cRed[1] + (cYellow[1] - cRed[1]) * factor);
+                            b = Math.round(cRed[2] + (cYellow[2] - cRed[2]) * factor);
+                        } else if (p > 26.0 && p <= 45.0) {
+                            // Жёлтый -> Зелёный
+                            const factor = (p - 26.0) / (45.0 - 26.0);
+                            r = Math.round(cYellow[0] + (cGreen[0] - cYellow[0]) * factor);
+                            g = Math.round(cYellow[1] + (cGreen[1] - cYellow[1]) * factor);
+                            b = Math.round(cYellow[2] + (cGreen[2] - cYellow[2]) * factor);
+                        } else if (p > 45.0 && p <= 59.0) {
+                            // Зелёный -> Голубой
+                            const factor = (p - 45.0) / (59.0 - 45.0);
+                            r = Math.round(cGreen[0] + (cCyan[0] - cGreen[0]) * factor);
+                            g = Math.round(cGreen[1] + (cCyan[1] - cGreen[1]) * factor);
+                            b = Math.round(cGreen[2] + (cCyan[2] - cGreen[2]) * factor);
+                        } else if (p > 59.0 && p <= 80.0) {
+                            // Голубой -> Белый
+                            const factor = (p - 59.0) / (80.0 - 59.0);
+                            r = Math.round(cCyan[0] + (cWhite[0] - cCyan[0]) * factor);
+                            g = Math.round(cCyan[1] + (cWhite[1] - cCyan[1]) * factor);
+                            b = Math.round(cCyan[2] + (cWhite[2] - cCyan[2]) * factor);
+                        } else {
+                            // Всё, что дальше 80% базы — чисто белое
+                            r = 255; g = 255; b = 255;
+                        }
+                
                         setPixel(ix, iy, r, g, b);
                     }
                 } else {
@@ -1066,10 +1135,9 @@
                 testAmp = Math.min(1, testAmp);
 
                 // Если пиксель горит ярче порога шума
-                if (testAmp >= 0.04) {
-                    const powerFactor = testAmp * testAmp;
-                    const rayLenX = Math.floor(slantDx * powerFactor);
-                    const rayLenY = Math.floor(slantDy * powerFactor);
+                if (testAmp >= MIN_DISPLAY_AMP) {
+                    const rayLenX = Math.floor(slantDx * testAmp);
+                    const rayLenY = Math.floor(slantDy * testAmp);
 
                     // Вычисляем, где должен закончиться луч, выходящий из этой точки (testX, testY)
                     let endX = testX, endY = testY;
