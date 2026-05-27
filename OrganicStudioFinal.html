@@ -617,24 +617,29 @@ function triggerVisuals(freq, name, octave) {
           // ========== BI РЕЖИМ: РАСЩЕПЛЕНИЕ ЧАСТОТЫ ==========
           if (isBiMode) {
             const shift = freq / 128; // смещение = частота / 128
-            const leftFreq = freq - shift; // левый канал: частота - смещение
-            const rightFreq = freq + shift; // правый канал: частота + смещение
+            const leftFreq = parseFloat((freq - shift).toFixed(6));
+            const rightFreq = parseFloat((freq + shift).toFixed(6));
+            const finalAmp = (a / totalWeight) * 0.9;
             
-            // Левый канал
+            // Левый канал (частота ниже, без задержки)
             const oscL = audioCtx.createOscillator();
             const gL = audioCtx.createGain();
             oscL.frequency.setValueAtTime(leftFreq, start);
             gL.gain.setValueAtTime(0, start);
             gL.gain.linearRampToValueAtTime(finalAmp, start + att);
             
-            // Правый канал
+            // Правый канал (частота выше, С ЗАДЕРЖКОЙ 90°)
             const oscR = audioCtx.createOscillator();
             const gR = audioCtx.createGain();
             oscR.frequency.setValueAtTime(rightFreq, start);
             gR.gain.setValueAtTime(0, start);
             gR.gain.linearRampToValueAtTime(finalAmp, start + att);
             
-            // Огибающая для левого канала
+            // Задержка 90° для правого канала (как в обычном режиме)
+            const phaseDelayRight = audioCtx.createDelay();
+            phaseDelayRight.delayTime.setValueAtTime(1 / (4 * rightFreq), start);
+            
+            // === ОГИБАЮЩАЯ ДЛЯ ЛЕВОГО КАНАЛА ===
             if (type === "symbiosis") {
               const curve = [];
               const pts = 120;
@@ -654,7 +659,7 @@ function triggerVisuals(freq, name, octave) {
               gL.gain.exponentialRampToValueAtTime(0.001, endTime);
             }
             
-            // Огибающая для правого канала (аналогично)
+            // === ОГИБАЮЩАЯ ДЛЯ ПРАВОГО КАНАЛА ===
             if (type === "symbiosis") {
               const curve = [];
               const pts = 120;
@@ -674,22 +679,17 @@ function triggerVisuals(freq, name, octave) {
               gR.gain.exponentialRampToValueAtTime(0.001, endTime);
             }
             
-            // Фазовый сдвиг 90° для правого канала (через задержку)
-            const delayR = audioCtx.createDelay();
-            delayR.delayTime.setValueAtTime(1 / (4 * rightFreq), start);
-            
-            // Подключение: левый канал -> левый выход, правый канал -> задержка -> правый выход
+            // === ПОДКЛЮЧЕНИЕ ===
+            // Левый канал: напрямую
             oscL.connect(gL);
             gL.connect(masterGain);
-            
-            oscR.connect(gR);
-            gR.connect(delayR);
-            delayR.connect(masterGain);
-            
-            // Также подключаем к реверберации
             gL.connect(reverb);
-            gR.connect(delayR);
-            delayR.connect(reverb);
+            
+            // Правый канал: через задержку 90°
+            oscR.connect(gR);
+            gR.connect(phaseDelayRight);
+            phaseDelayRight.connect(masterGain);
+            phaseDelayRight.connect(reverb);
             
             oscL.start(start);
             oscL.stop(endTime);
@@ -699,69 +699,22 @@ function triggerVisuals(freq, name, octave) {
             activeOscillators.push(oscL, oscR);
             
             // Очистка
-            const cleanup = () => {
-              activeOscillators = activeOscillators.filter(item => item !== oscL && item !== oscR);
-              delayR.disconnect();
+            const cleanupL = () => {
+              activeOscillators = activeOscillators.filter(item => item !== oscL);
               gL.disconnect();
-              gR.disconnect();
               oscL.disconnect();
+            };
+            const cleanupR = () => {
+              activeOscillators = activeOscillators.filter(item => item !== oscR);
+              phaseDelayRight.disconnect();
+              gR.disconnect();
               oscR.disconnect();
             };
-            oscL.onended = cleanup;
-            oscR.onended = cleanup;
-            
-          } else {
-            // ========== ОБЫЧНЫЙ РЕЖИМ (БЕЗ BI) ==========
-            const osc = audioCtx.createOscillator();
-            const g = audioCtx.createGain();
-            const merger = audioCtx.createChannelMerger(2);
-            const delay = audioCtx.createDelay();
-            
-            osc.frequency.setValueAtTime(freq, start);
-            delay.delayTime.setValueAtTime(1 / (4 * freq), start);
-            g.gain.setValueAtTime(0, start);
-            g.gain.linearRampToValueAtTime(finalAmp, start + att);
-            
-            if (type === "symbiosis") {
-              const curve = [];
-              const pts = 120;
-              const pulseSpeed = freq / 120;
-              for (let i = 0; i <= pts; i++) {
-                const phase = i / pts;
-                const mod = 0.75 + 0.25 * Math.sin(i * (pulseSpeed / 5));
-                const sFade = 0.5 * (1 + Math.cos(phase * Math.PI));
-                curve.push(finalAmp * mod * sFade);
-              }
-              g.gain.setValueCurveAtTime(curve, start + att, dec + rel);
-            } else if (type === "cosine") {
-              g.gain.setValueCurveAtTime([finalAmp, finalAmp * 0.5, 0], start + att + dec, rel);
-            } else if (type === "linear") {
-              g.gain.linearRampToValueAtTime(0, endTime);
-            } else {
-              g.gain.exponentialRampToValueAtTime(0.001, endTime);
-            }
-            
-            osc.connect(g);
-            g.connect(merger, 0, 0);
-            g.connect(delay);
-            delay.connect(merger, 0, 1);
-            merger.connect(masterGain);
-            merger.connect(reverb);
-            
-            osc.start(start);
-            osc.stop(endTime);
-            activeOscillators.push(osc);
-            
-            osc.onended = () => {
-              activeOscillators = activeOscillators.filter(item => item !== osc);
-              delay.disconnect();
-              merger.disconnect();
-              g.disconnect();
-              osc.disconnect();
-            };
+            oscL.onended = cleanupL;
+            oscR.onended = cleanupR;
           }
         });
-}
+      }
       
       function stopAllSounds() {
         // Останавливаем все осцилляторы
