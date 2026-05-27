@@ -375,6 +375,8 @@ body {
               <option value="exponential">Логарифм</option>
             </select>
           </div>
+          <div> <button id="biBtn" class="action-btn" style="background: #5e358c; margin-top: 12px; padding: 5px 12px; font-size: 12px;">bi</button>
+          </div>
           <div class="full-width">
             <label class="label-small">Обертоны (Золотой Эталон)</label>
             <textarea id="overtones" rows="1" oninput="autoResize(this)">
@@ -463,6 +465,7 @@ body {
       let activeOscillators = []; // Хранилище для остановки всех звуков
       let sequenceIntervals = []; // Хранилище для отмены запланированных таймаутов
       let isPlaying = false;      // Флаг состояния
+      let isBiMode = false; // Флаг бинаурального режима
 
       function autoResize(el) {
         el.style.height = "auto";
@@ -491,16 +494,6 @@ function triggerVisuals(freq, name, octave) {
   const body = document.body;
   const rel = parseFloat(document.getElementById('release').value);
   const color = getSpectralColor(name, octave);
-  
-  /*// 1. Подсветка фона (подложки)
-  body.style.transition = "none";
-  body.style.backgroundColor = color.replace(/[\d.]+\%\)/, ( + octave * 2) + '%)'); 
-
-  setTimeout(() => {
-body.style.transition = `background-color ${rel}s cubic-bezier(0.4, 0, 0.2, 1)`;
-
-    body.style.backgroundColor = "var(--bg)";
-  }, 50);*/
 
   // 2. Поиск и подсветка кнопки
   const btns = document.querySelectorAll('.note-btn');
@@ -603,8 +596,9 @@ body.style.transition = `background-color ${rel}s cubic-bezier(0.4, 0, 0.2, 1)`;
 
       function playNote(f, start = audioCtx.currentTime) {
         // Если частота 0, просто ничего не делаем
-        if (!f || f === 0) return; 
+        if (!f || f === 0) return;
         if (audioCtx.state === "suspended") audioCtx.resume();
+        
         const att = parseFloat(document.getElementById("attack").value),
           dec = parseFloat(document.getElementById("decay").value);
         const rel = parseFloat(document.getElementById("release").value),
@@ -615,66 +609,159 @@ body.style.transition = `background-color ${rel}s cubic-bezier(0.4, 0, 0.2, 1)`;
           .map((s) => s.trim().split(":").map(Number));
         const totalWeight = ovs.reduce((s, x) => s + x[1], 0);
         const endTime = start + att + dec + rel;
-
+        
         ovs.forEach(([m, a]) => {
-          const freq = f * m,
-            osc = audioCtx.createOscillator(),
-            g = audioCtx.createGain();
-          const merger = audioCtx.createChannelMerger(2),
-            delay = audioCtx.createDelay();
+          let freq = f * m;
           const finalAmp = (a / totalWeight) * 0.9;
-
-          osc.frequency.setValueAtTime(freq, start);
-          delay.delayTime.setValueAtTime(1 / (4 * freq), start);
-          g.gain.setValueAtTime(0, start);
-          g.gain.linearRampToValueAtTime(finalAmp, start + att);
-
-          if (type === "symbiosis") {
-            const curve = [];
-            const pts = 120;
-            const pulseSpeed = freq / 120;
-            for (let i = 0; i <= pts; i++) {
-              const phase = i / pts;
-              // ГЛУБИНА 0.25 (База 0.75 + Мод 0.25)
-              const mod = 0.75 + 0.25 * Math.sin(i * (pulseSpeed / 5));
-              const sFade = 0.5 * (1 + Math.cos(phase * Math.PI));
-              curve.push(finalAmp * mod * sFade);
+          
+          // ========== BI РЕЖИМ: РАСЩЕПЛЕНИЕ ЧАСТОТЫ ==========
+          if (isBiMode) {
+            const shift = freq / 128; // смещение = частота / 128
+            const leftFreq = freq - shift; // левый канал: частота - смещение
+            const rightFreq = freq + shift; // правый канал: частота + смещение
+            
+            // Левый канал
+            const oscL = audioCtx.createOscillator();
+            const gL = audioCtx.createGain();
+            oscL.frequency.setValueAtTime(leftFreq, start);
+            gL.gain.setValueAtTime(0, start);
+            gL.gain.linearRampToValueAtTime(finalAmp, start + att);
+            
+            // Правый канал
+            const oscR = audioCtx.createOscillator();
+            const gR = audioCtx.createGain();
+            oscR.frequency.setValueAtTime(rightFreq, start);
+            gR.gain.setValueAtTime(0, start);
+            gR.gain.linearRampToValueAtTime(finalAmp, start + att);
+            
+            // Огибающая для левого канала
+            if (type === "symbiosis") {
+              const curve = [];
+              const pts = 120;
+              const pulseSpeed = leftFreq / 120;
+              for (let i = 0; i <= pts; i++) {
+                const phase = i / pts;
+                const mod = 0.75 + 0.25 * Math.sin(i * (pulseSpeed / 5));
+                const sFade = 0.5 * (1 + Math.cos(phase * Math.PI));
+                curve.push(finalAmp * mod * sFade);
+              }
+              gL.gain.setValueCurveAtTime(curve, start + att, dec + rel);
+            } else if (type === "cosine") {
+              gL.gain.setValueCurveAtTime([finalAmp, finalAmp * 0.5, 0], start + att + dec, rel);
+            } else if (type === "linear") {
+              gL.gain.linearRampToValueAtTime(0, endTime);
+            } else {
+              gL.gain.exponentialRampToValueAtTime(0.001, endTime);
             }
-            g.gain.setValueCurveAtTime(curve, start + att, dec + rel);
-          } else if (type === "cosine") {
-            g.gain.setValueCurveAtTime(
-              [finalAmp, finalAmp * 0.5, 0],
-              start + att + dec,
-              rel,
-            );
-          } else if (type === "linear") {
-            g.gain.linearRampToValueAtTime(0, endTime);
+            
+            // Огибающая для правого канала (аналогично)
+            if (type === "symbiosis") {
+              const curve = [];
+              const pts = 120;
+              const pulseSpeed = rightFreq / 120;
+              for (let i = 0; i <= pts; i++) {
+                const phase = i / pts;
+                const mod = 0.75 + 0.25 * Math.sin(i * (pulseSpeed / 5));
+                const sFade = 0.5 * (1 + Math.cos(phase * Math.PI));
+                curve.push(finalAmp * mod * sFade);
+              }
+              gR.gain.setValueCurveAtTime(curve, start + att, dec + rel);
+            } else if (type === "cosine") {
+              gR.gain.setValueCurveAtTime([finalAmp, finalAmp * 0.5, 0], start + att + dec, rel);
+            } else if (type === "linear") {
+              gR.gain.linearRampToValueAtTime(0, endTime);
+            } else {
+              gR.gain.exponentialRampToValueAtTime(0.001, endTime);
+            }
+            
+            // Фазовый сдвиг 90° для правого канала (через задержку)
+            const delayR = audioCtx.createDelay();
+            delayR.delayTime.setValueAtTime(1 / (4 * rightFreq), start);
+            
+            // Подключение: левый канал -> левый выход, правый канал -> задержка -> правый выход
+            oscL.connect(gL);
+            gL.connect(masterGain);
+            
+            oscR.connect(gR);
+            gR.connect(delayR);
+            delayR.connect(masterGain);
+            
+            // Также подключаем к реверберации
+            gL.connect(reverb);
+            gR.connect(delayR);
+            delayR.connect(reverb);
+            
+            oscL.start(start);
+            oscL.stop(endTime);
+            oscR.start(start);
+            oscR.stop(endTime);
+            
+            activeOscillators.push(oscL, oscR);
+            
+            // Очистка
+            const cleanup = () => {
+              activeOscillators = activeOscillators.filter(item => item !== oscL && item !== oscR);
+              delayR.disconnect();
+              gL.disconnect();
+              gR.disconnect();
+              oscL.disconnect();
+              oscR.disconnect();
+            };
+            oscL.onended = cleanup;
+            oscR.onended = cleanup;
+            
           } else {
-            g.gain.exponentialRampToValueAtTime(0.001, endTime);
+            // ========== ОБЫЧНЫЙ РЕЖИМ (БЕЗ BI) ==========
+            const osc = audioCtx.createOscillator();
+            const g = audioCtx.createGain();
+            const merger = audioCtx.createChannelMerger(2);
+            const delay = audioCtx.createDelay();
+            
+            osc.frequency.setValueAtTime(freq, start);
+            delay.delayTime.setValueAtTime(1 / (4 * freq), start);
+            g.gain.setValueAtTime(0, start);
+            g.gain.linearRampToValueAtTime(finalAmp, start + att);
+            
+            if (type === "symbiosis") {
+              const curve = [];
+              const pts = 120;
+              const pulseSpeed = freq / 120;
+              for (let i = 0; i <= pts; i++) {
+                const phase = i / pts;
+                const mod = 0.75 + 0.25 * Math.sin(i * (pulseSpeed / 5));
+                const sFade = 0.5 * (1 + Math.cos(phase * Math.PI));
+                curve.push(finalAmp * mod * sFade);
+              }
+              g.gain.setValueCurveAtTime(curve, start + att, dec + rel);
+            } else if (type === "cosine") {
+              g.gain.setValueCurveAtTime([finalAmp, finalAmp * 0.5, 0], start + att + dec, rel);
+            } else if (type === "linear") {
+              g.gain.linearRampToValueAtTime(0, endTime);
+            } else {
+              g.gain.exponentialRampToValueAtTime(0.001, endTime);
+            }
+            
+            osc.connect(g);
+            g.connect(merger, 0, 0);
+            g.connect(delay);
+            delay.connect(merger, 0, 1);
+            merger.connect(masterGain);
+            merger.connect(reverb);
+            
+            osc.start(start);
+            osc.stop(endTime);
+            activeOscillators.push(osc);
+            
+            osc.onended = () => {
+              activeOscillators = activeOscillators.filter(item => item !== osc);
+              delay.disconnect();
+              merger.disconnect();
+              g.disconnect();
+              osc.disconnect();
+            };
           }
-
-          osc.connect(g);
-          g.connect(merger, 0, 0);
-          g.connect(delay);
-          delay.connect(merger, 0, 1);
-          merger.connect(masterGain);
-          merger.connect(reverb);
-
-          osc.start(start);
-          osc.stop(endTime);
-          activeOscillators.push(osc); // Добавляем в список активных
-
-          // ОЧИСТКА УЗЛОВ
-          osc.onended = () => {
-            // Удаляем из списка по завершении
-            activeOscillators = activeOscillators.filter(item => item !== osc);
-            delay.disconnect();
-            merger.disconnect();
-            g.disconnect();
-            osc.disconnect();
-          };
         });
-      }
+}
       
       function stopAllSounds() {
         // Останавливаем все осцилляторы
@@ -792,8 +879,12 @@ body.style.transition = `background-color ${rel}s cubic-bezier(0.4, 0, 0.2, 1)`;
         }
       };
       function saveWav() {
-        const name = prompt("Имя файла:", "Organic_Session");
-        if (!name) return;
+        const baseName = prompt("Имя файла:", "Organic_Session");
+        if (!baseName) return;
+        
+        // Добавляем индикатор BI режима в имя файла
+        const name = isBiMode ? baseName + "_BI" : baseName;
+        
         const FL = flatten(L),
           FR = flatten(R),
           buf = new ArrayBuffer(44 + FL.length * 8),
@@ -822,7 +913,7 @@ body.style.transition = `background-color ${rel}s cubic-bezier(0.4, 0, 0.2, 1)`;
         a.href = URL.createObjectURL(new Blob([v], { type: "audio/wav" }));
         a.download = name + ".wav";
         a.click();
-      }
+}
       function flatten(ch) {
         let l = ch.reduce((a, b) => a + b.length, 0),
           r = new Float32Array(l),
@@ -976,6 +1067,22 @@ body.style.transition = `background-color ${rel}s cubic-bezier(0.4, 0, 0.2, 1)`;
         autoResize(document.getElementById("sequence"));
         renderPresets();
         addTouchFeedback();
+        // Обработчик кнопки BI
+        const biBtn = document.getElementById('biBtn');
+        if (biBtn) {
+          biBtn.onclick = function() {
+            isBiMode = !isBiMode;
+            if (isBiMode) {
+              this.style.background = "#dfa0ff";
+              this.style.color = "#1a0b2e";
+              this.style.border = "1px solid white";
+            } else {
+              this.style.background = "#5e358c";
+              this.style.color = "";
+              this.style.border = "";
+            }
+          };
+        }
       };
       const modal = document.getElementById("infoModal");
       document.getElementById("infoModalBtn").onclick = () =>
