@@ -315,7 +315,7 @@
         <h4>🎯 Выявленные резонансы (биения / несущая / мощность)</h4>
         <div id="inputContainer" style="padding: 8px 12px; background: #222; border-radius: 8px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: #aaa;">
             <span>Порог (MIN_PEAK_AMP):</span>
-            <input type="number" id="minPeakAmpInput" value="4.0" step="0.1" min="0.1" max="100" 
+            <input type="number" id="minPeakAmpInput" value="26.0" step="0.1" min="0.1" max="100" 
                    style="width: 60px; background: #333; border: 1px solid #444; color: #fff; border-radius: 4px; padding: 4px; font-family: monospace; font-size: 12px; text-align: center; user-select: text !important;">
             <span>%</span>
             <span style="font-size: 10px; color: #666; margin-left: auto;">(Enter ↵)</span>
@@ -1151,7 +1151,7 @@
     document.getElementById('resetView').addEventListener('click', () => {
         // Сброс масштаба и позиции
         resetView();
-        // Сброс порога до 5%
+        // Сброс порога до 26%
         const defaultPercent = 26.0;
         const input = document.getElementById('minPeakAmpInput');
         if (input) {
