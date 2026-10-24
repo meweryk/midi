@@ -33,11 +33,11 @@ body {
   transition: background-color 0.5s ease-out;
 }
 
-/* Класс для активной подсветки кнопок */
+/* Класс для активной подсветки кнопок: возвращён оригинальный стиль */
 .note-btn.active-visual {
   transform: translateY(2px);
   box-shadow: none !important;
-  /* Цвет фона и border-color будут назначены через JS */
+  /* Цвет фона и border-color назначаются через JS */
 }
 
 /* Особая подсветка для Фа# по контуру */
@@ -92,6 +92,7 @@ body {
         aspect-ratio: 1.414 / 1;
         -webkit-tap-highlight-color: transparent;
         touch-action: manipulation;
+        box-sizing: border-box;
       }
       .note-name {
         font-size: 13px;
@@ -363,6 +364,10 @@ body {
             ><input type="number" id="release" value="3.0" step="0.1" />
           </div>
           <div>
+            <label class="label-small">Нота До (Гц)</label>
+            <input type="number" id="baseNote" value="128" step="0.001" min="0.001" />
+          </div>
+          <div>
             <label class="label-small">Интервал</label
             ><input type="number" id="stepTime" value="2.0" step="0.1" />
           </div>
@@ -375,12 +380,17 @@ body {
               <option value="exponential">Логарифм</option>
             </select>
           </div>
-          <div> <button id="biBtn" class="action-btn" style="background: #5e358c; margin-top: 12px; padding: 5px 12px; font-size: 12px;">bi</button>
+          
+          <div class="full-width" style="display: flex; gap: 6px; margin-top: 6px;">
+            <button id="biBtn" class="action-btn" style="flex: 1; background: #5e358c; font-size: 12px;">bi</button>
+            <button id="harm3Btn" class="action-btn" style="flex: 1; background: #5e358c; font-size: 12px;">3 гарм.</button>
+            <button id="harm11Btn" class="action-btn" style="flex: 1; background: #5e358c; font-size: 12px;">11 гарм</button>
           </div>
+
           <div class="full-width">
             <label class="label-small">Обертоны (Золотой Эталон)</label>
             <textarea id="overtones" rows="1" oninput="autoResize(this)">
-0.5:20, 1:40, 1.1852:15, 1.5:10, 2:5, 4:3, 8:2, 16:1, 32:0.7</textarea
+0.5:20, 1:40, 1.1852:15, 1.5:10, 2:5</textarea
             >
           </div>
           <div class="full-width">
@@ -446,6 +456,8 @@ body {
         <p>48kHz, обертоны с весами (множитель:амплитуда).</p>
         <h4>🎹 2. Клавиатура</h4>
         <p>4 октавы, 7 ступеней — пифагорейский строй. Фа#, До# выделены.</p>
+        <h4>🎨 2b. Цвет вспышки</h4>
+        <p>При нажатии вычисляется реальная длина волны (f → λ), октавно повышается до видимого диапазона (380–780 нм), переводится в RGB. Чем выше октава, тем светлее оттенок.</p>
         <h4>📉 3. Огибающая</h4>
         <p>Атака, удерж., затух. Форма: S, линейная, логарифм.</p>
         <h4>🌀 4. Эффекты</h4>
@@ -453,7 +465,7 @@ body {
         <h4>⏯ 5. Секвенсор</h4>
         <p>Список частот, кнопка ИГРАТЬ с интервалом.</p>
         <h4>💾 6. Запись WAV</h4>
-        <p>32bit float, 48kHz, стерео. ScriptProcessor.</p>
+        <p>32bit float, 48kHz, стерео. ScriptProcessor. Записывается именно тот звук (на тех частотах), который был воспроизведён.</p>
         <h4>📚 7. Пресеты</h4>
         <p>localStorage, сохранение/загрузка.</p>
         <h4>🧠 Интеллект</h4>
@@ -466,61 +478,109 @@ body {
       let sequenceIntervals = []; // Хранилище для отмены запланированных таймаутов
       let isPlaying = false;      // Флаг состояния
       let isBiMode = false; // Флаг бинаурального режима
+      
+      // Переменные для режимов гармоник
+      let currentHarmMode = 'none'; // 'none', '3', '11'
+      const GOLDEN_OVERTONES = "0.5:20, 1:40, 1.1852:15, 1.5:10, 2:5";
+      const HARM3_OVERTONES = "0.5:15, 1:30, 1.1852:11.25, 1.5:7.5, 2:3.75, 1.5:5, 3:10, 3.5556:3.75, 4.5:2.5, 6:1.25";
+      const HARM11_OVERTONES = "0.5:15, 1:30, 1.1852:11.25, 1.5:7.5, 2:3.75, 5.5:5, 11:10, 13.0372:3.75, 16.5:2.5, 22:1.25";
 
       function autoResize(el) {
         el.style.height = "auto";
         el.style.height = el.scrollHeight + "px";
       }
-      
-      // Матрица HSL цветов (Фа# - красный, До# - зеленый/синий, Ми - фиолетовый)
-const spectralColors = {
-  "Фа#": 0,    // Red
-  "Соль": 30,  // Orange
-  "Ля": 60,    // Yellow
-  "Си": 100,   // Green
-  "До": 180,   // Cyan
-  "До#": 220,  // Blue
-  "Ми": 280    // Violet
-};
 
-function getSpectralColor(name, octave) {
-  const hue = spectralColors[name];
-  // Октавная "пронзительность": 1 октава (35% яркости), 4 октава (80% яркости)
-  const lightness = 35 + (octave * 15); 
-  return `hsl(${hue}, 100%, ${lightness}%)`;
-}
+      // ================================================================
+      //  ЦВЕТ ИЗ ЧАСТОТЫ (порт из sound_color_frequency.html)
+      // ================================================================
 
-function triggerVisuals(freq, name, octave) {
-  const body = document.body;
-  const rel = parseFloat(document.getElementById('release').value);
-  const color = getSpectralColor(name, octave);
-
-  // 2. Поиск и подсветка кнопки
-  const btns = document.querySelectorAll('.note-btn');
-  btns.forEach(btn => {
-    // Ищем кнопку по тексту частоты внутри неё
-    if (btn.querySelector('.hz-val').innerText.includes(freq)) {
-      btn.style.transition = "none";
-      btn.classList.add('active-visual');
-      btn.style.backgroundColor = color;
-      
-      // Для Фа# добавляем пронзительный красный контур разной яркости
-      if (name === "Фа#") {
-          const redLightness = 30 + (octave * 20);
-          btn.style.borderColor = `hsl(0, 100%, ${redLightness}%)`;
-          btn.style.boxShadow = `0 0 15px hsl(0, 100%, ${redLightness}%)`;
+      function wavelengthToRGB(w) {
+        let r = 0, g = 0, b = 0;
+        if (w < 380 || w > 780) return [128, 128, 128]; 
+        if (w >= 380 && w < 440) { r = (440 - w) / 60; g = 0; b = 1; }
+        else if (w >= 440 && w < 490) { r = 0; g = (w - 440) / 50; b = 1; }
+        else if (w >= 490 && w < 510) { r = 0; g = 1; b = (510 - w) / 20; }
+        else if (w >= 510 && w < 580) { r = (w - 510) / 70; g = 1; b = 0; }
+        else if (w >= 580 && w < 645) { r = 1; g = (645 - w) / 65; b = 0; }
+        else if (w >= 645 && w <= 780) { r = 1; g = 0; b = 0; }
+        let factor = 1.0;
+        if (w < 420) factor = 0.3 + 0.7 * (w - 380) / 40;
+        else if (w > 700) factor = 0.3 + 0.7 * (780 - w) / 80;
+        const gamma = 0.8;
+        const R = r > 0 ? 255 * Math.pow(r * factor, gamma) : 0;
+        const G = g > 0 ? 255 * Math.pow(g * factor, gamma) : 0;
+        const B = b > 0 ? 255 * Math.pow(b * factor, gamma) : 0;
+        return [
+          Math.min(255, Math.round(R)),
+          Math.min(255, Math.round(G)),
+          Math.min(255, Math.round(B)),
+        ];
       }
 
-      setTimeout(() => {
-        btn.style.transition = `all ${rel}s ease-out`;
-        btn.classList.remove('active-visual');
-        btn.style.backgroundColor = ""; // Возврат к CSS стилю
-        btn.style.borderColor = "";
-        btn.style.boxShadow = "";
-      }, 100);
-    }
-  });
-}
+      function freqToVisibleWavelength(freq) {
+        if (!freq || freq <= 0 || !isFinite(freq)) return 550; 
+        const C = 299792458; 
+        let lambdaNm = (C / freq) * 1e9;
+        if (!isFinite(lambdaNm) || lambdaNm <= 0) return 550;
+        // Повышаем частоту октавами → λ уменьшается, пока не попадёт в видимый спектр
+        while (lambdaNm > 780) lambdaNm /= 2;
+        while (lambdaNm < 380) lambdaNm *= 2;
+        return lambdaNm;
+      }
+
+      // Конвертер RGB в HSL для получения чистого оттенка (Hue)
+      function rgbToHsl(r, g, b) {
+        r /= 255; g /= 255; b /= 255;
+        const max = Math.max(r, g, b), min = Math.min(r, g, b);
+        let h = 0, s = 0, l = (max + min) / 2;
+        if (max !== min) {
+          const d = max - min;
+          s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+          if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+          else if (max === g) h = (b - r) / d + 2;
+          else if (max === b) h = (r - g) / d + 4;
+          h /= 6;
+        }
+        return [h * 360, s * 100, l * 100];
+      }
+
+      // Вспышка при нажатии
+      function triggerVisuals(freq, name, octave) {
+        const rel = parseFloat(document.getElementById('release').value);
+        const btn = document.querySelector(`.note-btn[data-note="${name}"][data-oct="${octave}"]`);
+        if (!btn) return;
+
+        // 1. Вычисляем частоту в видимый цвет
+        const lambda = freqToVisibleWavelength(freq);
+        const [r, g, b] = wavelengthToRGB(lambda);
+        
+        // 2. Берём Hue из полученного цвета
+        const [h, s, l] = rgbToHsl(r, g, b);
+
+        // 3. Октавная "пронзительность" (35% - 1 окт, 80% - 4 окт)
+        const targetLightness = 35 + (octave * 15);
+        // Используем 100% насыщенности, как было в оригинальном дизайне
+        const color = `hsl(${h}, 100%, ${targetLightness}%)`;
+
+        btn.style.transition = "none";
+        btn.classList.add('active-visual');
+        btn.style.backgroundColor = color;
+        
+        // Для Фа# добавляем пронзительный красный контур разной яркости
+        if (name === "Фа#") {
+            const redLightness = 30 + (octave * 20);
+            btn.style.borderColor = `hsl(0, 100%, ${redLightness}%)`;
+            btn.style.boxShadow = `0 0 15px hsl(0, 100%, ${redLightness}%)`;
+        }
+
+        setTimeout(() => {
+          btn.style.transition = `all ${rel}s ease-out`;
+          btn.classList.remove('active-visual');
+          btn.style.backgroundColor = ""; // Плавный возврат к CSS-стилю (тёмному)
+          btn.style.borderColor = "";
+          btn.style.boxShadow = "";
+        }, 100);
+      }
 
       // ТАЧ-ПОДСВЕТКА
       function addTouchFeedback() {
@@ -559,16 +619,20 @@ function triggerVisuals(freq, name, octave) {
       reverb.connect(revG);
       revG.connect(masterGain);
 
-      const octaves = [
+      // Исходные частоты (эталон)
+      const originalOctaves = [
         [128.0, 136.688, 162.0, 182.25, 192.0, 216.0, 243.0],
         [256.0, 273.376, 324.0, 364.5, 384.0, 432.0, 486.0],
         [512.0, 546.752, 648.0, 729.0, 768.0, 864.0, 972.0],
         [1024.0, 1093.504, 1296.0, 1458.0, 1536.0, 1728.0, 1944.0],
       ];
+      // Текущие частоты (пересчитываются)
+      let currentOctaves = originalOctaves.map(row => [...row]);
+
       const noteNames = ["До", "До#", "Ми", "Фа#", "Соль", "Ля", "Си"];
 
       const kb = document.getElementById("keyboard");
-      octaves.forEach((freqs, octIdx) => {
+      currentOctaves.forEach((freqs, octIdx) => {
         const row = document.createElement("div");
         row.className = "octave-row";
         freqs.forEach((f, nIdx) => {
@@ -577,12 +641,16 @@ function triggerVisuals(freq, name, octave) {
           btn.className = "note-btn";
           if (name === "Фа#") btn.classList.add("f-sharp");
           if (name === "До#") btn.classList.add("c-sharp");
-          btn.innerHTML = `<span class="oct-num">${octIdx + 1}</span><span class="note-name">${name}</span><span class="hz-val">${f} Hz</span>`;
+          // data-атрибуты для точного поиска
+          btn.dataset.note = name;
+          btn.dataset.oct = octIdx;
+          btn.innerHTML = `<span class="oct-num">${octIdx + 1}</span><span class="note-name">${name}</span><span class="hz-val">${f.toFixed(3)} Hz</span>`;
 
           const trigger = (e) => {
             e.preventDefault();
-            playNote(f);
-            triggerVisuals(f, name, octIdx);
+            const currentFreq = currentOctaves[octIdx][nIdx];
+            playNote(currentFreq);
+            triggerVisuals(currentFreq, name, octIdx);
           };
           btn.onmousedown = trigger;
           btn.ontouchstart = (e) => {
@@ -594,8 +662,38 @@ function triggerVisuals(freq, name, octave) {
         kb.appendChild(row);
       });
 
+      // Функция пересчёта частот при изменении базовой ноты До
+      function updateFrequencies() {
+        const baseInput = document.getElementById('baseNote');
+        let base = parseFloat(baseInput.value);
+        if (isNaN(base) || base <= 0) base = 128;
+        const factor = base / 128.0; // 128 Гц — исходная нота
+
+        for (let oct = 0; oct < originalOctaves.length; oct++) {
+          for (let note = 0; note < originalOctaves[oct].length; note++) {
+            const orig = originalOctaves[oct][note];
+            const newFreq = Math.round(orig * factor * 1000) / 1000;
+            currentOctaves[oct][note] = newFreq;
+          }
+        }
+
+        // Обновляем только отображаемые значения на кнопках
+        const rows = document.querySelectorAll('.octave-row');
+        rows.forEach((row, octIdx) => {
+          const btns = row.querySelectorAll('.note-btn');
+          btns.forEach((btn, nIdx) => {
+            const hzSpan = btn.querySelector('.hz-val');
+            if (hzSpan) {
+              hzSpan.textContent = currentOctaves[octIdx][nIdx].toFixed(3) + ' Hz';
+            }
+          });
+        });
+      }
+
+      // Вызываем после построения клавиатуры
+      updateFrequencies();
+
       function playNote(f, start = audioCtx.currentTime) {
-        // Если частота 0, просто ничего не делаем
         if (!f || f === 0) return;
         if (audioCtx.state === "suspended") audioCtx.resume();
         
@@ -616,34 +714,27 @@ function triggerVisuals(freq, name, octave) {
           
           // ========== BI РЕЖИМ: РАСЩЕПЛЕНИЕ ЧАСТОТЫ ==========
           if (isBiMode) {
-            // СОХРАНЯЕМ ИСХОДНУЮ ЧАСТОТУ ДЛЯ ФАЗОВОГО СДВИГА
             const originalFreq = freq;
             const shift = freq / 128;
             const leftFreq = parseFloat((freq - shift).toFixed(6));
             const rightFreq = parseFloat((freq + shift).toFixed(6));
             
-            // Создаём осциллятор для левого канала
             const oscL = audioCtx.createOscillator();
             const gL = audioCtx.createGain();
             oscL.frequency.setValueAtTime(leftFreq, start);
             gL.gain.setValueAtTime(0, start);
             gL.gain.linearRampToValueAtTime(finalAmp, start + att);
             
-            // Создаём осциллятор для правого канала
             const oscR = audioCtx.createOscillator();
             const gR = audioCtx.createGain();
             oscR.frequency.setValueAtTime(rightFreq, start);
             gR.gain.setValueAtTime(0, start);
             gR.gain.linearRampToValueAtTime(finalAmp, start + att);
             
-            // === ФАЗОВЫЙ СДВИГ 90° — ИСПОЛЬЗУЕМ originalFreq ===
             const merger = audioCtx.createChannelMerger(2);
-            
-            // Левый канал (без задержки)
             oscL.connect(gL);
             gL.connect(merger, 0, 0);
             
-            // Правый канал (с задержкой на 90° относительно ИСХОДНОЙ частоты)
             const delayForRight = audioCtx.createDelay();
             delayForRight.delayTime.setValueAtTime(1 / (4 * originalFreq), start);
             
@@ -651,7 +742,6 @@ function triggerVisuals(freq, name, octave) {
             gR.connect(delayForRight);
             delayForRight.connect(merger, 0, 1);
             
-            // === ОГИБАЮЩАЯ ДЛЯ ЛЕВОГО ===
             if (type === "symbiosis") {
               const curve = [];
               const pts = 120;
@@ -671,7 +761,6 @@ function triggerVisuals(freq, name, octave) {
               gL.gain.exponentialRampToValueAtTime(0.001, endTime);
             }
             
-            // === ОГИБАЮЩАЯ ДЛЯ ПРАВОГО ===
             if (type === "symbiosis") {
               const curve = [];
               const pts = 120;
@@ -691,7 +780,6 @@ function triggerVisuals(freq, name, octave) {
               gR.gain.exponentialRampToValueAtTime(0.001, endTime);
             }
             
-            // Подключение к выходам
             merger.connect(masterGain);
             merger.connect(reverb);
             
@@ -715,7 +803,7 @@ function triggerVisuals(freq, name, octave) {
               merger.disconnect();
             };
           } else {
-            // ========== ОБЫЧНЫЙ РЕЖИМ (БЕЗ ИЗМЕНЕНИЙ) ==========
+            // ========== ОБЫЧНЫЙ РЕЖИМ ==========
             const osc = audioCtx.createOscillator();
             const g = audioCtx.createGain();
             const merger = audioCtx.createChannelMerger(2);
@@ -769,18 +857,15 @@ function triggerVisuals(freq, name, octave) {
       }
       
       function stopAllSounds() {
-        // Останавливаем все осцилляторы
         activeOscillators.forEach(osc => {
           try { osc.stop(); } catch(e) {}
           osc.disconnect();
         });
         activeOscillators = [];
         
-        // Отменяем все будущие ноты в секвенсоре
         sequenceIntervals.forEach(timeoutId => clearTimeout(timeoutId));
         sequenceIntervals = [];
         
-        // Возвращаем кнопку в исходное состояние
         isPlaying = false;
         const btn = document.getElementById("seqBtn");
         btn.innerText = "ИГРАТЬ";
@@ -802,6 +887,7 @@ function triggerVisuals(freq, name, octave) {
           env: document.getElementById("envType").value,
           ovs: document.getElementById("overtones").value,
           seq: document.getElementById("sequence").value,
+          base: document.getElementById("baseNote").value, 
         };
         let ps = JSON.parse(localStorage.getItem("organicPresets") || "{}");
         ps[name] = d;
@@ -824,7 +910,6 @@ function triggerVisuals(freq, name, octave) {
         const d = JSON.parse(localStorage.getItem("organicPresets"))[n];
         if (!d) return;
       
-        // Маппинг ключей объекта на ID элементов
         const config = {
           "attack": d.att,
           "decay": d.dec,
@@ -832,18 +917,20 @@ function triggerVisuals(freq, name, octave) {
           "stepTime": d.step,
           "envType": d.env,
           "overtones": d.ovs,
-          "sequence": d.seq
+          "sequence": d.seq,
+          "baseNote": d.base 
         };
       
         Object.keys(config).forEach(id => {
           const el = document.getElementById(id);
-          if (el) {
+          if (el && config[id] !== undefined) {
             el.value = config[id];
           }
         });
       
         autoResize(document.getElementById("overtones"));
         autoResize(document.getElementById("sequence"));
+        updateFrequencies(); // Пересчитываем данные на кнопках
       };
 
       window.deletePreset = (n) => {
@@ -885,8 +972,6 @@ function triggerVisuals(freq, name, octave) {
       function saveWav() {
         const baseName = prompt("Имя файла:", "Organic_Session");
         if (!baseName) return;
-        
-        // Добавляем индикатор BI режима в имя файла
         const name = isBiMode ? baseName + "_BI" : baseName;
         
         const FL = flatten(L),
@@ -901,17 +986,17 @@ function triggerVisuals(freq, name, octave) {
         v.setUint32(4, 36 + FL.length * 8, true);
         s(8, "WAVEfmt ");
         v.setUint32(16, 16, true);
-        v.setUint16(20, 3, true);
-        v.setUint16(22, 2, true);
+        v.setUint16(20, 3, true); 
+        v.setUint16(22, 2, true); 
         v.setUint32(24, 48000, true);
-        v.setUint32(28, 48000 * 8, true);
-        v.setUint16(32, 8, true);
-        v.setUint16(34, 32, true);
+        v.setUint32(28, 48000 * 8, true); 
+        v.setUint16(32, 8, true); 
+        v.setUint16(34, 32, true); 
         s(36, "data");
         v.setUint32(40, FL.length * 8, true);
         for (let i = 0; i < FL.length; i++) {
-          v.setFloat32(44 + i * 8, FL[i], true);
-          v.setFloat32(48 + i * 8, FR[i], true);
+          v.setFloat32(44 + i * 8, FL[i], true); 
+          v.setFloat32(48 + i * 8, FR[i], true); 
         }
         const a = document.createElement("a");
         a.href = URL.createObjectURL(new Blob([v], { type: "audio/wav" }));
@@ -950,23 +1035,20 @@ function triggerVisuals(freq, name, octave) {
     
     const timeoutId = setTimeout(() => {
       if (f > 0) {
-        octaves.forEach((freqs, octIdx) => {
+        currentOctaves.forEach((freqs, octIdx) => {
           const nIdx = freqs.indexOf(f);
           if (nIdx !== -1) triggerVisuals(f, noteNames[nIdx], octIdx);
         });
       }
       
-      // ИСПРАВЛЕННЫЙ БЛОК ДЛЯ ПОСЛЕДНЕЙ НОТЫ:
       if (index === seq.length - 1) {
         const att = parseFloat(document.getElementById("attack").value);
         const dec = parseFloat(document.getElementById("decay").value);
         const rel = parseFloat(document.getElementById("release").value);
-        // Ждем полное время звучания (ADR)
         const totalNoteDurationMs = (att + dec + rel) * 1000;
 
         const endTimeoutId = setTimeout(() => {
           if (isPlaying) {
-            // Просто меняем статус интерфейса, не обрывая хвост осциллятора
             isPlaying = false;
             this.innerText = "ИГРАТЬ";
             this.style.background = "#4d4dff";
@@ -990,19 +1072,16 @@ function triggerVisuals(freq, name, octave) {
         const ps = JSON.parse(localStorage.getItem("organicPresets") || "{}");
         if (Object.keys(ps).length === 0) return alert("Нет пресетов для экспорта");
       
-        // Заголовок CSV
-        let csvContent = "data:text/csv;charset=utf-8,Name;Attack;Decay;Release;Step;Env;Overtones;Sequence\n";
+        let csvContent = "data:text/csv;charset=utf-8,Name;Attack;Decay;Release;Step;Env;Overtones;Sequence;Base\n";
       
-        // Наполнение данными
         Object.keys(ps).forEach(name => {
           const d = ps[name];
-          // Экранируем возможные точки с запятой в текстах
           const ovs = `"${d.ovs.replace(/"/g, '""')}"`;
           const seq = `"${d.seq.replace(/"/g, '""')}"`;
-          csvContent += `${name};${d.att};${d.dec};${d.rel};${d.step};${d.env};${ovs};${seq}\n`;
+          const base = d.base || "128";
+          csvContent += `${name};${d.att};${d.dec};${d.rel};${d.step};${d.env};${ovs};${seq};${base}\n`;
         });
       
-        // Формируем дату для имени файла
         const now = new Date();
         const dateStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
         
@@ -1033,11 +1112,9 @@ function triggerVisuals(freq, name, octave) {
             let ps = JSON.parse(localStorage.getItem("organicPresets") || "{}");
             let count = 0;
       
-            // Пропускаем заголовок (i=1)
             for (let i = 1; i < lines.length; i++) {
               if (!lines[i].trim()) continue;
               
-              // Регулярка для корректного разделения CSV с учетом кавычек
               const parts = lines[i].split(/;(?=(?:(?:[^"]*"){2})*[^"]*$)/);
               
               if (parts.length >= 8) {
@@ -1049,7 +1126,8 @@ function triggerVisuals(freq, name, octave) {
                   step: parts[4],
                   env: parts[5],
                   ovs: parts[6].replace(/^"|"$/g, '').replace(/""/g, '"'),
-                  seq: parts[7].replace(/^"|"$/g, '').replace(/""/g, '"')
+                  seq: parts[7].replace(/^"|"$/g, '').replace(/""/g, '"'),
+                  base: parts[8] || "128", 
                 };
                 count++;
               }
@@ -1064,14 +1142,12 @@ function triggerVisuals(freq, name, octave) {
         input.click();
       }
 
-
-
       window.onload = () => {
         autoResize(document.getElementById("overtones"));
         autoResize(document.getElementById("sequence"));
         renderPresets();
         addTouchFeedback();
-        // Обработчик кнопки BI
+        
         const biBtn = document.getElementById('biBtn');
         if (biBtn) {
           biBtn.onclick = function() {
@@ -1086,6 +1162,63 @@ function triggerVisuals(freq, name, octave) {
               this.style.border = "";
             }
           };
+        }
+
+        // === ЛОГИКА ДЛЯ КНОПОК ГАРМОНИК ===
+        const harm3Btn = document.getElementById('harm3Btn');
+        const harm11Btn = document.getElementById('harm11Btn');
+        const overtonesInput = document.getElementById('overtones');
+
+        harm3Btn.onclick = function() {
+            if (currentHarmMode === '3') {
+                // Отжатие: возврат к золотому стандарту
+                currentHarmMode = 'none';
+                overtonesInput.value = GOLDEN_OVERTONES;
+                this.style.background = "#5e358c";
+                this.style.color = "";
+                this.style.border = "";
+            } else {
+                // Нажатие
+                currentHarmMode = '3';
+                overtonesInput.value = HARM3_OVERTONES;
+                this.style.background = "#dfa0ff";
+                this.style.color = "#1a0b2e";
+                this.style.border = "1px solid white";
+                // Сброс второй кнопки
+                harm11Btn.style.background = "#5e358c";
+                harm11Btn.style.color = "";
+                harm11Btn.style.border = "";
+            }
+            autoResize(overtonesInput);
+        };
+
+        harm11Btn.onclick = function() {
+            if (currentHarmMode === '11') {
+                // Отжатие: возврат к золотому стандарту
+                currentHarmMode = 'none';
+                overtonesInput.value = GOLDEN_OVERTONES;
+                this.style.background = "#5e358c";
+                this.style.color = "";
+                this.style.border = "";
+            } else {
+                // Нажатие
+                currentHarmMode = '11';
+                overtonesInput.value = HARM11_OVERTONES;
+                this.style.background = "#dfa0ff";
+                this.style.color = "#1a0b2e";
+                this.style.border = "1px solid white";
+                // Сброс первой кнопки
+                harm3Btn.style.background = "#5e358c";
+                harm3Btn.style.color = "";
+                harm3Btn.style.border = "";
+            }
+            autoResize(overtonesInput);
+        };
+
+        const baseInput = document.getElementById('baseNote');
+        if (baseInput) {
+          baseInput.addEventListener('input', updateFrequencies);
+          baseInput.addEventListener('change', updateFrequencies);
         }
       };
       const modal = document.getElementById("infoModal");
